@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  # Use an existing Postgres container instead of creating a new one.
+  # Ensure the existing container is reachable on the compose network by name.
+  # Update JDBC_URL below to match that container's name and credentials.
+  spark-service:
+    environment:
+      - STORAGE_PROVIDER=jdbc
+      - JDBC_URL=${JDBC_URL}
+      - JDBC_USER=${JDBC_USER}
+      - JDBC_PASSWORD=${JDBC_PASSWORD}
+      - JDBC_SSL=false
+    networks:
+      - app-net
+
+# No volumes declared; using existing Postgres container

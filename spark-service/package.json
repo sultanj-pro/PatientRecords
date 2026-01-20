@@ -1,0 +1,27 @@
+{
+  "name": "patientrecords-spark-service",
+  "version": "0.1.0",
+  "description": "Minimal spark-service stub for PatientRecords (provider options & health).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --coverage --runInBand",
+    "integration:provider-test": "node test-provider.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.6.1",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "../coverage/spark-service"
+  }
+}

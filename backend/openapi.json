@@ -1,0 +1,124 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PatientRecords API (stub)",
+    "version": "0.1.0",
+    "description": "Minimal API spec for development — includes auth and patient endpoints."
+  },
+  "servers": [
+    { "url": "http://localhost:3001", "description": "Local dev" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Liveness check",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login (returns JWT)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "username": { "type": "string" }, "password": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "400": { "description": "Bad request" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh token",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Token refreshed" }, "400": { "description": "Bad request" } }
+      }
+    },
+    "/api/patients": {
+      "get": {
+        "summary": "List patients",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search query" }
+        ],
+        "responses": { "200": { "description": "A list of patients" }, "401": { "description": "Unauthorized" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}": {
+      "get": {
+        "summary": "Get patient details",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Patient object" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/vitals": {
+      "get": {
+        "summary": "Get vitals for a patient",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "from", "in": "query", "schema": { "type": "string" }, "description": "Start date (inclusive)" },
+          { "name": "to", "in": "query", "schema": { "type": "string" }, "description": "End date (inclusive)" },
+          { "name": "type", "in": "query", "schema": { "type": "string" }, "description": "Filter by vital type" }
+        ],
+        "responses": { "200": { "description": "Array of vitals" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/labs": {
+      "get": {
+        "summary": "Get labs for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of labs" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/physician-visits": {
+      "get": {
+        "summary": "Get physician visits for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/hospital-visits": {
+      "get": {
+        "summary": "Get hospital visits for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/medications": {
+      "get": {
+        "summary": "Get medications for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of medications" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/provider-options": {
+      "get": {
+        "summary": "Proxy to spark-service provider options",
+        "responses": { "200": { "description": "Provider options" }, "502": { "description": "Bad gateway" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  }
+}

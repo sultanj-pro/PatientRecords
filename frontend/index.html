@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PatientRecords UI (Placeholder)</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:1rem}
+    .card{border:1px solid #ddd;padding:1rem;border-radius:6px;margin-bottom:1rem}
+    .search{display:flex;gap:.5rem}
+    .list{max-height:300px;overflow:auto}
+    .patient{padding:.5rem;border-bottom:1px solid #eee}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>PatientRecords UI (Placeholder)</h2>
+    <div class="search">
+      <input id="q" placeholder="Search patients by name or id" />
+      <button id="search">Search</button>
+    </div>
+    <div class="list card" id="results"></div>
+  </div>
+
+  <div class="card" id="detail" style="display:none"></div>
+
+  <script>
+    const api = (p) => `/api/${p}`;
+    async function login() {
+      // lightweight implicit auth for demo
+      const res = await fetch('/auth/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: 'doc1' }) });
+      const j = await res.json();
+      window._token = j.accessToken;
+      return j;
+    }
+    async function search(q){
+      if(!window._token) await login();
+      const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}`, { headers:{ Authorization:`Bearer ${window._token}` } });
+      return res.json();
+    }
+    async function getPatient(id){
+      if(!window._token) await login();
+      const res = await fetch(`/api/patients/${id}`, { headers:{ Authorization:`Bearer ${window._token}` } });
+      return res.json();
+    }
+    function renderList(items){
+      const el = document.getElementById('results');
+      el.innerHTML = items.map(p=>`<div class="patient"><b>${p.firstname} ${p.lastname}</b> — ${p.patientid} <button data-id="${p.patientid}">Open</button></div>`).join('');
+      el.querySelectorAll('button[data-id]').forEach(btn=>btn.addEventListener('click', async e=>{
+        const id = e.target.getAttribute('data-id');
+        const data = await getPatient(id);
+        showDetail(data);
+      }));
+    }
+    function showDetail(p){
+      const d = document.getElementById('detail');
+      d.style.display='block';
+      d.innerHTML = `<h3>${p.firstname} ${p.lastname} — ${p.patientid}</h3><pre>${JSON.stringify(p, null, 2)}</pre>`;
+      window.scrollTo(0,0);
+    }
+    document.getElementById('search').addEventListener('click', async ()=>{
+      const q = document.getElementById('q').value;
+      const items = await search(q);
+      renderList(items);
+    });
+    // initial load
+    (async()=>{ const items = await search(''); renderList(items); })();
+  </script>
+</body>
+</html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PatientRecords Frontend</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    .card { border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>PatientRecords Frontend</h1>
+    <p>Modernization UI placeholder. Backend running at <code>http://localhost:3001</code>.</p>
+  </div>
+</body>
+</html>
