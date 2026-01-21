@@ -4,8 +4,7 @@
   "description": "Minimal backend auth stub for PatientRecords (login/refresh/health)",
   "main": "server.js",
   "scripts": {
-    "start": "node init-db.js && node server.js",
-    "migrate": "node-pg-migrate up --migrations-dir=/migrations",
+    "start": "node server.js",
     "test": "jest --coverage --runInBand"
   },
   "engines": {
@@ -17,16 +16,11 @@
     "body-parser": "^1.20.2",
     "jsonwebtoken": "^9.0.0",
     "swagger-ui-express": "^4.6.3",
-    "pg": "^8.11.0"
+    "mongoose": "^7.5.0"
   },
-  "devDependencies": {
-    "node-pg-migrate": "^7.7.0"
-  },
-  
   "devDependencies": {
     "jest": "^29.6.1",
-    "supertest": "^6.3.3",
-    "node-pg-migrate": "^7.7.0"
+    "supertest": "^6.3.3"
   },
   "jest": {
     "testEnvironment": "node",

@@ -3,8 +3,10 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const swaggerUi = require('swagger-ui-express');
+const mongoose = require('mongoose');
 const openapiSpec = require('./openapi.json');
 
+// Initialize Express app
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -12,19 +14,126 @@ app.use(bodyParser.json());
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
+// Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 3001;
-
-const path = require('path');
-const fs = require('fs');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 const SPARK_SERVICE_URL = process.env.SPARK_SERVICE_URL || process.env.SPARK_URL || 'http://spark-service:8998';
+
+// Define Patient schema
+const patientSchema = new mongoose.Schema({
+  patientid: { type: Number, unique: true, required: true },
+  firstname: { type: String },
+  lastname: { type: String },
+  demographics: [
+    {
+      description: String,
+      value: String
+    }
+  ],
+  vitals: [
+    {
+      dateofobservation: String,
+      observationcode: String,
+      observationcodesystem: String,
+      organizationname: String,
+      vital_description: String,
+      unit: String,
+      value: String,
+      percentile: String
+    }
+  ],
+  labs: [
+    {
+      date: String,
+      test_name: String,
+      test_code: String,
+      result: String,
+      unit: String,
+      reference_range: String
+    }
+  ],
+  medications: [
+    {
+      startDate: String,
+      name: String,
+      dose: String,
+      frequency: String,
+      indication: String,
+      route: String
+    }
+  ],
+  physician_visits: [
+    {
+      date: String,
+      clinic: String,
+      reason: String,
+      notes: String,
+      provider_name: String,
+      facility_name: String
+    }
+  ],
+  hospital_visits: [
+    {
+      date: String,
+      facility: String,
+      reason: String,
+      notes: String,
+      discharge_status: String
+    }
+  ]
+}, { timestamps: true });
+
+const Patient = mongoose.model('Patient', patientSchema);
+
+// Seed database function
+const fs = require('fs');
+const path = require('path');
+
+async function seedDatabase() {
+  try {
+    const count = await Patient.countDocuments();
+    if (count === 0) {
+      console.log('Database empty, seeding with patient data...');
+      const dataPath = '/data/patient-vitals-hierarchical.json';
+      if (!fs.existsSync(dataPath)) {
+        console.log('No data file found at', dataPath);
+        return;
+      }
+      const raw = fs.readFileSync(dataPath, 'utf8');
+      const patients = JSON.parse(raw);
+      const result = await Patient.insertMany(patients);
+      console.log(`Seeded ${result.length} patients successfully`);
+    } else {
+      console.log(`Database already contains ${count} patients`);
+    }
+  } catch (err) {
+    console.error('Seeding error:', err.message);
+  }
+}
+
+// Ensure MongoDB connection
+let dbConnected = false;
+mongoose.connect(MONGODB_URI)
+  .then(async () => {
+    dbConnected = true;
+    console.log('MongoDB connected');
+    await seedDatabase();
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err.message);
+    if (require.main === module) {
+      // Only exit if running as main server, not in tests
+      process.exit(1);
+    }
+  });
 
 function signToken(username, role) {
   return jwt.sign({ sub: username, role }, JWT_SECRET, { expiresIn: '1h' });
 }
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', mongodb: dbConnected });
 });
 
 // Simple login: accepts { username, password }
@@ -32,7 +141,7 @@ app.post('/auth/login', (req, res) => {
   const { username } = req.body || {};
   if (!username) return res.status(400).json({ error: 'username required' });
 
-  // Very small stub: assign role based on username pattern
+  // Assign role based on username pattern
   const role = username === 'admin' ? 'admin' : username.startsWith('doc') ? 'physician' : 'nurse';
   const token = signToken(username, role);
   res.json({ accessToken: token, tokenType: 'Bearer', expiresIn: 3600, role });
@@ -51,7 +160,7 @@ app.post('/auth/refresh', (req, res) => {
   }
 });
 
-// Protected example endpoint (checks Authorization: Bearer <token>)
+// Protected middleware
 function authMiddleware(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: 'missing authorization' });
@@ -67,39 +176,157 @@ function authMiddleware(req, res, next) {
   }
 }
 
-app.get('/api/patients', authMiddleware, (req, res) => {
-  // Read mock data from workspace data folder (relative to repo root)
+// GET /api/patients - list patients with optional search
+app.get('/api/patients', authMiddleware, async (req, res) => {
   try {
-    const dataPath = path.resolve(__dirname, '..', '..', 'data', 'patient-vitals-hierarchical.json');
-    const raw = fs.readFileSync(dataPath, 'utf8');
-    const patients = JSON.parse(raw);
-    // support simple ?q= search by name or id
     const q = (req.query.q || '').toLowerCase();
-    const filtered = q
-      ? patients.filter(p => String(p.patientid).toLowerCase().includes(q) || ((p.firstname||'') + ' ' + (p.lastname||'')).toLowerCase().includes(q))
-      : patients;
-    // return lightweight list
-    const list = filtered.map(p => ({ patientid: p.patientid, firstname: p.firstname, lastname: p.lastname }));
-    res.json(list);
+    let query = {};
+    
+    if (q) {
+      query = {
+        $or: [
+          { patientid: isNaN(q) ? undefined : parseInt(q) },
+          { firstname: { $regex: q, $options: 'i' } },
+          { lastname: { $regex: q, $options: 'i' } }
+        ]
+      };
+      // Remove undefined from $or
+      query.$or = query.$or.filter(cond => Object.values(cond)[0] !== undefined);
+    }
+    
+    const patients = await Patient.find(query).select('patientid firstname lastname');
+    res.json(patients);
   } catch (err) {
-    res.status(500).json({ error: 'failed to read patient data', detail: err.message });
+    res.status(500).json({ error: 'failed to fetch patients', detail: err.message });
   }
 });
 
-app.get('/api/patients/:id', authMiddleware, (req, res) => {
+// GET /api/patients/:id - get patient by id
+app.get('/api/patients/:id', authMiddleware, async (req, res) => {
   try {
-    const dataPath = path.resolve(__dirname, '..', '..', 'data', 'patient-vitals-hierarchical.json');
-    const raw = fs.readFileSync(dataPath, 'utf8');
-    const patients = JSON.parse(raw);
-    const p = patients.find(x => String(x.patientid) === String(req.params.id));
-    if (!p) return res.status(404).json({ error: 'not found' });
-    res.json(p);
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    res.json(patient);
   } catch (err) {
-    res.status(500).json({ error: 'failed to read patient data', detail: err.message });
+    res.status(500).json({ error: 'failed to fetch patient', detail: err.message });
   }
 });
 
-// Proxy endpoint to show provider options from spark-service
+// Helper function to parse date
+function parseDate(d) {
+  const dt = Date.parse(d);
+  return isNaN(dt) ? null : new Date(dt);
+}
+
+// GET /api/patients/:id/vitals - get patient vitals with optional filters
+app.get('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    
+    let vitals = patient.vitals || [];
+    
+    const from = req.query.from ? parseDate(req.query.from) : null;
+    const to = req.query.to ? parseDate(req.query.to) : null;
+    const type = req.query.type ? req.query.type.toLowerCase() : null;
+    
+    if (type) {
+      vitals = vitals.filter(v => 
+        (v.vital_description || '').toLowerCase().includes(type) || 
+        (v.observationcode || '').toLowerCase().includes(type)
+      );
+    }
+    
+    if (from) {
+      vitals = vitals.filter(v => {
+        const d = parseDate(v.dateofobservation);
+        return d && d >= from;
+      });
+    }
+    
+    if (to) {
+      vitals = vitals.filter(v => {
+        const d = parseDate(v.dateofobservation);
+        return d && d <= to;
+      });
+    }
+    
+    res.json(vitals);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch vitals', detail: err.message });
+  }
+});
+
+// GET /api/patients/:id/labs
+app.get('/api/patients/:id/labs', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    res.json(patient.labs || []);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch labs', detail: err.message });
+  }
+});
+
+// GET /api/patients/:id/medications
+app.get('/api/patients/:id/medications', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    res.json(patient.medications || []);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch medications', detail: err.message });
+  }
+});
+
+// GET /api/patients/:id/meds - alias for medications
+app.get('/api/patients/:id/meds', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    res.json(patient.medications || []);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch medications', detail: err.message });
+  }
+});
+
+// GET /api/patients/:id/physician-visits
+app.get('/api/patients/:id/physician-visits', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    res.json(patient.physician_visits || []);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch physician visits', detail: err.message });
+  }
+});
+
+// GET /api/patients/:id/hospital-visits
+app.get('/api/patients/:id/hospital-visits', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    res.json(patient.hospital_visits || []);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch hospital visits', detail: err.message });
+  }
+});
+
+// GET /api/patients/:id/visits - combine physician and hospital visits
+app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    const phys = patient.physician_visits || [];
+    const hosp = patient.hospital_visits || [];
+    const combined = phys.concat(hosp);
+    res.json(combined);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch visits', detail: err.message });
+  }
+});
+
+// Proxy endpoint to spark-service
 app.get('/api/provider-options', authMiddleware, async (req, res) => {
   try {
     const resp = await fetch(`${SPARK_SERVICE_URL}/provider-options`);
@@ -110,95 +337,12 @@ app.get('/api/provider-options', authMiddleware, async (req, res) => {
   }
 });
 
-// Helper: get patient by id (string-safe)
-function getPatientById(patients, id) {
-  return patients.find(x => String(x.patientid) === String(id));
-}
-
-// Parse date helper
-function parseDate(d) {
-  const dt = Date.parse(d);
-  return isNaN(dt) ? null : new Date(dt);
-}
-
-// Generic collection endpoint factory
-function sendCollection(req, res, collectionName) {
-  try {
-    const dataPath = path.resolve(__dirname, '..', '..', 'data', 'patient-vitals-hierarchical.json');
-    const raw = fs.readFileSync(dataPath, 'utf8');
-    const patients = JSON.parse(raw);
-    const patient = getPatientById(patients, req.params.id);
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    const items = patient[collectionName] || [];
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ error: 'failed to read patient data', detail: err.message });
-  }
-}
-
-// GET vitals with optional filters: from, to, type
-app.get('/api/patients/:id/vitals', authMiddleware, (req, res) => {
-  try {
-    const dataPath = path.resolve(__dirname, '..', '..', 'data', 'patient-vitals-hierarchical.json');
-    const raw = fs.readFileSync(dataPath, 'utf8');
-    const patients = JSON.parse(raw);
-    const patient = getPatientById(patients, req.params.id);
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    let vitals = patient.vitals || [];
-    const from = req.query.from ? parseDate(req.query.from) : null;
-    const to = req.query.to ? parseDate(req.query.to) : null;
-    const type = req.query.type ? req.query.type.toLowerCase() : null;
-    if (type) {
-      vitals = vitals.filter(v => (v.vital_description || '').toLowerCase().includes(type) || (v.observationcode || '').toLowerCase().includes(type));
-    }
-    if (from) {
-      vitals = vitals.filter(v => { const d = parseDate(v.dateofobservation); return d && d >= from; });
-    }
-    if (to) {
-      vitals = vitals.filter(v => { const d = parseDate(v.dateofobservation); return d && d <= to; });
-    }
-    res.json(vitals);
-  } catch (err) {
-    res.status(500).json({ error: 'failed to read patient data', detail: err.message });
-  }
-});
-
-// Labs
-app.get('/api/patients/:id/labs', authMiddleware, (req, res) => sendCollection(req, res, 'labs'));
-
-// Physician visits
-app.get('/api/patients/:id/physician-visits', authMiddleware, (req, res) => sendCollection(req, res, 'physician_visits'));
-
-// Hospital visits
-app.get('/api/patients/:id/hospital-visits', authMiddleware, (req, res) => sendCollection(req, res, 'hospital_visits'));
-
-// Medications
-app.get('/api/patients/:id/medications', authMiddleware, (req, res) => sendCollection(req, res, 'medications'));
-
-// Convenience aliases for older clients
-app.get('/api/patients/:id/meds', authMiddleware, (req, res) => sendCollection(req, res, 'medications'));
-
-// Combine physician and hospital visits under a common "visits" path
-app.get('/api/patients/:id/visits', authMiddleware, (req, res) => {
-  try {
-    const dataPath = path.resolve(__dirname, '..', '..', 'data', 'patient-vitals-hierarchical.json');
-    const raw = fs.readFileSync(dataPath, 'utf8');
-    const patients = JSON.parse(raw);
-    const patient = getPatientById(patients, req.params.id);
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    const phys = patient.physician_visits || [];
-    const hosp = patient.hospital_visits || [];
-    const combined = phys.concat(hosp);
-    res.json(combined);
-  } catch (err) {
-    res.status(500).json({ error: 'failed to read patient data', detail: err.message });
-  }
-});
-
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`backend stub listening on ${PORT}`);
+    console.log(`Patient Records API listening on http://localhost:${PORT}`);
+    console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
   });
 }
 
 module.exports = app;
+

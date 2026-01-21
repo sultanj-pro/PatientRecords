@@ -1,5 +1,6 @@
 const request = require('supertest');
 
+jest.mock('mongoose');
 jest.mock('fs');
 const fs = require('fs');
 const samplePatients = [
@@ -14,6 +15,21 @@ const samplePatients = [
 ];
 fs.readFileSync.mockImplementation((p, enc) => JSON.stringify(samplePatients));
 
+// Mock mongoose and Patient model
+const mongoose = require('mongoose');
+const mockPatientModel = {
+  find: jest.fn().mockReturnValue({
+    select: jest.fn().mockResolvedValue(samplePatients.map(p => ({ patientid: p.patientid, firstname: p.firstname, lastname: p.lastname })))
+  }),
+  findOne: jest.fn().mockImplementation(query => Promise.resolve(samplePatients.find(p => p.patientid === query.patientid))),
+  countDocuments: jest.fn().mockResolvedValue(samplePatients.length),
+  deleteMany: jest.fn().mockResolvedValue({}),
+  insertMany: jest.fn().mockResolvedValue(samplePatients)
+};
+
+mongoose.model.mockReturnValue(mockPatientModel);
+mongoose.connect.mockResolvedValue(undefined);
+
 const app = require('../server');
 
 describe('backend stub', () => {
@@ -21,7 +37,7 @@ describe('backend stub', () => {
   test('health', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body.status).toBe('ok');
   });
 
   test('login returns token and role', async () => {
@@ -79,6 +95,7 @@ describe('backend stub', () => {
   });
 
   test('returns 404 for missing patient', async () => {
+    mockPatientModel.findOne.mockResolvedValueOnce(null);
     const res = await request(app).get('/api/patients/99999').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(404);
   });
