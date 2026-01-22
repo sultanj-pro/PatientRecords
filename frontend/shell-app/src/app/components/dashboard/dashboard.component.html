@@ -1,0 +1,25 @@
+<div class="dashboard-wrapper">
+  <!-- Patient Header -->
+  <div class="patient-header" *ngIf="patient; else noPatient">
+    <div class="patient-details">
+      <h2>{{ getFullName() }}</h2>
+      <div class="patient-info">
+        <span class="info-item">
+          <strong>MRN:</strong> {{ getMRN() }}
+        </span>
+        <span class="info-item">
+          <strong>DOB:</strong> {{ getDOB() }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noPatient>
+    <div class="alert alert-warning">
+      No patient selected. Please use the search function to select a patient.
+    </div>
+  </ng-template>
+
+  <!-- Module Dashboard -->
+  <app-modules-dashboard></app-modules-dashboard>
+</div>

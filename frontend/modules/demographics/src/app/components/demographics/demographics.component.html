@@ -1,0 +1,52 @@
+<div class="demographics-container">
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading demographics...</p>
+  </div>
+
+  <div class="demographics-content" *ngIf="!loading">
+    <div class="info-section">
+      <h3>Personal Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Full Name:</label>
+          <span>{{ getFullName() }}</span>
+        </div>
+        <div class="info-item">
+          <label>MRN:</label>
+          <span>{{ getMRN() }}</span>
+        </div>
+        <div class="info-item">
+          <label>Date of Birth:</label>
+          <span>{{ patient?.dateOfBirth | date: 'long' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Age:</label>
+          <span>{{ getAge() }} years</span>
+        </div>
+        <div class="info-item" *ngIf="patient?.gender">
+          <label>Gender:</label>
+          <span>{{ patient.gender }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-section" *ngIf="patient?.phone || patient?.email || patient?.address">
+      <h3>Contact Information</h3>
+      <div class="info-grid">
+        <div class="info-item" *ngIf="patient?.phone">
+          <label>Phone:</label>
+          <span>{{ patient.phone }}</span>
+        </div>
+        <div class="info-item" *ngIf="patient?.email">
+          <label>Email:</label>
+          <span>{{ patient.email }}</span>
+        </div>
+        <div class="info-item" *ngIf="patient?.address">
+          <label>Address:</label>
+          <span>{{ patient.address }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

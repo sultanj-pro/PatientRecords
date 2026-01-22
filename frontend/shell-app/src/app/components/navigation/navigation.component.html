@@ -1,0 +1,17 @@
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="navbar-brand">
+      <h1>Patient Records</h1>
+    </div>
+
+    <div class="navbar-right">
+      <div class="user-info">
+        <span class="username">{{ currentUsername }}</span>
+        <span class="role" [ngClass]="'role-' + (currentRole || 'unknown')">
+          {{ currentRole }}
+        </span>
+      </div>
+      <button class="btn-logout" (click)="onLogout()">Logout</button>
+    </div>
+  </div>
+</nav>

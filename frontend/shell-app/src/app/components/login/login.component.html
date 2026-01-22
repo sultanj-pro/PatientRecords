@@ -1,0 +1,46 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1>Patient Records System</h1>
+    <h2>Login</h2>
+
+    <form (ngSubmit)="onLogin()" class="login-form">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          [(ngModel)]="username"
+          name="username"
+          class="form-control"
+          placeholder="Enter your username"
+          [disabled]="loading"
+          autocomplete="username"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="loading || !username.trim()"
+      >
+        {{ loading ? 'Logging in...' : 'Login' }}
+      </button>
+    </form>
+
+    <div *ngIf="error" class="alert alert-danger">
+      {{ error }}
+    </div>
+
+    <div class="demo-users">
+      <p class="text-muted">Demo Users:</p>
+      <ul>
+        <li>physician</li>
+        <li>nurse</li>
+        <li>lab-tech</li>
+        <li>radiology</li>
+        <li>nutrition</li>
+        <li>physical-therapy</li>
+      </ul>
+    </div>
+  </div>
+</div>

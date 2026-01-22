@@ -1,0 +1,46 @@
+<div class="modules-dashboard">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h2 class="dashboard-title">
+      <span class="title-icon">📋</span>
+      Patient Data Dashboard
+    </h2>
+  </div>
+
+  <!-- Module Navigation Tabs -->
+  <div class="modules-nav">
+    <div class="nav-container">
+      <button 
+        *ngFor="let module of modules"
+        class="nav-tab"
+        [class.active]="isModuleSelected(module.name)"
+        [class.loaded]="module.loaded"
+        (click)="selectModule(module.name)"
+        [title]="module.description">
+        <span class="tab-icon">{{ getModuleIcon(module.name) }}</span>
+        <span class="tab-label">{{ module.name }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Module Content Area -->
+  <div class="module-content">
+    <!-- Empty State -->
+    <div *ngIf="!selectedModule" class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>Select a Module</h3>
+      <p>Choose a module from the tabs above to view patient data</p>
+    </div>
+
+    <!-- Selected Module Content -->
+    <div *ngIf="selectedModule" class="module-view">
+      <div class="module-header">
+        <h3>{{ selectedModule }}</h3>
+        <p class="module-description">{{ getModuleDescription(selectedModule) }}</p>
+      </div>
+      <div class="module-placeholder">
+        <p>Module content will load here when connected to the micro-frontend service</p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,121 @@
+<div class="visits-container">
+  <div *ngIf="loading" class="loading-spinner"></div>
+  
+  <div *ngIf="!loading" class="visits-content">
+    <h2 class="section-title">Visits & Appointments</h2>
+    
+    <!-- Filter Section -->
+    <div *ngIf="getVisitTypes().length > 0" class="filter-section">
+      <label for="visitType" class="filter-label">Filter by Visit Type:</label>
+      <select id="visitType" [(ngModel)]="selectedVisitType" class="filter-select">
+        <option value="all">All Visits</option>
+        <option *ngFor="let type of getVisitTypes()" [value]="type">
+          {{ getVisitIcon(type) }} {{ getVisitTypeLabel(type) }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Upcoming Visits -->
+    <div *ngIf="getUpcomingVisits().length > 0" class="visits-section">
+      <h3 class="section-subtitle">📅 Upcoming Appointments</h3>
+      <div class="visits-list upcoming">
+        <div *ngFor="let visit of getUpcomingVisits()" class="visit-card upcoming-card">
+          <div class="visit-header">
+            <div class="visit-icon">{{ getVisitIcon(visit.visitType) }}</div>
+            <div class="visit-main-info">
+              <div class="visit-type">{{ getVisitTypeLabel(visit.visitType) }}</div>
+              <div class="visit-provider">{{ visit.provider || 'TBD' }}</div>
+            </div>
+            <div class="visit-countdown">
+              <div class="days-until" *ngIf="getDaysUntilVisit(visit.visitDate); let days">
+                In {{ days }} days
+              </div>
+              <div class="countdown-date">{{ formatDate(visit.visitDate) }}</div>
+            </div>
+          </div>
+          <div class="visit-details" *ngIf="expandedVisit === visit.id">
+            <div class="detail-row">
+              <span class="detail-label">Date & Time:</span>
+              <span class="detail-value">{{ formatDate(visit.visitDate) }} at {{ formatTime(visit.visitDate) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Department:</span>
+              <span class="detail-value">{{ visit.department || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Reason:</span>
+              <span class="detail-value">{{ visit.reason || 'N/A' }}</span>
+            </div>
+            <div class="detail-row" *ngIf="visit.notes">
+              <span class="detail-label">Notes:</span>
+              <span class="detail-value">{{ visit.notes }}</span>
+            </div>
+          </div>
+          <button class="expand-button" (click)="toggleExpandVisit(visit.id)">
+            {{ expandedVisit === visit.id ? '▼ Hide Details' : '▶ Show Details' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Past Visits Timeline -->
+    <div *ngIf="getPastVisits().length > 0" class="visits-section">
+      <h3 class="section-subtitle">📋 Visit History</h3>
+      <div class="visits-timeline">
+        <div *ngFor="let visit of getPastVisits()" class="timeline-item">
+          <div class="timeline-marker" [ngClass]="visit.visitType"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="timeline-title">
+                <span class="visit-icon">{{ getVisitIcon(visit.visitType) }}</span>
+                {{ getVisitTypeLabel(visit.visitType) }}
+              </div>
+              <div class="timeline-date">{{ formatDate(visit.visitDate) }}</div>
+            </div>
+            <div class="timeline-body">
+              <div class="info-item">
+                <span class="info-label">Provider:</span>
+                <span class="info-value">{{ visit.provider || 'N/A' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Department:</span>
+                <span class="info-value">{{ visit.department || 'N/A' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Reason:</span>
+                <span class="info-value">{{ visit.reason || 'N/A' }}</span>
+              </div>
+              <div class="info-item" *ngIf="visit.notes">
+                <span class="info-label">Notes:</span>
+                <span class="info-value">{{ visit.notes }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div *ngIf="visits.length > 0" class="summary-stats">
+      <div class="stat">
+        <div class="stat-value">{{ getFilteredVisits().length }}</div>
+        <div class="stat-label">
+          <span *ngIf="selectedVisitType === 'all'">Total Visits</span>
+          <span *ngIf="selectedVisitType !== 'all'">{{ getVisitTypeLabel(selectedVisitType) }} Visits</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">{{ getUpcomingVisits().length }}</div>
+        <div class="stat-label">Upcoming</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">{{ getPastVisits().length }}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+
+    <div *ngIf="getFilteredVisits().length === 0" class="no-data">
+      <p>No visits recorded</p>
+    </div>
+  </div>
+</div>

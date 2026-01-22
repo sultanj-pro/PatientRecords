@@ -1,16 +1,16 @@
 # Build stage
 FROM node:24-alpine AS builder
 WORKDIR /app
-COPY shell-app/package*.json ./
-COPY shell-app/tsconfig*.json ./
-COPY shell-app/angular.json ./
-COPY shell-app/src ./src
+COPY modules/vitals/package*.json ./
+COPY modules/vitals/tsconfig*.json ./
+COPY modules/vitals/angular.json ./
+COPY modules/vitals/src ./src
 RUN npm install --no-audit --no-fund
 RUN npm run build
 
 # Serve stage
 FROM nginx:alpine
-COPY --from=builder /app/dist/shell-app /usr/share/nginx/html
+COPY --from=builder /app/dist/vitals/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 4200
+EXPOSE 4202
 CMD ["nginx", "-g", "daemon off;"]

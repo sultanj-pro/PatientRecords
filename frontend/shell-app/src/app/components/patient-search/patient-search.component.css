@@ -1,0 +1,106 @@
+.patient-search-container {
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.spinner-border-sm {
+  position: absolute;
+  right: 10px;
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+  color: #667eea;
+}
+
+.alert-danger {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.patient-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.patient-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.patient-item:last-child {
+  border-bottom: none;
+}
+
+.patient-item:hover {
+  background-color: #f5f5f5;
+}
+
+.patient-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.patient-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.mrn,
+.dob {
+  margin-right: 1rem;
+}
+
+.no-results {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  color: #999;
+  font-size: 0.875rem;
+}

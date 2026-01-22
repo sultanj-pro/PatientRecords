@@ -1,0 +1,32 @@
+<div class="patient-search-container">
+  <div class="search-input-wrapper">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearchChange($event)"
+      placeholder="Search by patient name or MRN..."
+      class="form-control search-input"
+      [disabled]="loading"
+      autocomplete="off"
+    />
+    <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="patients.length > 0" class="patient-results">
+    <div class="patient-item" *ngFor="let patient of patients" (click)="selectPatient(patient)">
+      <div class="patient-name">{{ getFullName(patient) }}</div>
+      <div class="patient-info">
+        <span class="mrn">MRN: {{ patient.mrn }}</span>
+        <span class="dob">DOB: {{ patient.dateOfBirth | date: 'MM/dd/yyyy' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="searchQuery && patients.length === 0 && !loading" class="no-results">
+    No patients found
+  </div>
+</div>

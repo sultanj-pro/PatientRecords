@@ -1,0 +1,249 @@
+.vitals-container {
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+  display: block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.vitals-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 10px;
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.vital-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.vital-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.vital-icon {
+  font-size: 32px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vital-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.vital-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  letter-spacing: 0.5px;
+}
+
+.vital-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+}
+
+.vital-value-small {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  word-break: break-word;
+}
+
+.vital-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.vital-status.Normal {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.vital-status.Abnormal {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.vital-status.High {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.vital-status.Low {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.history-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.2fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f0f1f5;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.2fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  color: #555;
+}
+
+.table-row:hover {
+  background-color: #f8f9fa;
+}
+
+.col-date {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.col-temp,
+.col-bp,
+.col-hr,
+.col-o2 {
+  text-align: center;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-style: italic;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .vitals-container {
+    padding: 16px;
+  }
+
+  .vitals-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .vital-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .vital-icon {
+    font-size: 28px;
+  }
+
+  .vital-value {
+    font-size: 20px;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+    font-size: 11px;
+  }
+
+  .col-date {
+    grid-column: 1 / -1;
+    margin-bottom: 8px;
+  }
+
+  .col-temp,
+  .col-bp {
+    grid-column: span 1;
+  }
+
+  .col-hr,
+  .col-o2 {
+    display: none;
+  }
+}

@@ -1,14 +1,16 @@
 services:
-  pr-frontend:
-    build: ./frontend
-    image: patientrecords-frontend
-    container_name: patientrecords-frontend
+  pr-shell:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: patientrecords-shell
+    container_name: patientrecords-shell
     ports:
-      - "8081:80"
+      - "4200:4200"
     networks:
       - app-net
+
   pr-backend:
-    build: ./backend
     image: patientrecords-backend
     container_name: patientrecords-backend
     environment:
@@ -24,8 +26,8 @@ services:
         condition: service_healthy
     networks:
       - app-net
+
   mongo:
-    build: ./mongo
     image: patientrecords-mongodb
     container_name: patientrecords-mongo
     environment:
@@ -42,6 +44,7 @@ services:
       retries: 5
     networks:
       - app-net
+
 volumes:
   mongo_data:
     driver: local

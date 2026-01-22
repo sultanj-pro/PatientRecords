@@ -1,0 +1,90 @@
+<div class="medications-container">
+  <div *ngIf="loading" class="loading-spinner"></div>
+  
+  <div *ngIf="!loading" class="medications-content">
+    <h2 class="section-title">Medications</h2>
+    
+    <!-- Tabs for Active/Historical -->
+    <div class="tabs-section">
+      <button 
+        class="tab-button" 
+        [class.active]="showActive"
+        (click)="showActive = true">
+        Active Medications ({{ activeMedications.length }})
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="!showActive"
+        (click)="showActive = false">
+        Historical Medications ({{ historicalMedications.length }})
+      </button>
+    </div>
+
+    <!-- Medications List -->
+    <div *ngIf="getDisplayMedications().length > 0" class="medications-list">
+      <div *ngFor="let med of getDisplayMedications()" class="medication-card">
+        <div class="card-header">
+          <div class="med-name">{{ med.medicationName }}</div>
+          <div class="med-status" [ngClass]="getMedicationStatus(med)">
+            {{ getMedicationStatus(med) }}
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <div class="med-info-grid">
+            <div class="med-info">
+              <div class="info-label">Dosage</div>
+              <div class="info-value">{{ med.dosage || 'N/A' }}</div>
+            </div>
+            
+            <div class="med-info">
+              <div class="info-label">Frequency</div>
+              <div class="info-value">{{ med.frequency || 'N/A' }}</div>
+            </div>
+            
+            <div class="med-info">
+              <div class="info-label">Route</div>
+              <div class="info-value">{{ med.route || 'N/A' }}</div>
+            </div>
+          </div>
+
+          <div class="med-indication">
+            <div class="info-label">Indication</div>
+            <div class="info-value">{{ med.indication || 'N/A' }}</div>
+          </div>
+
+          <div class="med-prescribed">
+            <div class="info-label">Prescribed By</div>
+            <div class="info-value">{{ med.prescribedBy || 'N/A' }}</div>
+          </div>
+
+          <div class="med-duration">
+            <div class="info-label">Duration</div>
+            <div class="info-value">{{ getMedicationDuration(med) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div *ngIf="medications.length > 0" class="stats-section">
+      <div class="stat-card">
+        <div class="stat-label">Total Medications</div>
+        <div class="stat-value">{{ medications.length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Currently Active</div>
+        <div class="stat-value active">{{ activeMedications.length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Discontinued</div>
+        <div class="stat-value discontinued">{{ historicalMedications.length }}</div>
+      </div>
+    </div>
+
+    <div *ngIf="getDisplayMedications().length === 0" class="no-data">
+      <p *ngIf="showActive">No active medications</p>
+      <p *ngIf="!showActive">No discontinued medications</p>
+    </div>
+  </div>
+</div>

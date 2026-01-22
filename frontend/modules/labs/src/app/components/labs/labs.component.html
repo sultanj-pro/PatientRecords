@@ -1,0 +1,70 @@
+<div class="labs-container">
+  <div *ngIf="loading" class="loading-spinner"></div>
+  
+  <div *ngIf="!loading" class="labs-content">
+    <h2 class="section-title">Laboratory Results</h2>
+    
+    <!-- Filter Section -->
+    <div *ngIf="getTestTypeOptions().length > 0" class="filter-section">
+      <label for="testType" class="filter-label">Filter by Test Type:</label>
+      <select id="testType" [(ngModel)]="selectedTestType" class="filter-select">
+        <option value="all">All Tests</option>
+        <option *ngFor="let type of getTestTypeOptions()" [value]="type">{{ type }}</option>
+      </select>
+    </div>
+
+    <!-- Recent Tests Summary -->
+    <div class="summary-grid">
+      <div *ngFor="let testType of getTestTypeOptions()" class="summary-card">
+        <div class="test-name">{{ testType }}</div>
+        <div *ngIf="getLatestLabByType(testType); let lab" class="test-latest">
+          <div class="test-value">{{ lab.value }} {{ lab.unit }}</div>
+          <div class="test-date">{{ formatDate(lab.resultDate) }}</div>
+          <div class="test-status" [ngClass]="{ 'abnormal': isAbnormal(lab) }">
+            {{ getResultStatus(lab) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lab Results Table -->
+    <div *ngIf="getFilteredLabs().length > 0" class="results-section">
+      <h3>Detailed Results</h3>
+      <div class="table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Test Name</th>
+              <th>Result</th>
+              <th>Unit</th>
+              <th>Reference Range</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Lab</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let lab of getFilteredLabs()" [ngClass]="{ 'abnormal-row': isAbnormal(lab) }">
+              <td class="test-col">
+                <strong>{{ lab.testName }}</strong>
+                <div class="test-code">{{ lab.testCode || 'N/A' }}</div>
+              </td>
+              <td class="value-col">{{ lab.value }}</td>
+              <td class="unit-col">{{ lab.unit }}</td>
+              <td class="range-col">{{ lab.referenceRange || 'N/A' }}</td>
+              <td class="status-col">
+                <span class="status-badge" [ngClass]="lab.status">{{ getResultStatus(lab) }}</span>
+              </td>
+              <td class="date-col">{{ formatDate(lab.resultDate) }}</td>
+              <td class="lab-col">{{ lab.labName || 'N/A' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="getFilteredLabs().length === 0" class="no-data">
+      <p>No lab results found</p>
+    </div>
+  </div>
+</div>
