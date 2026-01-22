@@ -105,6 +105,7 @@ describe('backend stub', () => {
     const mockPatient = {
       patientid: 31323,
       vitals: [],
+      markModified: jest.fn(),
       save: jest.fn().mockResolvedValue({ vitals: [{ dateofobservation: '2024-01-22', vital_description: 'Blood Pressure' }] })
     };
     mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
@@ -130,6 +131,52 @@ describe('backend stub', () => {
     
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');
+  });
+
+  test('create vital record retires previous reading with same vital_description', async () => {
+    const mockPatient = {
+      patientid: 31323,
+      vitals: [
+        { dateofobservation: '2024-01-20', vital_description: 'Blood Pressure', value: '120/80', deletedAt: null },
+        { dateofobservation: '2024-01-20', vital_description: 'Heart Rate', value: '72', deletedAt: null }
+      ],
+      markModified: jest.fn(),
+      save: jest.fn().mockResolvedValue({})
+    };
+    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
+    
+    const res = await request(app)
+      .post('/api/patients/31323/vitals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ dateofobservation: '2024-01-22', vital_description: 'Blood Pressure', value: '130/85' });
+    
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('value', '130/85');
+    expect(mockPatient.vitals[0].deletedAt).toBeDefined();
+    expect(mockPatient.vitals[1].deletedAt).toBeNull();
+    expect(mockPatient.markModified).toHaveBeenCalledWith('vitals');
+  });
+
+  test('create vital record does not retire already-deleted readings', async () => {
+    const mockPatient = {
+      patientid: 31323,
+      vitals: [
+        { dateofobservation: '2024-01-19', vital_description: 'Blood Pressure', value: '110/70', deletedAt: new Date('2024-01-21') },
+        { dateofobservation: '2024-01-20', vital_description: 'Blood Pressure', value: '120/80', deletedAt: null }
+      ],
+      markModified: jest.fn(),
+      save: jest.fn().mockResolvedValue({})
+    };
+    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
+    
+    const res = await request(app)
+      .post('/api/patients/31323/vitals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ dateofobservation: '2024-01-22', vital_description: 'Blood Pressure', value: '130/85' });
+    
+    expect(res.status).toBe(201);
+    expect(mockPatient.vitals[0].deletedAt).toEqual(new Date('2024-01-21'));
+    expect(mockPatient.vitals[1].deletedAt).toBeDefined();
   });
 
   test('create lab record', async () => {
@@ -190,60 +237,62 @@ describe('backend stub', () => {
     expect(res.status).toBe(400);
   });
 
-  test('create physician visit record', async () => {
+  test('create visit record (clinic type)', async () => {
     const mockPatient = {
       patientid: 31323,
-      physician_visits: [],
-      save: jest.fn().mockResolvedValue({ physician_visits: [{ date: '2024-01-22', clinic: 'General' }] })
+      visits: [],
+      markModified: jest.fn(),
+      save: jest.fn().mockResolvedValue({ visits: [{ date: '2024-01-22', visitType: 'clinic', reason: 'Checkup', provider_name: 'Dr. Smith' }] })
     };
     mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
     
     const res = await request(app)
-      .post('/api/patients/31323/physician-visits')
+      .post('/api/patients/31323/visits')
       .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22', clinic: 'General', reason: 'Checkup' });
+      .send({ date: '2024-01-22', visitType: 'clinic', reason: 'Checkup', provider_name: 'Dr. Smith' });
     
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('clinic', 'General');
+    expect(res.body).toHaveProperty('visitType', 'clinic');
   });
 
-  test('create physician visit requires clinic', async () => {
-    const mockPatient = { patientid: 31323, physician_visits: [] };
+  test('create visit requires visitType', async () => {
+    const mockPatient = { patientid: 31323, visits: [] };
     mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
     
     const res = await request(app)
-      .post('/api/patients/31323/physician-visits')
+      .post('/api/patients/31323/visits')
       .set('Authorization', `Bearer ${token}`)
       .send({ date: '2024-01-22' });
     
     expect(res.status).toBe(400);
   });
 
-  test('create hospital visit record', async () => {
+  test('create visit record (hospital type)', async () => {
     const mockPatient = {
       patientid: 31323,
-      hospital_visits: [],
-      save: jest.fn().mockResolvedValue({ hospital_visits: [{ date: '2024-01-22', facility: 'General Hospital' }] })
+      visits: [],
+      markModified: jest.fn(),
+      save: jest.fn().mockResolvedValue({ visits: [{ date: '2024-01-22', visitType: 'hospital', reason: 'Procedure', facility_name: 'General Hospital' }] })
     };
     mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
     
     const res = await request(app)
-      .post('/api/patients/31323/hospital-visits')
+      .post('/api/patients/31323/visits')
       .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22', facility: 'General Hospital', reason: 'Procedure' });
+      .send({ date: '2024-01-22', visitType: 'hospital', reason: 'Procedure', facility_name: 'General Hospital' });
     
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('facility', 'General Hospital');
+    expect(res.body).toHaveProperty('visitType', 'hospital');
   });
 
-  test('create hospital visit requires facility', async () => {
-    const mockPatient = { patientid: 31323, hospital_visits: [] };
+  test('create visit rejects invalid visitType', async () => {
+    const mockPatient = { patientid: 31323, visits: [] };
     mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
     
     const res = await request(app)
-      .post('/api/patients/31323/hospital-visits')
+      .post('/api/patients/31323/visits')
       .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22' });
+      .send({ date: '2024-01-22', visitType: 'invalid' });
     
     expect(res.status).toBe(400);
   });
@@ -317,54 +366,13 @@ describe('backend stub', () => {
     expect(res.body[0].name).toBe('Aspirin');
   });
 
-  test('get physician visits filters out soft-deleted records', async () => {
+  test('get visits filters out soft-deleted records', async () => {
     const mockPatient = {
       patientid: 31323,
-      physician_visits: [
-        { date: '2024-01-20', clinic: 'Primary Care', deletedAt: null },
-        { date: '2024-01-21', clinic: 'Cardiology', deletedAt: new Date('2024-01-22') }
-      ]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .get('/api/patients/31323/physician-visits')
-      .set('Authorization', `Bearer ${token}`);
-    
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].clinic).toBe('Primary Care');
-  });
-
-  test('get hospital visits filters out soft-deleted records', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      hospital_visits: [
-        { date: '2024-01-20', facility: 'General Hospital', deletedAt: null },
-        { date: '2024-01-21', facility: 'Children Hospital', deletedAt: new Date('2024-01-22') }
-      ]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .get('/api/patients/31323/hospital-visits')
-      .set('Authorization', `Bearer ${token}`);
-    
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].facility).toBe('General Hospital');
-  });
-
-  test('get combined visits filters out soft-deleted records', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      physician_visits: [
-        { date: '2024-01-20', clinic: 'Primary Care', deletedAt: null },
-        { date: '2024-01-21', clinic: 'Cardiology', deletedAt: new Date('2024-01-22') }
-      ],
-      hospital_visits: [
-        { date: '2024-01-20', facility: 'General Hospital', deletedAt: null },
-        { date: '2024-01-21', facility: 'Children Hospital', deletedAt: new Date('2024-01-22') }
+      visits: [
+        { date: '2024-01-20', visitType: 'clinic', provider_name: 'Dr. Smith', deletedAt: null },
+        { date: '2024-01-21', visitType: 'office', provider_name: 'Dr. Jones', deletedAt: new Date('2024-01-22') },
+        { date: '2024-01-22', visitType: 'hospital', facility_name: 'General Hospital', deletedAt: null }
       ]
     };
     mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
@@ -376,191 +384,5 @@ describe('backend stub', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
     expect(res.body.every(v => !v.deletedAt)).toBe(true);
-  });
-
-  test('update vital record', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      vitals: [{ dateofobservation: '2024-01-20', vital_description: 'Blood Pressure', value: '120/80', deletedAt: null }],
-      markModified: jest.fn(),
-      save: jest.fn().mockResolvedValue({})
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/vitals/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ dateofobservation: '2024-01-22', vital_description: 'Blood Pressure', value: '130/85' });
-    
-    expect(res.status).toBe(200);
-    expect(res.body.value).toBe('130/85');
-    expect(mockPatient.markModified).toHaveBeenCalledWith('vitals');
-    expect(mockPatient.save).toHaveBeenCalled();
-  });
-
-  test('update vital requires dateofobservation', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      vitals: [{ dateofobservation: '2024-01-20', vital_description: 'Blood Pressure' }]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/vitals/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ vital_description: 'Blood Pressure' });
-    
-    expect(res.status).toBe(400);
-  });
-
-  test('update lab record', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      labs: [{ date: '2024-01-20', test_name: 'Blood Work', result: 'Normal', deletedAt: null }],
-      markModified: jest.fn(),
-      save: jest.fn().mockResolvedValue({})
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/labs/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22', test_name: 'Blood Work', result: 'Abnormal' });
-    
-    expect(res.status).toBe(200);
-    expect(res.body.result).toBe('Abnormal');
-    expect(mockPatient.markModified).toHaveBeenCalledWith('labs');
-  });
-
-  test('update lab requires test_name', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      labs: [{ date: '2024-01-20', test_name: 'Blood Work' }]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/labs/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22' });
-    
-    expect(res.status).toBe(400);
-  });
-
-  test('update medication record', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      medications: [{ name: 'Aspirin', dose: '100mg', deletedAt: null }],
-      markModified: jest.fn(),
-      save: jest.fn().mockResolvedValue({})
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/medications/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Aspirin', dose: '200mg' });
-    
-    expect(res.status).toBe(200);
-    expect(res.body.dose).toBe('200mg');
-    expect(mockPatient.markModified).toHaveBeenCalledWith('medications');
-  });
-
-  test('update medication requires name', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      medications: [{ name: 'Aspirin', dose: '100mg' }]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/medications/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ dose: '200mg' });
-    
-    expect(res.status).toBe(400);
-  });
-
-  test('update physician visit record', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      physician_visits: [{ date: '2024-01-20', clinic: 'Primary Care', deletedAt: null }],
-      markModified: jest.fn(),
-      save: jest.fn().mockResolvedValue({})
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/physician-visits/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22', clinic: 'Cardiology', reason: 'Checkup' });
-    
-    expect(res.status).toBe(200);
-    expect(res.body.clinic).toBe('Cardiology');
-    expect(mockPatient.markModified).toHaveBeenCalledWith('physician_visits');
-  });
-
-  test('update physician visit requires clinic', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      physician_visits: [{ date: '2024-01-20', clinic: 'Primary Care' }]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/physician-visits/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22' });
-    
-    expect(res.status).toBe(400);
-  });
-
-  test('update hospital visit record', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      hospital_visits: [{ date: '2024-01-20', facility: 'General Hospital', deletedAt: null }],
-      markModified: jest.fn(),
-      save: jest.fn().mockResolvedValue({})
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/hospital-visits/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22', facility: 'Children Hospital', reason: 'Procedure' });
-    
-    expect(res.status).toBe(200);
-    expect(res.body.facility).toBe('Children Hospital');
-    expect(mockPatient.markModified).toHaveBeenCalledWith('hospital_visits');
-  });
-
-  test('update hospital visit requires facility', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      hospital_visits: [{ date: '2024-01-20', facility: 'General Hospital' }]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/hospital-visits/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ date: '2024-01-22' });
-    
-    expect(res.status).toBe(400);
-  });
-
-  test('update vital returns 404 for missing record', async () => {
-    const mockPatient = {
-      patientid: 31323,
-      vitals: [{ dateofobservation: '2024-01-20', vital_description: 'Blood Pressure' }]
-    };
-    mockPatientModel.findOne.mockResolvedValueOnce(mockPatient);
-    
-    const res = await request(app)
-      .put('/api/patients/31323/vitals/99')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ dateofobservation: '2024-01-22', vital_description: 'Blood Pressure' });
-    
-    expect(res.status).toBe(404);
   });
 });

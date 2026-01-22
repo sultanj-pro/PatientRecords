@@ -15,8 +15,7 @@
     { "name": "Vitals", "description": "Patient vital signs management" },
     { "name": "Labs", "description": "Patient laboratory results management" },
     { "name": "Medications", "description": "Patient medication records management" },
-    { "name": "Physician Visits", "description": "Patient physician visit records" },
-    { "name": "Hospital Visits", "description": "Patient hospital visit records" },
+    { "name": "Visits", "description": "Patient visit records (hospital, clinic, office)" },
     { "name": "Provider Options", "description": "Healthcare provider lookup and options" }
   ],
   "paths": {
@@ -120,70 +119,6 @@
         },
         "responses": { "201": { "description": "Vital record created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
-      },
-      "put": {
-        "tags": ["Vitals"],
-        "summary": "Update vital record",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "vitalId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Vital record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "dateofobservation": { "type": "string" },
-                  "observationcode": { "type": "string" },
-                  "observationcodesystem": { "type": "string" },
-                  "organizationname": { "type": "string" },
-                  "vital_description": { "type": "string" },
-                  "unit": { "type": "string" },
-                  "value": { "type": "string" },
-                  "percentile": { "type": "string" }
-                },
-                "required": ["dateofobservation", "vital_description"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Vital record updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or vital not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
-    },
-    "/api/patients/{id}/vitals/{vitalId}": {
-      "put": {
-        "tags": ["Vitals"],
-        "summary": "Update vital record",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "vitalId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Vital record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "dateofobservation": { "type": "string" },
-                  "observationcode": { "type": "string" },
-                  "observationcodesystem": { "type": "string" },
-                  "organizationname": { "type": "string" },
-                  "vital_description": { "type": "string" },
-                  "unit": { "type": "string" },
-                  "value": { "type": "string" },
-                  "percentile": { "type": "string" }
-                },
-                "required": ["dateofobservation", "vital_description"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Vital record updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or vital not found" } },
-        "security": [ { "bearerAuth": [] } ]
       }
     },
     "/api/patients/{id}/labs": {
@@ -218,253 +153,6 @@
           }
         },
         "responses": { "201": { "description": "Lab record created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      },
-      "put": {
-        "tags": ["Labs"],
-        "summary": "Update lab record",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "labId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Lab record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "test_name": { "type": "string" },
-                  "test_code": { "type": "string" },
-                  "result": { "type": "string" },
-                  "unit": { "type": "string" },
-                  "reference_range": { "type": "string" }
-                },
-                "required": ["date", "test_name"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Lab record updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or lab not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
-    },
-    "/api/patients/{id}/labs/{labId}": {
-      "put": {
-        "tags": ["Labs"],
-        "summary": "Update lab record",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "labId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Lab record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "test_name": { "type": "string" },
-                  "test_code": { "type": "string" },
-                  "result": { "type": "string" },
-                  "unit": { "type": "string" },
-                  "reference_range": { "type": "string" }
-                },
-                "required": ["date", "test_name"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Lab record updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or lab not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
-    },
-    "/api/patients/{id}/physician-visits": {
-      "get": {
-        "tags": ["Physician Visits"],
-        "summary": "Get physician visits for a patient",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      },
-      "post": {
-        "tags": ["Physician Visits"],
-        "summary": "Create new physician visit",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "clinic": { "type": "string" },
-                  "reason": { "type": "string" },
-                  "notes": { "type": "string" },
-                  "provider_name": { "type": "string" },
-                  "facility_name": { "type": "string" }
-                },
-                "required": ["date", "clinic"]
-              }
-            }
-          }
-        },
-        "responses": { "201": { "description": "Physician visit created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      },
-      "put": {
-        "tags": ["Physician Visits"],
-        "summary": "Update physician visit",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "visitId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Visit record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "clinic": { "type": "string" },
-                  "reason": { "type": "string" },
-                  "notes": { "type": "string" },
-                  "provider_name": { "type": "string" },
-                  "facility_name": { "type": "string" }
-                },
-                "required": ["date", "clinic"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Physician visit updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or visit not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
-    },
-    "/api/patients/{id}/physician-visits/{visitId}": {
-      "put": {
-        "tags": ["Physician Visits"],
-        "summary": "Update physician visit",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "visitId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Visit record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "clinic": { "type": "string" },
-                  "reason": { "type": "string" },
-                  "notes": { "type": "string" },
-                  "provider_name": { "type": "string" },
-                  "facility_name": { "type": "string" }
-                },
-                "required": ["date", "clinic"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Physician visit updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or visit not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
-    },
-    "/api/patients/{id}/hospital-visits": {
-      "get": {
-        "tags": ["Hospital Visits"],
-        "summary": "Get hospital visits for a patient",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      },
-      "post": {
-        "tags": ["Hospital Visits"],
-        "summary": "Create new hospital visit",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "facility": { "type": "string" },
-                  "reason": { "type": "string" },
-                  "notes": { "type": "string" },
-                  "discharge_status": { "type": "string" }
-                },
-                "required": ["date", "facility"]
-              }
-            }
-          }
-        },
-        "responses": { "201": { "description": "Hospital visit created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      },
-      "put": {
-        "tags": ["Hospital Visits"],
-        "summary": "Update hospital visit",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "visitId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Visit record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "facility": { "type": "string" },
-                  "reason": { "type": "string" },
-                  "notes": { "type": "string" },
-                  "discharge_status": { "type": "string" }
-                },
-                "required": ["date", "facility"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Hospital visit updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or visit not found" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
-    },
-    "/api/patients/{id}/hospital-visits/{visitId}": {
-      "put": {
-        "tags": ["Hospital Visits"],
-        "summary": "Update hospital visit",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "visitId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Visit record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": { "type": "string" },
-                  "facility": { "type": "string" },
-                  "reason": { "type": "string" },
-                  "notes": { "type": "string" },
-                  "discharge_status": { "type": "string" }
-                },
-                "required": ["date", "facility"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Hospital visit updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or visit not found" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
@@ -501,14 +189,20 @@
         },
         "responses": { "201": { "description": "Medication created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/visits": {
+      "get": {
+        "tags": ["Visits"],
+        "summary": "Get visits for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
       },
-      "put": {
-        "tags": ["Medications"],
-        "summary": "Update medication",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "medId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Medication record index" }
-        ],
+      "post": {
+        "tags": ["Visits"],
+        "summary": "Create new visit record",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "requestBody": {
           "required": true,
           "content": {
@@ -516,50 +210,29 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "startDate": { "type": "string" },
-                  "name": { "type": "string" },
-                  "dose": { "type": "string" },
-                  "frequency": { "type": "string" },
-                  "indication": { "type": "string" },
-                  "route": { "type": "string" }
+                  "date": { "type": "string" },
+                  "visitType": { "type": "string", "enum": ["hospital", "clinic", "office"] },
+                  "reason": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "provider_name": { "type": "string" },
+                  "facility_name": { "type": "string" },
+                  "discharge_status": { "type": "string" }
                 },
-                "required": ["name"]
+                "required": ["date", "visitType"]
               }
             }
           }
         },
-        "responses": { "200": { "description": "Medication updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or medication not found" } },
+        "responses": { "201": { "description": "Visit created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
-    "/api/patients/{id}/medications/{medId}": {
-      "put": {
+    "/api/meds": {
+      "get": {
         "tags": ["Medications"],
-        "summary": "Update medication",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "medId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Medication record index" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "startDate": { "type": "string" },
-                  "name": { "type": "string" },
-                  "dose": { "type": "string" },
-                  "frequency": { "type": "string" },
-                  "indication": { "type": "string" },
-                  "route": { "type": "string" }
-                },
-                "required": ["name"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "Medication updated" }, "400": { "description": "Bad request" }, "404": { "description": "Patient or medication not found" } },
+        "summary": "Alias for /api/patients/{id}/medications",
+        "parameters": [ { "name": "id", "in": "query", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of medications" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
@@ -578,3 +251,5 @@
     }
   }
 }
+
+
