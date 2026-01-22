@@ -326,6 +326,101 @@ app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/patients/:id/vitals - create new vital record
+app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newVital = req.body;
+    if (!newVital.dateofobservation || !newVital.vital_description) {
+      return res.status(400).json({ error: 'dateofobservation and vital_description are required' });
+    }
+    
+    patient.vitals.push(newVital);
+    await patient.save();
+    res.status(201).json(newVital);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create vital', detail: err.message });
+  }
+});
+
+// POST /api/patients/:id/labs - create new lab record
+app.post('/api/patients/:id/labs', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newLab = req.body;
+    if (!newLab.date || !newLab.test_name) {
+      return res.status(400).json({ error: 'date and test_name are required' });
+    }
+    
+    patient.labs.push(newLab);
+    await patient.save();
+    res.status(201).json(newLab);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create lab', detail: err.message });
+  }
+});
+
+// POST /api/patients/:id/medications - create new medication
+app.post('/api/patients/:id/medications', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newMed = req.body;
+    if (!newMed.name) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    
+    patient.medications.push(newMed);
+    await patient.save();
+    res.status(201).json(newMed);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create medication', detail: err.message });
+  }
+});
+
+// POST /api/patients/:id/physician-visits - create new physician visit
+app.post('/api/patients/:id/physician-visits', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newVisit = req.body;
+    if (!newVisit.date || !newVisit.clinic) {
+      return res.status(400).json({ error: 'date and clinic are required' });
+    }
+    
+    patient.physician_visits.push(newVisit);
+    await patient.save();
+    res.status(201).json(newVisit);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create physician visit', detail: err.message });
+  }
+});
+
+// POST /api/patients/:id/hospital-visits - create new hospital visit
+app.post('/api/patients/:id/hospital-visits', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newVisit = req.body;
+    if (!newVisit.date || !newVisit.facility) {
+      return res.status(400).json({ error: 'date and facility are required' });
+    }
+    
+    patient.hospital_visits.push(newVisit);
+    await patient.save();
+    res.status(201).json(newVisit);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create hospital visit', detail: err.message });
+  }
+});
+
 // Proxy endpoint to spark-service
 app.get('/api/provider-options', authMiddleware, async (req, res) => {
   try {

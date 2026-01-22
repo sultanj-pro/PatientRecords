@@ -8,15 +8,28 @@
   "servers": [
     { "url": "http://localhost:5001", "description": "Local dev" }
   ],
+  "tags": [
+    { "name": "System", "description": "System health and status endpoints" },
+    { "name": "Authentication", "description": "User authentication and token management" },
+    { "name": "Patient Demographics", "description": "Patient demographics and general information" },
+    { "name": "Vitals", "description": "Patient vital signs management" },
+    { "name": "Labs", "description": "Patient laboratory results management" },
+    { "name": "Medications", "description": "Patient medication records management" },
+    { "name": "Physician Visits", "description": "Patient physician visit records" },
+    { "name": "Hospital Visits", "description": "Patient hospital visit records" },
+    { "name": "Provider Options", "description": "Healthcare provider lookup and options" }
+  ],
   "paths": {
     "/health": {
       "get": {
+        "tags": ["System"],
         "summary": "Liveness check",
         "responses": { "200": { "description": "OK" } }
       }
     },
     "/auth/login": {
       "post": {
+        "tags": ["Authentication"],
         "summary": "Login (returns JWT)",
         "requestBody": {
           "required": true,
@@ -38,6 +51,7 @@
     },
     "/auth/refresh": {
       "post": {
+        "tags": ["Authentication"],
         "summary": "Refresh token",
         "requestBody": {
           "required": true,
@@ -48,6 +62,7 @@
     },
     "/api/patients": {
       "get": {
+        "tags": ["Patient Demographics"],
         "summary": "List patients",
         "parameters": [
           { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search query" }
@@ -58,6 +73,7 @@
     },
     "/api/patients/{id}": {
       "get": {
+        "tags": ["Patient Demographics"],
         "summary": "Get patient details",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": { "200": { "description": "Patient object" }, "404": { "description": "Not found" } },
@@ -66,6 +82,7 @@
     },
     "/api/patients/{id}/vitals": {
       "get": {
+        "tags": ["Vitals"],
         "summary": "Get vitals for a patient",
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
@@ -75,42 +92,178 @@
         ],
         "responses": { "200": { "description": "Array of vitals" }, "404": { "description": "Not found" } },
         "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Vitals"],
+        "summary": "Create new vital record",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateofobservation": { "type": "string" },
+                  "observationcode": { "type": "string" },
+                  "observationcodesystem": { "type": "string" },
+                  "organizationname": { "type": "string" },
+                  "vital_description": { "type": "string" },
+                  "unit": { "type": "string" },
+                  "value": { "type": "string" },
+                  "percentile": { "type": "string" }
+                },
+                "required": ["dateofobservation", "vital_description"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Vital record created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
+        "security": [ { "bearerAuth": [] } ]
       }
     },
     "/api/patients/{id}/labs": {
       "get": {
+        "tags": ["Labs"],
         "summary": "Get labs for a patient",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": { "200": { "description": "Array of labs" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Labs"],
+        "summary": "Create new lab record",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "test_name": { "type": "string" },
+                  "test_code": { "type": "string" },
+                  "result": { "type": "string" },
+                  "unit": { "type": "string" },
+                  "reference_range": { "type": "string" }
+                },
+                "required": ["date", "test_name"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Lab record created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
     "/api/patients/{id}/physician-visits": {
       "get": {
+        "tags": ["Physician Visits"],
         "summary": "Get physician visits for a patient",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Physician Visits"],
+        "summary": "Create new physician visit",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "clinic": { "type": "string" },
+                  "reason": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "provider_name": { "type": "string" },
+                  "facility_name": { "type": "string" }
+                },
+                "required": ["date", "clinic"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Physician visit created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
     "/api/patients/{id}/hospital-visits": {
       "get": {
+        "tags": ["Hospital Visits"],
         "summary": "Get hospital visits for a patient",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Hospital Visits"],
+        "summary": "Create new hospital visit",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "facility": { "type": "string" },
+                  "reason": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "discharge_status": { "type": "string" }
+                },
+                "required": ["date", "facility"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Hospital visit created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
     "/api/patients/{id}/medications": {
       "get": {
+        "tags": ["Medications"],
         "summary": "Get medications for a patient",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": { "200": { "description": "Array of medications" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Medications"],
+        "summary": "Create new medication",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startDate": { "type": "string" },
+                  "name": { "type": "string" },
+                  "dose": { "type": "string" },
+                  "frequency": { "type": "string" },
+                  "indication": { "type": "string" },
+                  "route": { "type": "string" }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Medication created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
         "security": [ { "bearerAuth": [] } ]
       }
     },
     "/api/provider-options": {
       "get": {
+        "tags": ["Provider Options"],
         "summary": "Proxy to spark-service provider options",
         "responses": { "200": { "description": "Provider options" }, "502": { "description": "Bad gateway" } },
         "security": [ { "bearerAuth": [] } ]
