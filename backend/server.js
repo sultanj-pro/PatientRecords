@@ -40,7 +40,8 @@ const patientSchema = new mongoose.Schema({
       vital_description: String,
       unit: String,
       value: String,
-      percentile: String
+      percentile: String,
+      deletedAt: { type: Date, default: null }
     }
   ],
   labs: [
@@ -50,7 +51,8 @@ const patientSchema = new mongoose.Schema({
       test_code: String,
       result: String,
       unit: String,
-      reference_range: String
+      reference_range: String,
+      deletedAt: { type: Date, default: null }
     }
   ],
   medications: [
@@ -60,7 +62,8 @@ const patientSchema = new mongoose.Schema({
       dose: String,
       frequency: String,
       indication: String,
-      route: String
+      route: String,
+      deletedAt: { type: Date, default: null }
     }
   ],
   physician_visits: [
@@ -70,7 +73,8 @@ const patientSchema = new mongoose.Schema({
       reason: String,
       notes: String,
       provider_name: String,
-      facility_name: String
+      facility_name: String,
+      deletedAt: { type: Date, default: null }
     }
   ],
   hospital_visits: [
@@ -79,7 +83,8 @@ const patientSchema = new mongoose.Schema({
       facility: String,
       reason: String,
       notes: String,
-      discharge_status: String
+      discharge_status: String,
+      deletedAt: { type: Date, default: null }
     }
   ]
 }, { timestamps: true });
@@ -224,7 +229,7 @@ app.get('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
     
-    let vitals = patient.vitals || [];
+    let vitals = (patient.vitals || []).filter(v => !v.deletedAt);
     
     const from = req.query.from ? parseDate(req.query.from) : null;
     const to = req.query.to ? parseDate(req.query.to) : null;
@@ -262,7 +267,8 @@ app.get('/api/patients/:id/labs', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json(patient.labs || []);
+    const labs = (patient.labs || []).filter(l => !l.deletedAt);
+    res.json(labs);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch labs', detail: err.message });
   }
@@ -273,7 +279,8 @@ app.get('/api/patients/:id/medications', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json(patient.medications || []);
+    const meds = (patient.medications || []).filter(m => !m.deletedAt);
+    res.json(meds);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch medications', detail: err.message });
   }
@@ -284,7 +291,8 @@ app.get('/api/patients/:id/meds', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json(patient.medications || []);
+    const meds = (patient.medications || []).filter(m => !m.deletedAt);
+    res.json(meds);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch medications', detail: err.message });
   }
@@ -295,7 +303,8 @@ app.get('/api/patients/:id/physician-visits', authMiddleware, async (req, res) =
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json(patient.physician_visits || []);
+    const visits = (patient.physician_visits || []).filter(v => !v.deletedAt);
+    res.json(visits);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch physician visits', detail: err.message });
   }
@@ -306,7 +315,8 @@ app.get('/api/patients/:id/hospital-visits', authMiddleware, async (req, res) =>
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json(patient.hospital_visits || []);
+    const visits = (patient.hospital_visits || []).filter(v => !v.deletedAt);
+    res.json(visits);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch hospital visits', detail: err.message });
   }
@@ -317,8 +327,8 @@ app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    const phys = patient.physician_visits || [];
-    const hosp = patient.hospital_visits || [];
+    const phys = (patient.physician_visits || []).filter(v => !v.deletedAt);
+    const hosp = (patient.hospital_visits || []).filter(v => !v.deletedAt);
     const combined = phys.concat(hosp);
     res.json(combined);
   } catch (err) {
@@ -418,6 +428,121 @@ app.post('/api/patients/:id/hospital-visits', authMiddleware, async (req, res) =
     res.status(201).json(newVisit);
   } catch (err) {
     res.status(500).json({ error: 'failed to create hospital visit', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/vitals/:vitalId - update vital record
+app.put('/api/patients/:id/vitals/:vitalId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const vitalIndex = patient.vitals.findIndex((v, idx) => idx === parseInt(req.params.vitalId));
+    if (vitalIndex === -1) return res.status(404).json({ error: 'vital record not found' });
+    
+    const updateData = req.body;
+    if (!updateData.dateofobservation || !updateData.vital_description) {
+      return res.status(400).json({ error: 'dateofobservation and vital_description are required' });
+    }
+    
+    patient.vitals[vitalIndex] = { ...patient.vitals[vitalIndex], ...updateData };
+    patient.markModified('vitals');
+    await patient.save();
+    res.status(200).json(patient.vitals[vitalIndex]);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update vital', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/labs/:labId - update lab record
+app.put('/api/patients/:id/labs/:labId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const labIndex = patient.labs.findIndex((l, idx) => idx === parseInt(req.params.labId));
+    if (labIndex === -1) return res.status(404).json({ error: 'lab record not found' });
+    
+    const updateData = req.body;
+    if (!updateData.date || !updateData.test_name) {
+      return res.status(400).json({ error: 'date and test_name are required' });
+    }
+    
+    patient.labs[labIndex] = { ...patient.labs[labIndex], ...updateData };
+    patient.markModified('labs');
+    await patient.save();
+    res.status(200).json(patient.labs[labIndex]);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update lab', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/medications/:medId - update medication
+app.put('/api/patients/:id/medications/:medId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const medIndex = patient.medications.findIndex((m, idx) => idx === parseInt(req.params.medId));
+    if (medIndex === -1) return res.status(404).json({ error: 'medication record not found' });
+    
+    const updateData = req.body;
+    if (!updateData.name) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    
+    patient.medications[medIndex] = { ...patient.medications[medIndex], ...updateData };
+    patient.markModified('medications');
+    await patient.save();
+    res.status(200).json(patient.medications[medIndex]);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update medication', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/physician-visits/:visitId - update physician visit
+app.put('/api/patients/:id/physician-visits/:visitId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const visitIndex = patient.physician_visits.findIndex((v, idx) => idx === parseInt(req.params.visitId));
+    if (visitIndex === -1) return res.status(404).json({ error: 'physician visit not found' });
+    
+    const updateData = req.body;
+    if (!updateData.date || !updateData.clinic) {
+      return res.status(400).json({ error: 'date and clinic are required' });
+    }
+    
+    patient.physician_visits[visitIndex] = { ...patient.physician_visits[visitIndex], ...updateData };
+    patient.markModified('physician_visits');
+    await patient.save();
+    res.status(200).json(patient.physician_visits[visitIndex]);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update physician visit', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/hospital-visits/:visitId - update hospital visit
+app.put('/api/patients/:id/hospital-visits/:visitId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const visitIndex = patient.hospital_visits.findIndex((v, idx) => idx === parseInt(req.params.visitId));
+    if (visitIndex === -1) return res.status(404).json({ error: 'hospital visit not found' });
+    
+    const updateData = req.body;
+    if (!updateData.date || !updateData.facility) {
+      return res.status(400).json({ error: 'date and facility are required' });
+    }
+    
+    patient.hospital_visits[visitIndex] = { ...patient.hospital_visits[visitIndex], ...updateData };
+    patient.markModified('hospital_visits');
+    await patient.save();
+    res.status(200).json(patient.hospital_visits[visitIndex]);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update hospital visit', detail: err.message });
   }
 });
 
