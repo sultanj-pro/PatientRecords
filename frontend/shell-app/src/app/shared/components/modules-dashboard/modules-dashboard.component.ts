@@ -1,11 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../core/services/auth.service';
+import { getModulesForRole, ModuleConfig } from '../../../core/config/role-module-config';
 
-interface Module {
-  name: string;
-  icon: string;
-  description: string;
+interface ModuleDisplay extends ModuleConfig {
   loaded: boolean;
+  order: number;
 }
 
 @Component({
@@ -16,16 +16,20 @@ interface Module {
   imports: [CommonModule]
 })
 export class ModulesDashboardComponent implements OnInit, OnDestroy {
-  modules: Module[] = [
-    { name: 'Demographics', icon: '👤', description: 'Patient demographics', loaded: false },
-    { name: 'Vitals', icon: '💓', description: 'Vital signs', loaded: false },
-    { name: 'Labs', icon: '🧪', description: 'Lab results', loaded: false },
-    { name: 'Medications', icon: '💊', description: 'Medications', loaded: false },
-    { name: 'Visits', icon: '📅', description: 'Visits', loaded: false }
-  ];
+  modules: ModuleDisplay[] = [];
   selectedModule: string | null = null;
+  userRole: string = 'nurse'; // default role
+
+  constructor(private authService: AuthService) {}
 
   ngOnInit(): void {
+    // Get user role
+    const role = this.authService.getRole();
+    this.userRole = role || 'nurse';
+
+    // Load modules for user's role
+    this.loadModulesForRole(this.userRole);
+
     // Select first module by default
     if (this.modules.length > 0) {
       this.selectModule(this.modules[0].name);
@@ -34,6 +38,18 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     // Cleanup if needed
+  }
+
+  /**
+   * Load modules based on user role
+   */
+  private loadModulesForRole(role: string): void {
+    const availableModules = getModulesForRole(role);
+    this.modules = availableModules.map((module, index) => ({
+      ...module,
+      loaded: false,
+      order: index
+    }));
   }
 
   selectModule(moduleName: string): void {
@@ -49,12 +65,12 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
     return module?.icon || '📦';
   }
 
-  isModuleSelected(moduleName: string): boolean {
-    return this.selectedModule === moduleName;
-  }
-
   getModuleDescription(moduleName: string): string {
     const module = this.modules.find(m => m.name === moduleName);
     return module?.description || '';
+  }
+
+  isModuleSelected(moduleName: string): boolean {
+    return this.selectedModule === moduleName;
   }
 }

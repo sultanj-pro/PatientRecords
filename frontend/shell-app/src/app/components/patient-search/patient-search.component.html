@@ -1,9 +1,12 @@
-<div class="patient-search-container">
+<div class="patient-search-container" #searchContainer>
   <div class="search-input-wrapper">
     <input
+      #searchInput
       type="text"
       [(ngModel)]="searchQuery"
       (ngModelChange)="onSearchChange($event)"
+      (focus)="onSearchFocus()"
+      (keydown)="onKeyDown($event)"
       placeholder="Search by patient name or MRN..."
       class="form-control search-input"
       [disabled]="loading"
@@ -12,12 +15,16 @@
     <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
   </div>
 
-  <div *ngIf="error" class="alert alert-danger">
+  <div *ngIf="error && showResults" class="alert alert-danger">
     {{ error }}
   </div>
 
-  <div *ngIf="patients.length > 0" class="patient-results">
-    <div class="patient-item" *ngFor="let patient of patients" (click)="selectPatient(patient)">
+  <div *ngIf="patients.length > 0 && showResults" class="patient-results">
+    <div 
+      class="patient-item" 
+      *ngFor="let patient of patients; let i = index; trackBy: trackByPatientId" 
+      [class.highlighted]="isHighlighted(i)"
+      (click)="selectPatient(patient)">
       <div class="patient-name">{{ getFullName(patient) }}</div>
       <div class="patient-info">
         <span class="mrn">MRN: {{ patient.mrn }}</span>
@@ -26,7 +33,11 @@
     </div>
   </div>
 
-  <div *ngIf="searchQuery && patients.length === 0 && !loading" class="no-results">
+  <div *ngIf="searchQuery && patients.length === 0 && !loading && showResults" class="no-results">
     No patients found
+  </div>
+
+  <div *ngIf="patients.length > 0 && showResults" class="search-help">
+    <small>↑ ↓ to navigate • Enter to select • Esc to close</small>
   </div>
 </div>

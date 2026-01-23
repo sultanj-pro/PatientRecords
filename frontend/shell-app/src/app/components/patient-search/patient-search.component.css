@@ -104,3 +104,17 @@
   color: #999;
   font-size: 0.875rem;
 }
+
+.patient-item.highlighted {
+  background-color: #e3f2fd;
+  border-left: 3px solid #667eea;
+}
+
+.search-help {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  color: #999;
+  border-top: 1px solid #eee;
+  background: #f9f9f9;
+  text-align: center;
+}

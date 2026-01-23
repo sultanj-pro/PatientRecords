@@ -25,13 +25,16 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   login(username: string): Observable<AuthResponse> {
+    console.log('AuthService.login() called with username:', username);
     return this.http
       .post<AuthResponse>(`${this.apiUrl}/auth/login`, { username })
       .pipe(
         tap((response) => {
+          console.log('Login response received:', response);
           localStorage.setItem(this.tokenKey, response.accessToken);
           localStorage.setItem(this.roleKey, response.role);
           localStorage.setItem(this.usernameKey, response.username);
+          console.log('Token stored in localStorage:', response.accessToken.substring(0, 20) + '...');
           this.isAuthenticated$.next(true);
           this.currentRole$.next(response.role);
           this.currentUsername$.next(response.username);

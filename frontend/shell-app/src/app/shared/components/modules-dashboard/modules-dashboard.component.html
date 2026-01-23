@@ -5,6 +5,10 @@
       <span class="title-icon">📋</span>
       Patient Data Dashboard
     </h2>
+    <div class="header-info">
+      <span class="role-badge">{{ userRole | uppercase }}</span>
+      <span class="loaded-count">{{ modules.length }} Module{{ modules.length !== 1 ? 's' : '' }}</span>
+    </div>
   </div>
 
   <!-- Module Navigation Tabs -->
@@ -17,7 +21,7 @@
         [class.loaded]="module.loaded"
         (click)="selectModule(module.name)"
         [title]="module.description">
-        <span class="tab-icon">{{ getModuleIcon(module.name) }}</span>
+        <span class="tab-icon">{{ module.icon }}</span>
         <span class="tab-label">{{ module.name }}</span>
       </button>
     </div>
