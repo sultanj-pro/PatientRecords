@@ -63,6 +63,18 @@ export class PatientSearchComponent implements OnInit {
     }
   }
 
+  onIconClick(): void {
+    // Toggle search visibility or focus if already visible
+    if (this.showResults && this.searchQuery.length === 0) {
+      this.showResults = false;
+    } else {
+      this.showResults = true;
+      if (this.searchInput) {
+        setTimeout(() => this.searchInput.nativeElement.focus(), 0);
+      }
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     // Close results if clicking outside the search container

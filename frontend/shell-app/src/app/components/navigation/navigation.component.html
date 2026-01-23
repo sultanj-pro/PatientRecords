@@ -4,6 +4,14 @@
       <h1>Patient Records</h1>
     </div>
 
+    <div class="navbar-center">
+      <div class="patient-control">
+        <div class="search-container" [class.visible]="searchVisible">
+          <app-patient-search #patientSearchRef (click)="$event.stopPropagation()"></app-patient-search>
+        </div>
+      </div>
+    </div>
+
     <div class="navbar-right">
       <div class="user-info">
         <span class="username">{{ currentUsername }}</span>
@@ -11,7 +19,7 @@
           {{ currentRole }}
         </span>
       </div>
-      <button class="btn-logout" (click)="onLogout()">Logout</button>
+      <a class="logout-link" (click)="onLogout()">Logout</a>
     </div>
   </div>
 </nav>

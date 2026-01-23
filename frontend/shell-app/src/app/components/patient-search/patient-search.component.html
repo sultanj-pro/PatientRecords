@@ -1,5 +1,6 @@
 <div class="patient-search-container" #searchContainer>
   <div class="search-input-wrapper">
+    <span class="search-icon-inline" (click)="onIconClick()" title="Search for patient">🔍</span>
     <input
       #searchInput
       type="text"
@@ -7,37 +8,48 @@
       (ngModelChange)="onSearchChange($event)"
       (focus)="onSearchFocus()"
       (keydown)="onKeyDown($event)"
-      placeholder="Search by patient name or MRN..."
-      class="form-control search-input"
+      placeholder="Search patient..."
+      class="form-control search-input header-search-input"
       [disabled]="loading"
       autocomplete="off"
     />
     <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
-  </div>
 
-  <div *ngIf="error && showResults" class="alert alert-danger">
-    {{ error }}
-  </div>
+    <div *ngIf="error && showResults" class="alert alert-danger">
+      {{ error }}
+    </div>
 
-  <div *ngIf="patients.length > 0 && showResults" class="patient-results">
-    <div 
-      class="patient-item" 
-      *ngFor="let patient of patients; let i = index; trackBy: trackByPatientId" 
-      [class.highlighted]="isHighlighted(i)"
-      (click)="selectPatient(patient)">
-      <div class="patient-name">{{ getFullName(patient) }}</div>
-      <div class="patient-info">
-        <span class="mrn">MRN: {{ patient.mrn }}</span>
-        <span class="dob">DOB: {{ patient.dateOfBirth | date: 'MM/dd/yyyy' }}</span>
+    <div *ngIf="patients.length > 0 && showResults" class="patient-results">
+      <div 
+        class="patient-item" 
+        *ngFor="let patient of patients; let i = index; trackBy: trackByPatientId" 
+        [class.highlighted]="isHighlighted(i)"
+        (click)="selectPatient(patient)">
+        <div class="patient-name">{{ getFullName(patient) }}</div>
+        <div class="patient-info">
+          <span class="mrn">MRN: {{ patient.mrn }}</span>
+          <span class="dob">DOB: {{ patient.dateOfBirth | date: 'MM/dd/yyyy' }}</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div *ngIf="searchQuery && patients.length === 0 && !loading && showResults" class="no-results">
-    No patients found
-  </div>
-
-  <div *ngIf="patients.length > 0 && showResults" class="search-help">
-    <small>↑ ↓ to navigate • Enter to select • Esc to close</small>
+    <div class="search-help-wrapper">
+      <span class="search-help-icon">?</span>
+      <div class="search-help-tooltip">
+        <div class="tooltip-title">Keyboard Shortcuts</div>
+        <div class="tooltip-item">
+          <span class="tooltip-key">↑ ↓</span>
+          <span class="tooltip-desc">Navigate results</span>
+        </div>
+        <div class="tooltip-item">
+          <span class="tooltip-key">Enter</span>
+          <span class="tooltip-desc">Select patient</span>
+        </div>
+        <div class="tooltip-item">
+          <span class="tooltip-key">Esc</span>
+          <span class="tooltip-desc">Close dropdown</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

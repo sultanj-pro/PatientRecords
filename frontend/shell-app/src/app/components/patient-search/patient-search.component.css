@@ -1,22 +1,44 @@
 .patient-search-container {
   width: 100%;
-  max-width: 500px;
   position: relative;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .search-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+  height: auto;
+}
+
+.search-icon-inline {
+  position: absolute;
+  left: 0.5rem;
+  font-size: 0.8rem;
+  pointer-events: auto;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 0.3s;
+  z-index: 10;
+}
+
+.search-icon-inline:hover {
+  opacity: 1;
 }
 
 .search-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
+  padding: 0.4rem 2rem 0.4rem 2rem;
+  font-size: 0.9rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   transition: border-color 0.3s;
+  height: auto;
+  line-height: 1.4;
 }
 
 .search-input:focus {
@@ -28,6 +50,16 @@
 .search-input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
+}
+
+.header-search-input {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.header-search-input::placeholder {
+  color: rgba(51, 51, 51, 0.6);
 }
 
 .spinner-border-sm {
@@ -51,17 +83,16 @@
 
 .patient-results {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 0.25rem);
   left: 0;
   right: 0;
   background: white;
   border: 1px solid #ddd;
-  border-top: none;
   border-radius: 0 0 4px 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-height: 300px;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 1000;
 }
 
 .patient-item {
@@ -110,11 +141,93 @@
   border-left: 3px solid #667eea;
 }
 
-.search-help {
-  padding: 0.5rem 1rem;
+.search-help-icon {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #667eea;
+  color: white;
+  border-radius: 50%;
   font-size: 0.75rem;
-  color: #999;
-  border-top: 1px solid #eee;
-  background: #f9f9f9;
+  font-weight: bold;
+  cursor: help;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.search-help-icon:hover {
+  opacity: 1;
+}
+
+.search-help-wrapper {
+  position: relative;
+}
+
+.search-help-tooltip {
+  position: absolute;
+  right: -10px;
+  top: calc(100% + 10px);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.75rem;
+  min-width: 180px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.search-help-wrapper:hover .search-help-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.tooltip-item:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-key {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 0.2rem 0.4rem;
+  font-weight: 600;
+  color: #333;
+  min-width: 35px;
   text-align: center;
+  font-family: monospace;
+}
+
+.tooltip-desc {
+  color: #666;
 }

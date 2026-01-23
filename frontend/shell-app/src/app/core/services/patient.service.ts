@@ -12,7 +12,7 @@ export interface Patient {
   providedIn: 'root'
 })
 export class PatientService {
-  private apiUrl = 'http://localhost:5001/api';
+  private apiUrl = '/api';
 
   constructor(private http: HttpClient) {}
 
