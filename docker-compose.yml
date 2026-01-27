@@ -1,35 +1,99 @@
 services:
-  pr-shell:
+  # Shell App (Host) - Orchestrator
+  patientrecord-shell:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    image: patientrecords-shell
-    container_name: patientrecords-shell
+      dockerfile: shell-app/Dockerfile
+    image: patientrecord-shell
+    container_name: patientrecord-shell
     ports:
       - "4200:4200"
     networks:
       - app-net
 
-  pr-backend:
-    image: patientrecords-backend
-    container_name: patientrecords-backend
+  # Demographics Micro-Frontend (Independent Container)
+  patientrecord-demographics:
+    build:
+      context: ./frontend
+      dockerfile: modules/demographics/Dockerfile
+    image: patientrecord-demographics
+    container_name: patientrecord-demographics
+    ports:
+      - "4201:4200"
+    networks:
+      - app-net
+
+  # Vitals Micro-Frontend (Independent Container)
+  patientrecord-vitals:
+    build:
+      context: ./frontend
+      dockerfile: modules/vitals/Dockerfile
+    image: patientrecord-vitals
+    container_name: patientrecord-vitals
+    ports:
+      - "4202:4200"
+    networks:
+      - app-net
+
+  # Labs Micro-Frontend (Independent Container)
+  patientrecord-labs:
+    build:
+      context: ./frontend
+      dockerfile: modules/labs/Dockerfile
+    image: patientrecord-labs
+    container_name: patientrecord-labs
+    ports:
+      - "4203:4200"
+    networks:
+      - app-net
+
+  # Medications Micro-Frontend (Independent Container)
+  patientrecord-medications:
+    build:
+      context: ./frontend
+      dockerfile: modules/medications/Dockerfile
+    image: patientrecord-medications
+    container_name: patientrecord-medications
+    ports:
+      - "4204:4200"
+    networks:
+      - app-net
+
+  # Visits Micro-Frontend (Independent Container)
+  patientrecord-visits:
+    build:
+      context: ./frontend
+      dockerfile: modules/visits/Dockerfile
+    image: patientrecord-visits
+    container_name: patientrecord-visits
+    ports:
+      - "4205:4200"
+    networks:
+      - app-net
+
+  patientrecord-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: patientrecord-backend
+    container_name: patientrecord-backend
     environment:
       - NODE_ENV=development
       - PORT=5001
-      - MONGODB_URI=mongodb://admin:admin@mongo:27017/patientrecords?authSource=admin
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5001:5001"
     volumes:
       - ../POC-ccnc/data:/data:ro
     depends_on:
-      mongo:
+      patientrecord-mongodb:
         condition: service_healthy
     networks:
       - app-net
 
-  mongo:
-    image: patientrecords-mongodb
-    container_name: patientrecords-mongo
+  patientrecord-mongodb:
+    image: patientrecord-mongodb
+    container_name: patientrecord-mongo
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=admin

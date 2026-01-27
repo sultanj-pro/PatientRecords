@@ -6,11 +6,12 @@ WORKDIR /app
 COPY shared ../shared
 COPY tsconfig.base.json ../tsconfig.base.json
 
-# Copy package files and module source
-COPY modules/medications/package*.json ./
-COPY modules/medications/src ./src
-COPY modules/medications/webpack.config.js ./
-COPY modules/medications/tsconfig.json ./
+# Copy package files and shell app source
+COPY shell-app/package*.json ./
+COPY shell-app/src ./src
+COPY shell-app/angular.json ./
+COPY shell-app/tsconfig*.json ./
+COPY shell-app/webpack.config.js ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund
@@ -18,8 +19,7 @@ RUN npm run build
 
 # Serve stage
 FROM nginx:alpine
-COPY --from=builder /app/dist/medications /usr/share/nginx/html
-COPY modules/medications/src/index.html /usr/share/nginx/html/index.html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist/shell-app /usr/share/nginx/html
 EXPOSE 4200
 CMD ["nginx", "-g", "daemon off;"]

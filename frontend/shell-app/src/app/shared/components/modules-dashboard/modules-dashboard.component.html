@@ -7,9 +7,15 @@
         class="nav-tab"
         [class.active]="isModuleSelected(module.name)"
         [class.loaded]="module.loaded"
+        [class.loading]="isModuleLoading(module.name)"
+        [class.error]="getModuleError(module.name) !== null"
+        [disabled]="isModuleLoading(module.name)"
         (click)="selectModule(module.name)"
         [title]="module.description">
-        <span class="tab-icon">{{ module.icon }}</span>
+        <span class="tab-icon">
+          {{ module.icon }}
+          <span *ngIf="isModuleLoading(module.name)" class="loading-spinner">⏳</span>
+        </span>
         <span class="tab-label">{{ module.name }}</span>
       </button>
     </div>
@@ -30,8 +36,33 @@
         <h3>{{ selectedModule }}</h3>
         <p class="module-description">{{ getModuleDescription(selectedModule) }}</p>
       </div>
-      <div class="module-placeholder">
-        <p>Module content will load here when connected to the micro-frontend service</p>
+
+      <!-- Loading State -->
+      <div *ngIf="isModuleLoading(selectedModule)" class="module-loading">
+        <div class="spinner"></div>
+        <p>Loading {{ selectedModule }} module...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="getModuleError(selectedModule)" class="module-error">
+        <div class="error-icon">⚠️</div>
+        <h4>Failed to load module</h4>
+        <p>{{ getModuleError(selectedModule) }}</p>
+        <button (click)="selectModule(selectedModule)" class="retry-btn">
+          Retry
+        </button>
+      </div>
+
+      <!-- Success State -->
+      <div *ngIf="!isModuleLoading(selectedModule) && !getModuleError(selectedModule) && isModuleLoaded(selectedModule)" class="module-success">
+        <div class="success-icon">✓</div>
+        <p>Module loaded successfully</p>
+        <p class="module-info">Connected to {{ selectedModule }} micro-frontend service at http://localhost:{{ getModulePort(selectedModule) }}</p>
+      </div>
+
+      <!-- Placeholder for unloaded modules -->
+      <div *ngIf="!isModuleLoading(selectedModule) && !getModuleError(selectedModule) && !isModuleLoaded(selectedModule)" class="module-placeholder">
+        <p>Module content will load here when the micro-frontend service connects</p>
       </div>
     </div>
   </div>

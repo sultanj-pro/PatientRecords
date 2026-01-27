@@ -1,6 +1,3 @@
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { VisitsModule } from './app/visits.module';
-
-platformBrowserDynamic()
-  .bootstrapModule(VisitsModule)
-  .catch(err => console.error(err));
+// Module Federation entry point
+// Individual bootstrap handled by shell app
+export {};

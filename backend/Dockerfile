@@ -6,6 +6,6 @@ COPY init-db.js .
 COPY server.js .
 COPY openapi.json .
 ENV NODE_ENV=production
-ENV PORT=3001
-EXPOSE 3001
+ENV PORT=5001
+EXPOSE 5001
 CMD ["npm", "start"]
