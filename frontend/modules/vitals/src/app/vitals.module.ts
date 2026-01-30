@@ -1,7 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 import { VitalsComponent } from './components/vitals/vitals.component';
+import { VITALS_ROUTES } from './vitals.routes';
 
 @NgModule({
   declarations: [
@@ -9,7 +11,8 @@ import { VitalsComponent } from './components/vitals/vitals.component';
   ],
   imports: [
     CommonModule,
-    HttpClientModule
+    HttpClientModule,
+    RouterModule.forChild(VITALS_ROUTES)
   ],
   exports: [
     VitalsComponent

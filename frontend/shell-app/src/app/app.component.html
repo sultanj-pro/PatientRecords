@@ -1,13 +1,7 @@
 <div class="app-container">
   <app-navigation *ngIf="isAuthenticated"></app-navigation>
 
-  <div class="main-content">
-    <div *ngIf="isAuthenticated" class="authenticated-layout">
-      <router-outlet></router-outlet>
-    </div>
-
-    <div *ngIf="!isAuthenticated" class="login-layout">
-      <router-outlet></router-outlet>
-    </div>
+  <div class="main-content" [ngClass]="{'authenticated-layout': isAuthenticated, 'login-layout': !isAuthenticated}">
+    <router-outlet></router-outlet>
   </div>
 </div>

@@ -1,7 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 import { VisitsComponent } from './components/visits/visits.component';
+import { VISITS_ROUTES } from './visits.routes';
 
 @NgModule({
   declarations: [
@@ -9,7 +11,8 @@ import { VisitsComponent } from './components/visits/visits.component';
   ],
   imports: [
     CommonModule,
-    HttpClientModule
+    HttpClientModule,
+    RouterModule.forChild(VISITS_ROUTES)
   ],
   exports: [
     VisitsComponent

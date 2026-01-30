@@ -4,7 +4,10 @@ import {
   OnDestroy, 
   Input,
   ViewContainerRef,
-  createNgModule
+  ViewChild,
+  EnvironmentInjector,
+  Injector,
+  createComponent
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
@@ -30,6 +33,7 @@ interface ModuleDisplay extends ModuleConfig {
 })
 export class ModulesDashboardComponent implements OnInit, OnDestroy {
   @Input() patient: any = null;
+  @ViewChild('moduleContainer', { read: ViewContainerRef }) moduleContainer!: ViewContainerRef;
 
   modules: ModuleDisplay[] = [];
   selectedModule: string | null = null;
@@ -43,7 +47,7 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private patientContextService: PatientContextService,
     private moduleLoaderService: ModuleLoaderService,
-    private viewContainerRef: ViewContainerRef
+    private injector: Injector
   ) {}
 
   ngOnInit(): void {
@@ -59,6 +63,8 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(patient => {
         this.patient = patient;
+        // Share patient context with micro-frontends
+        this.sharePatientContextWithMicroFrontends(patient);
       });
 
     // Select first module by default
@@ -100,8 +106,12 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
 
     this.selectedModuleData = module;
 
+    // Always trigger data reload when module is selected
+    this.notifyMicroFrontendOfSelection(moduleName);
+
     if (module.loaded) {
-      // Already loaded, just update selection
+      // Already loaded, render the component
+      this.renderModule(moduleName, module);
       return;
     }
 
@@ -110,15 +120,14 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
     module.error = null;
 
     // Load the module via Module Federation
-    this.moduleLoaderService.loadModule(moduleName)
-      .then(loadedModule => {
+    this.moduleLoaderService.loadModule(moduleName, this.injector)
+      .then(moduleRef => {
         module.loaded = true;
         module.loading = false;
-        console.log(`✓ Module '${moduleName}' loaded successfully:`, loadedModule);
+        console.log(`✓ Module '${moduleName}' loaded successfully:`, moduleRef);
         
-        // Optional: Inject the component into the view
-        // This would require a container in the template with #moduleContainer
-        // this.injectModuleComponent(moduleName, loadedModule);
+        // Render the loaded component
+        this.renderModule(moduleName, module);
       })
       .catch(error => {
         module.loading = false;
@@ -128,27 +137,50 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Inject a loaded module component into the view (future enhancement)
-   * This would use ViewContainerRef to dynamically create the component
+   * Render the loaded component in the module container
    */
-  private injectModuleComponent(moduleName: string, moduleExport: any): void {
-    try {
-      // Clear previous component
-      this.viewContainerRef.clear();
+  private renderModule(moduleName: string, moduleData: ModuleDisplay): void {
+    if (!this.moduleContainer) {
+      console.warn('Module container not available yet');
+      return;
+    }
 
-      // Get the component class from the module export
-      const ComponentClass = moduleExport.Component || moduleExport;
-      
-      // Create an instance of the component
-      // Note: This requires the component to be standalone or part of a module
-      // For now, we'll just log success
-      console.log(`Module component ready for injection: ${moduleName}`, ComponentClass);
-      
-      // TODO: Implement actual ViewContainerRef.createComponent() when
-      // remote components are properly structured as standalone or modules
-      
+    try {
+      // Get the loaded module from the service
+      this.moduleLoaderService.getLoadedModule$(moduleName)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(loadedModule => {
+          if (!loadedModule || !loadedModule.moduleRef || !loadedModule.componentType) {
+            console.warn(`No loaded module found for '${moduleName}'`);
+            return;
+          }
+
+          try {
+            // Clear previous component
+            this.moduleContainer.clear();
+
+            const moduleRef = loadedModule.moduleRef;
+            const componentType = loadedModule.componentType;
+            
+            console.log(`Creating component '${moduleName}' with type:`, componentType);
+            
+            // Create the component using the module's injector
+            const componentRef = createComponent(componentType, {
+              environmentInjector: moduleRef.injector
+            });
+            
+            // Attach to view
+            this.moduleContainer.insert(componentRef.hostView);
+            
+            console.log(`✓ Component '${moduleName}' rendered successfully`);
+          } catch (renderError) {
+            console.error(`Failed to render component '${moduleName}':`, renderError);
+            moduleData.error = `Render failed: ${renderError instanceof Error ? renderError.message : String(renderError)}`;
+          }
+        });
     } catch (error) {
-      console.error(`Failed to inject module component:`, error);
+      console.error(`Failed to setup module rendering for '${moduleName}':`, error);
+      moduleData.error = `Setup failed: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
@@ -196,5 +228,59 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
   getModulePort(moduleName: string): number {
     const module = this.modules.find(m => m.name === moduleName);
     return module ? 4201 + module.order : 4200;
+  }
+
+  /**
+   * Notify micro-frontend that it has been selected (for data reloading)
+   */
+  private notifyMicroFrontendOfSelection(moduleName: string): void {
+    // Set a flag in localStorage to indicate which module is active
+    localStorage.setItem('__ACTIVE_MODULE__', moduleName);
+    localStorage.setItem('__MODULE_SELECTED_AT__', new Date().getTime().toString());
+    
+    // Dispatch a global event that all micro-frontends can listen to
+    window.dispatchEvent(new CustomEvent('module-selected', {
+      detail: { 
+        moduleName,
+        timestamp: new Date().getTime()
+      }
+    }));
+    
+    console.log(`Module '${moduleName}' selected - triggering reload in micro-frontend`);
+  }
+
+  /**
+   * Share patient context with micro-frontends via window object and localStorage
+   */
+  private sharePatientContextWithMicroFrontends(patient: any): void {
+    if (!patient) {
+      // Clear context
+      (window as any).__PATIENT_CONTEXT__ = null;
+      localStorage.removeItem('__PATIENT_CONTEXT__');
+      return;
+    }
+
+    // Create patient context object
+    const patientContext = {
+      patientId: patient.patientid || patient.id,
+      firstName: patient.firstname || patient.firstName,
+      lastName: patient.lastname || patient.lastName,
+      dateOfBirth: patient.dateOfBirth || patient.dob,
+      mrn: patient.mrn || patient.medicalRecordNumber,
+      timestamp: new Date().getTime()
+    };
+
+    // Share with all windows/iframes
+    (window as any).__PATIENT_CONTEXT__ = patientContext;
+    
+    // Also store in localStorage for micro-frontends to access
+    localStorage.setItem('__PATIENT_CONTEXT__', JSON.stringify(patientContext));
+    
+    // Also broadcast via window events for any listeners
+    window.dispatchEvent(new CustomEvent('patient-context-changed', {
+      detail: patientContext
+    }));
+
+    console.log('Patient context shared with micro-frontends:', patientContext);
   }
 }

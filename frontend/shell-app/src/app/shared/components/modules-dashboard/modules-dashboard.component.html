@@ -53,11 +53,9 @@
         </button>
       </div>
 
-      <!-- Success State -->
+      <!-- Success State - Render loaded component -->
       <div *ngIf="!isModuleLoading(selectedModule) && !getModuleError(selectedModule) && isModuleLoaded(selectedModule)" class="module-success">
-        <div class="success-icon">✓</div>
-        <p>Module loaded successfully</p>
-        <p class="module-info">Connected to {{ selectedModule }} micro-frontend service at http://localhost:{{ getModulePort(selectedModule) }}</p>
+        <div #moduleContainer></div>
       </div>
 
       <!-- Placeholder for unloaded modules -->

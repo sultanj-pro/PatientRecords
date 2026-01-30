@@ -5,6 +5,26 @@
   min-height: 400px;
 }
 
+.welcome-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.welcome-banner h1 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+.welcome-banner p {
+  margin: 0;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
 .loading-spinner {
   display: inline-block;
   width: 40px;

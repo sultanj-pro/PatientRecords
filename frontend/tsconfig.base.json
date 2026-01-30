@@ -21,7 +21,12 @@
     "lib": ["ES2022", "dom"],
     "paths": {
       "@patient-records/shared": ["shared/src/public-api.ts"],
-      "@patient-records/shared/*": ["shared/src/lib/*"]
+      "@patient-records/shared/*": ["shared/src/lib/*"],
+      "medicationsApp/*": ["modules/medications/src/app/*"],
+      "vitalsApp/*": ["modules/vitals/src/app/*"],
+      "labsApp/*": ["modules/labs/src/app/*"],
+      "visitsApp/*": ["modules/visits/src/app/*"],
+      "demographicsApp/*": ["modules/demographics/src/app/*"]
     }
   },
   "angularCompilerOptions": {

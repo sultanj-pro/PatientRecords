@@ -20,6 +20,20 @@
     </div>
   </ng-template>
 
-  <!-- Module Dashboard -->
-  <app-modules-dashboard [patient]="patient"></app-modules-dashboard>
+  <!-- Module Navigation Tabs -->
+  <div class="module-tabs" *ngIf="patient && availableModules.length > 0">
+    <button 
+      *ngFor="let module of availableModules"
+      class="tab-button"
+      [class.active]="selectedModule === module.name.toLowerCase()"
+      (click)="navigateToModule(module.name.toLowerCase())">
+      <span class="tab-icon">{{ module.icon }}</span>
+      <span class="tab-label">{{ module.name }}</span>
+    </button>
+  </div>
+
+  <!-- Module Content (loaded via router) -->
+  <div class="module-content">
+    <router-outlet></router-outlet>
+  </div>
 </div>

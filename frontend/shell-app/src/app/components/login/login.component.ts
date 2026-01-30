@@ -22,9 +22,9 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // If already authenticated, redirect to a default dashboard
+    // If already authenticated, redirect to dashboard
     if (this.authService.isAuthenticatedSync()) {
-      this.router.navigate(['/']);
+      this.router.navigate(['/dashboard']);
     }
   }
 
@@ -40,7 +40,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(this.username).subscribe(
       () => {
         this.loading = false;
-        this.router.navigate(['/']);
+        this.router.navigate(['/dashboard']);
       },
       (err) => {
         this.loading = false;

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, createNgModuleRef, Injector, NgModuleRef, Type } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -17,8 +17,8 @@ export interface RemoteModuleConfig {
  */
 export interface LoadedModule {
   config: RemoteModuleConfig;
-  module: any;
-  component: any;
+  moduleRef: NgModuleRef<any> | null;
+  componentType: Type<any> | null;
   loaded: boolean;
   loading: boolean;
   error: string | null;
@@ -62,32 +62,32 @@ export class ModuleLoaderService {
     ['Demographics', {
       name: 'demographics',
       remoteEntry: 'http://localhost:4201/remoteEntry.js',
-      exposedModule: './DemographicsComponent',
-      componentName: 'DemographicsComponent'
+      exposedModule: './DemographicsModule',
+      componentName: 'DemographicsModule'
     }],
     ['Vitals', {
       name: 'vitals',
       remoteEntry: 'http://localhost:4202/remoteEntry.js',
-      exposedModule: './VitalsComponent',
-      componentName: 'VitalsComponent'
+      exposedModule: './VitalsModule',
+      componentName: 'VitalsModule'
     }],
     ['Labs', {
       name: 'labs',
       remoteEntry: 'http://localhost:4203/remoteEntry.js',
-      exposedModule: './LabsComponent',
-      componentName: 'LabsComponent'
+      exposedModule: './LabsModule',
+      componentName: 'LabsModule'
     }],
     ['Medications', {
       name: 'medications',
       remoteEntry: 'http://localhost:4204/remoteEntry.js',
-      exposedModule: './MedicationsComponent',
-      componentName: 'MedicationsComponent'
+      exposedModule: './MedicationsModule',
+      componentName: 'MedicationsModule'
     }],
     ['Visits', {
       name: 'visits',
       remoteEntry: 'http://localhost:4205/remoteEntry.js',
-      exposedModule: './VisitsComponent',
-      componentName: 'VisitsComponent'
+      exposedModule: './VisitsModule',
+      componentName: 'VisitsModule'
     }]
   ]);
 
@@ -106,13 +106,14 @@ export class ModuleLoaderService {
    * 2. Loads the remoteEntry.js script
    * 3. Initializes the shared container
    * 4. Requests the exposed module
-   * 5. Returns the component or module for instantiation
+   * 5. Uses createNgModuleRef to instantiate the module
+   * 6. Returns the module reference and component type for rendering
    * 
    * @param moduleName Name of the module (e.g., 'Demographics')
-   * @returns Promise resolving to the loaded component or module
+   * @returns Promise resolving to the loaded module reference
    * @throws Error if module not found or loading fails
    */
-  async loadModule(moduleName: string): Promise<any> {
+  async loadModule(moduleName: string, injector: Injector): Promise<NgModuleRef<any>> {
     const config = this.moduleConfigs.get(moduleName);
     const containerName = this.containerNames.get(moduleName);
     
@@ -147,29 +148,66 @@ export class ModuleLoaderService {
         try {
           await container.init(this.createSharedContainer());
         } catch (initError) {
-          // Init might fail if shared scope is already initialized, which is OK
           console.warn(`Module '${moduleName}' init failed (may be already initialized):`, initError);
         }
       }
       
-      // Get the factory
+      // Get the factory for the module
       if (typeof container.get !== 'function') {
         throw new Error(`Container for '${moduleName}' has no 'get' method`);
       }
 
-      const factory = await container.get(config.exposedModule);
-      const moduleExport = factory();
+      const moduleFactory = await container.get(config.exposedModule);
+      const ModuleClass = moduleFactory();
+      
+      // Create an instance of the module using createNgModuleRef
+      const moduleRef = createNgModuleRef(ModuleClass, injector);
+      
+      // Get the root component from the module's declarations
+      // Usually it's the first exported component
+      let componentType: Type<any> | null = null;
+      
+      // Try to get it from module's bootstrap array (if defined)
+      if (moduleRef.instance && (moduleRef.instance as any).bootstrap) {
+        componentType = (moduleRef.instance as any).bootstrap[0];
+      }
+      
+      // Fallback: try to find the component from the module metadata
+      if (!componentType) {
+        const metadata = (ModuleClass as any).ɵmod;
+        if (metadata && metadata.declarations && metadata.declarations.length > 0) {
+          // Usually the first declared component is the main one
+          componentType = metadata.declarations[0];
+        }
+      }
+      
+      // Last resort: check exported components
+      if (!componentType) {
+        const metadata = (ModuleClass as any).ɵmod;
+        if (metadata && metadata.exports && metadata.exports.length > 0) {
+          for (const exported of metadata.exports) {
+            if (exported.ɵcmp) { // It's a component
+              componentType = exported;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (!componentType) {
+        throw new Error(`Could not determine root component for module '${moduleName}'`);
+      }
       
       // Update state with loaded module
       this.updateModuleState(moduleName, { 
-        module: moduleExport,
-        component: moduleExport,
+        moduleRef,
+        componentType,
         loaded: true,
         loading: false
       });
       
-      console.log(`✓ Module '${moduleName}' loaded successfully`);
-      return moduleExport;
+      console.log(`✓ Module '${moduleName}' loaded successfully`, { moduleRef, componentType });
+      return moduleRef;
     } catch (error) {
       const errorMessage = `Failed to load module '${moduleName}': ${error instanceof Error ? error.message : String(error)}`;
       this.updateModuleState(moduleName, { 
