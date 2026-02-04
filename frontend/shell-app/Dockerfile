@@ -12,6 +12,7 @@ COPY shell-app/src ./src
 COPY shell-app/angular.json ./
 COPY shell-app/tsconfig*.json ./
 COPY shell-app/webpack.config.js ./
+COPY shell-app/federation.config.js ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund
