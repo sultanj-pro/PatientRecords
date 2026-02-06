@@ -8,7 +8,12 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
-    children: []
+    children: [
+      {
+        path: 'medications',
+        loadChildren: () => import('medications/MedicationsModule').then(m => m.MedicationsModule)
+      }
+    ]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' }

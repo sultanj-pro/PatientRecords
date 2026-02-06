@@ -6,6 +6,9 @@ WORKDIR /app
 COPY modules/medications/package*.json ./
 COPY modules/medications/src ./src
 COPY modules/medications/webpack.config.js ./
+COPY modules/medications/webpack.config.standalone.js ./
+COPY modules/medications/webpack.config.federated.js ./
+COPY modules/medications/federation.config.js ./
 COPY modules/medications/tsconfig.json ./
 
 # Install dependencies and build

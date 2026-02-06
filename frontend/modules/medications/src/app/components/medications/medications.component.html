@@ -1,59 +1,8 @@
-<div class="medications-container">
-  <div class="welcome-banner">
-    <h1>Welcome to Medications Module</h1>
-    <p>Module Federation Test - Standalone Mode</p>
-  </div>
-  
-  <div *ngIf="loading" class="loading-spinner"></div>
-  
-  <div *ngIf="!loading" class="medications-content">
-    <h2 class="section-title">Medications</h2>
-    
-    <!-- Tabs for Active/Historical -->
-    <div class="tabs-section">
-      <button 
-        class="tab-button" 
-        [class.active]="showActive"
-        (click)="showActive = true">
-        Active Medications ({{ activeMedications.length }})
-      </button>
-      <button 
-        class="tab-button" 
-        [class.active]="!showActive"
-        (click)="showActive = false">
-        Historical Medications ({{ historicalMedications.length }})
-      </button>
-    </div>
-
-    <!-- Medications List -->
-    <div *ngIf="getDisplayMedications().length > 0" class="medications-list">
-      <div *ngFor="let med of getDisplayMedications()" class="medication-card">
-        <div class="card-header">
-          <div class="med-name">{{ med.medicationName }}</div>
-          <div class="med-status" [ngClass]="getMedicationStatus(med)">
-            {{ getMedicationStatus(med) }}
-          </div>
-        </div>
-        
-        <div class="card-body">
-          <div class="med-info-grid">
-            <div class="med-info">
-              <div class="info-label">Dosage</div>
-              <div class="info-value">{{ med.dosage || 'N/A' }}</div>
-            </div>
-            
-            <div class="med-info">
-              <div class="info-label">Frequency</div>
-              <div class="info-value">{{ med.frequency || 'N/A' }}</div>
-            </div>
-            
-            <div class="med-info">
-              <div class="info-label">Route</div>
-              <div class="info-value">{{ med.route || 'N/A' }}</div>
-            </div>
-          </div>
-
-          <div class="med-indication">
+<div style="padding: 40px; text-align: center; font-family: Arial, sans-serif; background: #f0f0f0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+  <h1 style="color: #333; font-size: 48px; margin: 0 0 20px 0;">Hello from Medications!</h1>
+  <p style="color: #666; font-size: 18px; margin: 0 0 10px 0;">This is the medications micro-frontend module</p>
+  <p style="color: green; font-weight: bold; font-size: 20px; margin: 0;">✓ Module is rendering successfully!</p>
+</div>          <div class="med-indication">
             <div class="info-label">Indication</div>
             <div class="info-value">{{ med.indication || 'N/A' }}</div>
           </div>
