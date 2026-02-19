@@ -110,6 +110,9 @@ services:
       - app-net
 
   patientrecord-mongodb:
+    build:
+      context: ./mongo
+      dockerfile: Dockerfile
     image: patientrecord-mongodb
     container_name: patientrecord-mongo
     environment:

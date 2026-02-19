@@ -1,0 +1,150 @@
+ Image patientrecord-mongodb Building 
+ Image patientrecord-backend Building 
+ Image patientrecord-demographics Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.59kB done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 702B 0.0s done
+#2 DONE 0.2s
+
+#3 [internal] load metadata for docker.io/library/nginx:alpine
+#3 DONE 1.8s
+
+#4 [internal] load metadata for docker.io/library/node:24-alpine
+#4 DONE 1.9s
+
+#5 [internal] load .dockerignore
+#5 transferring context:
+#5 transferring context: 2B 0.0s done
+#5 DONE 0.3s
+
+#6 [builder  1/10] FROM docker.io/library/node:24-alpine@sha256:4f696fbf39f383c1e486030ba6b289a5d9af541642fc78ab197e584a113b9c03
+#6 resolve docker.io/library/node:24-alpine@sha256:4f696fbf39f383c1e486030ba6b289a5d9af541642fc78ab197e584a113b9c03
+#6 ...
+
+#7 [internal] load build context
+#7 transferring context: 2.00kB 0.1s done
+#7 DONE 0.4s
+
+#8 [stage-1 1/3] FROM docker.io/library/nginx:alpine@sha256:1d13701a5f9f3fb01aaa88cef2344d65b6b5bf6b7d9fa4cf0dca557a8d7702ba
+#8 resolve docker.io/library/nginx:alpine@sha256:1d13701a5f9f3fb01aaa88cef2344d65b6b5bf6b7d9fa4cf0dca557a8d7702ba
+#8 ...
+
+#6 [builder  1/10] FROM docker.io/library/node:24-alpine@sha256:4f696fbf39f383c1e486030ba6b289a5d9af541642fc78ab197e584a113b9c03
+#6 resolve docker.io/library/node:24-alpine@sha256:4f696fbf39f383c1e486030ba6b289a5d9af541642fc78ab197e584a113b9c03 1.2s done
+#6 DONE 1.3s
+
+#9 [builder  6/10] COPY modules/demographics/src ./src
+#9 CACHED
+
+#10 [builder  7/10] COPY modules/demographics/webpack.config.js ./
+#10 CACHED
+
+#11 [builder  2/10] WORKDIR /app
+#11 CACHED
+
+#12 [builder  3/10] COPY shared ../shared
+#12 CACHED
+
+#13 [builder  4/10] COPY tsconfig.base.json ../tsconfig.base.json
+#13 CACHED
+
+#14 [builder  5/10] COPY modules/demographics/package*.json ./
+#14 CACHED
+
+#15 [builder  8/10] COPY modules/demographics/tsconfig.json ./
+#15 CACHED
+
+#8 [stage-1 1/3] FROM docker.io/library/nginx:alpine@sha256:1d13701a5f9f3fb01aaa88cef2344d65b6b5bf6b7d9fa4cf0dca557a8d7702ba
+#8 resolve docker.io/library/nginx:alpine@sha256:1d13701a5f9f3fb01aaa88cef2344d65b6b5bf6b7d9fa4cf0dca557a8d7702ba 1.3s done
+#8 CACHED
+
+#16 [builder  9/10] RUN npm install --no-audit --no-fund
+#16 82.52 npm warn deprecated read-package-json@7.0.1: This package is no longer supported. Please use @npmcli/package-json instead.
+#16 85.32 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#16 85.48 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#16 99.83 npm warn deprecated tar@6.2.1: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#16 100.2 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#16 106.0 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#16 106.0 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#16 106.1 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#16 106.1 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#16 137.0 
+#16 137.0 added 920 packages in 2m
+#16 137.0 npm notice
+#16 137.0 npm notice New minor version of npm available! 11.8.0 -> 11.10.0
+#16 137.0 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.10.0
+#16 137.0 npm notice To update run: npm install -g npm@11.10.0
+#16 137.0 npm notice
+#16 DONE 144.2s
+
+#17 [builder 10/10] RUN npm run build
+#17 3.632 
+#17 3.632 > patient-records-demographics@0.1.0 build
+#17 3.632 > webpack --mode production --config webpack.config.js
+#17 3.632 
+#17 51.72 assets by status 771 KiB [big]
+#17 51.72   asset remoteEntry.js 387 KiB [emitted] [minimized] [big] (name: demographicsApp) 1 related asset
+#17 51.72   asset main.47d8937e8ea6c8c64ff1.js 384 KiB [emitted] [immutable] [minimized] [big] (name: main) 1 related asset
+#17 51.72 asset 774.d655aa3af4658ebd8280.js 1.44 KiB [emitted] [immutable] [minimized]
+#17 51.72 asset 688.7ad9b83ecebec2f85aee.js 1.29 KiB [emitted] [immutable] [minimized]
+#17 51.72 asset 519.150dc50b2dfa01ac6549.js 1.18 KiB [emitted] [immutable] [minimized]
+#17 51.72 orphan modules 207 KiB [orphan] 201 modules
+#17 51.72 runtime modules 28.9 KiB 17 modules
+#17 51.72 built modules 1.71 MiB (javascript) 126 bytes (share-init) 126 bytes (consume-shared) [built]
+#17 51.72   modules by path ./node_modules/ 1.71 MiB 28 modules
+#17 51.72   modules by path ./src/ 1.81 KiB
+#17 51.72     modules by path ./src/app/*.ts 394 bytes 2 modules
+#17 51.72     + 2 modules
+#17 51.72   provide-module modules 126 bytes
+#17 51.72     provide shared module (default) @angular/core@17.3.12 = ./node_modules/@angular/...(truncated) 42 bytes [built] [code generated]
+#17 51.72     + 2 modules
+#17 51.72   consume-shared-module modules 126 bytes
+#17 51.72     consume shared module (default) rxjs@^auto (singleton) (fallback: ./node_modules...(truncated) 42 bytes [built] [code generated]
+#17 51.72     + 2 modules
+#17 51.72   container entry 42 bytes [built] [code generated]
+#17 51.72 
+#17 51.72 WARNING in asset size limit: The following asset(s) exceed the recommended size limit (244 KiB).
+#17 51.72 This can impact web performance.
+#17 51.72 Assets: 
+#17 51.72   remoteEntry.js (387 KiB)
+#17 51.72   main.47d8937e8ea6c8c64ff1.js (384 KiB)
+#17 51.72 
+#17 51.72 WARNING in entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (244 KiB). This can impact web performance.
+#17 51.72 Entrypoints:
+#17 51.72   main (384 KiB)
+#17 51.72       main.47d8937e8ea6c8c64ff1.js
+#17 51.72   demographicsApp (387 KiB)
+#17 51.72       remoteEntry.js
+#17 51.72 
+#17 51.72 webpack 5.105.2 compiled with 2 warnings in 45374 ms
+#17 DONE 53.8s
+
+#18 [stage-1 2/3] COPY --from=builder /app/dist/demographics /usr/share/nginx/html
+#18 DONE 0.7s
+
+#19 [stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#19 DONE 0.9s
+
+#20 exporting to image
+#20 exporting layers
+#20 exporting layers 3.0s done
+#20 exporting manifest sha256:4aaa40a8b0227a7f75846c432936af79e088b5d2ad7a389aa9c90809f8080b8a
+#20 exporting manifest sha256:4aaa40a8b0227a7f75846c432936af79e088b5d2ad7a389aa9c90809f8080b8a 0.3s done
+#20 exporting config sha256:5a8b1b22281377fc451f7b41af75bd02323efbe467c2881e35835f5ddd61f08e
+#20 exporting config sha256:5a8b1b22281377fc451f7b41af75bd02323efbe467c2881e35835f5ddd61f08e 0.5s done
+#20 exporting attestation manifest sha256:a13d557d069468dd169f8ef00ef768747c20350b7e7f2ed1d7f1726bf3f468e9
+#20 exporting attestation manifest sha256:a13d557d069468dd169f8ef00ef768747c20350b7e7f2ed1d7f1726bf3f468e9 1.3s done
+#20 exporting manifest list sha256:3e38cf8b4daf18d1411575e6c39bfbe5a48a2498db99393028092b7b7ecce243
+#20 exporting manifest list sha256:3e38cf8b4daf18d1411575e6c39bfbe5a48a2498db99393028092b7b7ecce243 0.5s done
+#20 naming to docker.io/library/patientrecord-demographics:latest
+#20 naming to docker.io/library/patientrecord-demographics:latest 0.2s done
+#20 unpacking to docker.io/library/patientrecord-demographics:latest
+#20 unpacking to docker.io/library/patientrecord-demographics:latest 1.0s done
+#20 DONE 7.4s
+
+#21 resolving provenance for metadata file
+#21 DONE 0.1s
+ Image patientrecord-demographics Built 

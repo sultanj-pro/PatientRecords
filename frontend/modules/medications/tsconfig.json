@@ -14,7 +14,15 @@
     "resolveJsonModule": true,
     "strict": false,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["src/**/*.ts"]
+  "angularCompilerOptions": {
+    "compilationMode": "full",
+    "enableIvy": true,
+    "fullTemplateTypeCheck": false,
+    "strictInjectionParameters": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/app/medications-standalone.module.ts", "src/main-standalone.ts"]
 }

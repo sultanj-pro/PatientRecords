@@ -6,8 +6,6 @@
     "ng": "ng",
     "start": "ng serve --port 4204",
     "build": "webpack --mode production --config webpack.config.js",
-    "build:standalone": "webpack --mode production --config webpack.config.standalone.js",
-    "build:federated": "webpack --mode production --config webpack.config.federated.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
