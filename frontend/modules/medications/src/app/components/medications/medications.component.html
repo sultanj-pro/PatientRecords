@@ -1,44 +1,67 @@
-<div style="padding: 40px; text-align: center; font-family: Arial, sans-serif; background: #f0f0f0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-  <h1 style="color: #333; font-size: 48px; margin: 0 0 20px 0;">Hello from Medications!</h1>
-  <p style="color: #666; font-size: 18px; margin: 0 0 10px 0;">This is the medications micro-frontend module</p>
-  <p style="color: green; font-weight: bold; font-size: 20px; margin: 0;">✓ Module is rendering successfully!</p>
-</div>          <div class="med-indication">
-            <div class="info-label">Indication</div>
-            <div class="info-value">{{ med.indication || 'N/A' }}</div>
-          </div>
+<div class="medications-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Loading medications...</p>
+  </div>
 
-          <div class="med-prescribed">
-            <div class="info-label">Prescribed By</div>
-            <div class="info-value">{{ med.prescribedBy || 'N/A' }}</div>
-          </div>
+  <!-- Error State -->
+  <div *ngIf="!loading && error" class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h2>Unable to Load Medications</h2>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="retryLoad()">Try Again</button>
+  </div>
 
-          <div class="med-duration">
-            <div class="info-label">Duration</div>
-            <div class="info-value">{{ getMedicationDuration(med) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- Content State -->
+  <div *ngIf="!loading && medications && medications.length > 0 && !error" class="content-container">
+    <h1 class="page-title">Medications for {{ patientName }}</h1>
 
     <!-- Summary Stats -->
-    <div *ngIf="medications.length > 0" class="stats-section">
+    <div class="stats-section">
       <div class="stat-card">
         <div class="stat-label">Total Medications</div>
         <div class="stat-value">{{ medications.length }}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Currently Active</div>
-        <div class="stat-value active">{{ activeMedications.length }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Discontinued</div>
-        <div class="stat-value discontinued">{{ historicalMedications.length }}</div>
-      </div>
     </div>
 
-    <div *ngIf="getDisplayMedications().length === 0" class="no-data">
-      <p *ngIf="showActive">No active medications</p>
-      <p *ngIf="!showActive">No discontinued medications</p>
-    </div>
+    <!-- Medications List -->
+    <section class="medications-section">
+      <h2 class="section-title">💊 Active Medications</h2>
+      <div class="medications-grid">
+        <div *ngFor="let med of medications" class="medication-card">
+          <div class="med-header">
+            <h3 class="med-name">{{ med['name'] || 'Unknown Medication' }}</h3>
+          </div>
+          <div class="med-details">
+            <div class="med-item">
+              <span class="med-label">Dose:</span>
+              <span class="med-value">{{ med['dose'] || 'N/A' }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Frequency:</span>
+              <span class="med-value">{{ getFrequencyLabel(med['frequency']) }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Route:</span>
+              <span class="med-value">{{ med['route'] || 'N/A' }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Started:</span>
+              <span class="med-value">{{ formatDate(med['startDate']) }}</span>
+            </div>
+          </div>
+          <div *ngIf="med['indication']" class="med-indication">
+            <strong>Indication:</strong> {{ med['indication'] }}
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && (!medications || medications.length === 0) && !error" class="empty-state-container">
+    <div style="font-size: 80px; margin-bottom: 20px;">💊</div>
+    <p>No medications found for this patient.</p>
   </div>
 </div>
