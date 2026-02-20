@@ -18,6 +18,10 @@ export const routes: Routes = [
         loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
       },
       {
+        path: 'labs',
+        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
+      },
+      {
         path: 'medications',
         loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
       }

@@ -54,43 +54,43 @@ const ROLE_CONFIGURATIONS: RoleConfig[] = [
   {
     role: 'nurse',
     displayName: 'Nurse',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'physician',
     displayName: 'Physician / Doctor',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'lab-tech',
     displayName: 'Lab Technician',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'radiology',
     displayName: 'Radiologist',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'nutrition',
     displayName: 'Nutritionist',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'physical-therapy',
     displayName: 'Physical Therapist',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'admin',
     displayName: 'Administrator',
-    modules: ['demographics', 'vitals', 'medications'],
+    modules: ['demographics', 'vitals', 'labs', 'medications'],
     layoutMode: 'dashboard'
   }
 ];

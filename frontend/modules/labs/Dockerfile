@@ -11,7 +11,7 @@ COPY modules/labs/package*.json ./
 COPY modules/labs/src ./src
 COPY modules/labs/angular.json ./
 COPY modules/labs/webpack.config.js ./
-COPY modules/labs/tsconfig.json ./
+COPY modules/labs/tsconfig*.json ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund
@@ -19,8 +19,7 @@ RUN npm run build
 
 # Serve stage
 FROM nginx:alpine
-COPY --from=builder /app/dist/labs /usr/share/nginx/html
-COPY modules/labs/src/index.html /usr/share/nginx/html/index.html
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 4200
 CMD ["nginx", "-g", "daemon off;"]
