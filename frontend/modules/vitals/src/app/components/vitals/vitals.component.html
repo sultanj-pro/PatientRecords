@@ -1,104 +1,136 @@
 <div class="vitals-container">
-  <div *ngIf="loading" class="loading-spinner"></div>
-  
-  <div *ngIf="!loading" class="vitals-content">
-    <h2 class="section-title">Vital Signs</h2>
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading vital signs...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && error" class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h2>Unable to Load Vitals</h2>
+    <p>{{ error }}</p>
+    <button class="retry-btn" (click)="retryLoad()">Try Again</button>
+  </div>
+
+  <!-- Content State -->
+  <div *ngIf="!loading && !error && vitals.length > 0" class="content-state">
+    <h1 class="page-title">Vital Signs for {{ patientName }}</h1>
     
-    <div class="vitals-grid">
-      <!-- Temperature -->
-      <div class="vital-card">
-        <div class="vital-icon">🌡️</div>
-        <div class="vital-details">
-          <div class="vital-label">Temperature</div>
-          <div class="vital-value">{{ getLatestVital('temperature') }}°C</div>
-          <div class="vital-status" [ngClass]="getTemperatureStatus(getLatestVital('temperature'))">
-            {{ getTemperatureStatus(getLatestVital('temperature')) }} {{ getVitalTrend('temperature') }}
+    <!-- Current Vital Signs -->
+    <div class="vitals-section">
+      <h2 class="section-title">Current Readings</h2>
+      <div class="vitals-grid">
+        <!-- Temperature -->
+        <div class="vital-card">
+          <div class="vital-header">
+            <span class="vital-icon">🌡️</span>
+            <h3>Temperature</h3>
+          </div>
+          <div class="vital-body">
+            <div class="vital-value">{{ getLatestVital('temperature') }}°C</div>
+            <div class="vital-status" [ngClass]="getTemperatureStatus(getLatestVital('temperature'))">
+              {{ getTemperatureStatus(getLatestVital('temperature')) }} {{ getVitalTrend('temperature') }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Blood Pressure -->
-      <div class="vital-card">
-        <div class="vital-icon">💓</div>
-        <div class="vital-details">
-          <div class="vital-label">Blood Pressure</div>
-          <div class="vital-value">{{ getLatestVital('bpSystolic') }}/{{ getLatestVital('bpDiastolic') }} mmHg</div>
-          <div class="vital-status" [ngClass]="getBloodPressureStatus(getLatestVital('bpSystolic'), getLatestVital('bpDiastolic'))">
-            {{ getBloodPressureStatus(getLatestVital('bpSystolic'), getLatestVital('bpDiastolic')) }} {{ getVitalTrend('bpSystolic') }}
+        <!-- Blood Pressure -->
+        <div class="vital-card">
+          <div class="vital-header">
+            <span class="vital-icon">💓</span>
+            <h3>Blood Pressure</h3>
+          </div>
+          <div class="vital-body">
+            <div class="vital-value">{{ getLatestVital('bpSystolic') }}/{{ getLatestVital('bpDiastolic') }} mmHg</div>
+            <div class="vital-status" [ngClass]="getBloodPressureStatus(getLatestVital('bpSystolic'), getLatestVital('bpDiastolic'))">
+              {{ getBloodPressureStatus(getLatestVital('bpSystolic'), getLatestVital('bpDiastolic')) }} {{ getVitalTrend('bpSystolic') }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Heart Rate -->
-      <div class="vital-card">
-        <div class="vital-icon">❤️</div>
-        <div class="vital-details">
-          <div class="vital-label">Heart Rate</div>
-          <div class="vital-value">{{ getLatestVital('heartRate') }} bpm</div>
-          <div class="vital-status" [ngClass]="getLatestVital('heartRate') >= 60 && getLatestVital('heartRate') <= 100 ? 'Normal' : 'Abnormal'">
-            {{ getLatestVital('heartRate') >= 60 && getLatestVital('heartRate') <= 100 ? 'Normal' : 'Abnormal' }} {{ getVitalTrend('heartRate') }}
+        <!-- Heart Rate -->
+        <div class="vital-card">
+          <div class="vital-header">
+            <span class="vital-icon">❤️</span>
+            <h3>Heart Rate</h3>
+          </div>
+          <div class="vital-body">
+            <div class="vital-value">{{ getLatestVital('heartRate') }} bpm</div>
+            <div class="vital-status" [ngClass]="isHeartRateNormal(getLatestVital('heartRate')) ? 'stable' : 'abnormal'">
+              {{ isHeartRateNormal(getLatestVital('heartRate')) ? 'Normal' : 'Abnormal' }} {{ getVitalTrend('heartRate') }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Respiratory Rate -->
-      <div class="vital-card">
-        <div class="vital-icon">💨</div>
-        <div class="vital-details">
-          <div class="vital-label">Respiratory Rate</div>
-          <div class="vital-value">{{ getLatestVital('respiratoryRate') }} breaths/min</div>
-          <div class="vital-status" [ngClass]="getLatestVital('respiratoryRate') >= 12 && getLatestVital('respiratoryRate') <= 20 ? 'Normal' : 'Abnormal'">
-            {{ getLatestVital('respiratoryRate') >= 12 && getLatestVital('respiratoryRate') <= 20 ? 'Normal' : 'Abnormal' }} {{ getVitalTrend('respiratoryRate') }}
+        <!-- Respiratory Rate -->
+        <div class="vital-card">
+          <div class="vital-header">
+            <span class="vital-icon">💨</span>
+            <h3>Respiratory Rate</h3>
+          </div>
+          <div class="vital-body">
+            <div class="vital-value">{{ getLatestVital('respiratoryRate') }} breaths/min</div>
+            <div class="vital-status" [ngClass]="isRespiratoryRateNormal(getLatestVital('respiratoryRate')) ? 'stable' : 'abnormal'">
+              {{ isRespiratoryRateNormal(getLatestVital('respiratoryRate')) ? 'Normal' : 'Abnormal' }} {{ getVitalTrend('respiratoryRate') }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Oxygen Saturation -->
-      <div class="vital-card">
-        <div class="vital-icon">🫁</div>
-        <div class="vital-details">
-          <div class="vital-label">O₂ Saturation</div>
-          <div class="vital-value">{{ getLatestVital('o2Saturation') }}%</div>
-          <div class="vital-status" [ngClass]="getLatestVital('o2Saturation') >= 95 ? 'Normal' : 'Abnormal'">
-            {{ getLatestVital('o2Saturation') >= 95 ? 'Normal' : 'Low' }} {{ getVitalTrend('o2Saturation') }}
+        <!-- Oxygen Saturation -->
+        <div class="vital-card">
+          <div class="vital-header">
+            <span class="vital-icon">🫁</span>
+            <h3>O₂ Saturation</h3>
+          </div>
+          <div class="vital-body">
+            <div class="vital-value">{{ getLatestVital('o2Saturation') }}%</div>
+            <div class="vital-status" [ngClass]="isO2SaturationNormal(getLatestVital('o2Saturation')) ? 'stable' : 'abnormal'">
+              {{ isO2SaturationNormal(getLatestVital('o2Saturation')) ? 'Normal' : 'Low' }} {{ getVitalTrend('o2Saturation') }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Last Recorded -->
-      <div class="vital-card">
-        <div class="vital-icon">⏰</div>
-        <div class="vital-details">
-          <div class="vital-label">Last Recorded</div>
-          <div class="vital-value-small">{{ formatDate(getLatestVital('recordedAt')) }}</div>
-          <div class="vital-status">{{ getLatestVital('recordedBy') || 'N/A' }}</div>
+        <!-- Last Recorded -->
+        <div class="vital-card">
+          <div class="vital-header">
+            <span class="vital-icon">⏰</span>
+            <h3>Last Recorded</h3>
+          </div>
+          <div class="vital-body">
+            <div class="vital-value-small">{{ getFormattedDate() }}</div>
+            <div class="vital-status">{{ getLatestVital('recordedBy') || 'N/A' }}</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Vital History -->
-    <div *ngIf="vitals.length > 0" class="history-section">
-      <h3>Vital History (Last 10 Readings)</h3>
+    <!-- Vital History Table -->
+    <div class="history-section" *ngIf="vitals.length > 1">
+      <h2 class="section-title">Recent History</h2>
       <div class="history-table">
         <div class="table-header">
           <div class="col-date">Date/Time</div>
-          <div class="col-temp">Temp (°C)</div>
-          <div class="col-bp">BP (mmHg)</div>
-          <div class="col-hr">HR (bpm)</div>
-          <div class="col-o2">O₂ (%)</div>
+          <div class="col-temp">Temperature</div>
+          <div class="col-bp">Blood Pressure</div>
+          <div class="col-hr">Heart Rate</div>
+          <div class="col-o2">O₂ Saturation</div>
         </div>
         <div *ngFor="let vital of vitals | slice:0:10" class="table-row">
           <div class="col-date">{{ formatDate(vital.recordedAt) }}</div>
-          <div class="col-temp">{{ vital.temperature }}</div>
-          <div class="col-bp">{{ vital.bpSystolic }}/{{ vital.bpDiastolic }}</div>
-          <div class="col-hr">{{ vital.heartRate }}</div>
-          <div class="col-o2">{{ vital.o2Saturation }}</div>
+          <div class="col-temp">{{ vital.temperature || 'N/A' }}°C</div>
+          <div class="col-bp">{{ vital.bpSystolic || 'N/A' }}/{{ vital.bpDiastolic || 'N/A' }}</div>
+          <div class="col-hr">{{ vital.heartRate || 'N/A' }} bpm</div>
+          <div class="col-o2">{{ vital.o2Saturation || 'N/A' }}%</div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div *ngIf="vitals.length === 0" class="no-data">
-      <p>No vital readings recorded yet</p>
-    </div>
+  <!-- Empty State -->
+  <div *ngIf="!loading && !error && vitals.length === 0" class="empty-state">
+    <div class="empty-icon">📊</div>
+    <h2>No Vital Signs Available</h2>
+    <p>Please select a patient from the dashboard to view their vital signs.</p>
   </div>
 </div>
