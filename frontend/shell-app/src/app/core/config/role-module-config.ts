@@ -54,43 +54,43 @@ const ROLE_CONFIGURATIONS: RoleConfig[] = [
   {
     role: 'nurse',
     displayName: 'Nurse',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'physician',
     displayName: 'Physician / Doctor',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'lab-tech',
     displayName: 'Lab Technician',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'radiology',
     displayName: 'Radiologist',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'nutrition',
     displayName: 'Nutritionist',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'physical-therapy',
     displayName: 'Physical Therapist',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   },
   {
     role: 'admin',
     displayName: 'Administrator',
-    modules: ['medications'],
+    modules: ['demographics', 'vitals', 'medications'],
     layoutMode: 'dashboard'
   }
 ];

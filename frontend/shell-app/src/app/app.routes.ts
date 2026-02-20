@@ -10,6 +10,14 @@ export const routes: Routes = [
     component: DashboardComponent,
     children: [
       {
+        path: 'demographics',
+        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
+      },
+      {
+        path: 'vitals',
+        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
+      },
+      {
         path: 'medications',
         loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
       }
