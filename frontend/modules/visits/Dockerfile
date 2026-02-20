@@ -11,7 +11,7 @@ COPY modules/visits/package*.json ./
 COPY modules/visits/src ./src
 COPY modules/visits/angular.json ./
 COPY modules/visits/webpack.config.js ./
-COPY modules/visits/tsconfig.json ./
+COPY modules/visits/tsconfig*.json ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund
@@ -19,8 +19,7 @@ RUN npm run build
 
 # Serve stage
 FROM nginx:alpine
-COPY --from=builder /app/dist/visits /usr/share/nginx/html
-COPY modules/visits/src/index.html /usr/share/nginx/html/index.html
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 4200
 CMD ["nginx", "-g", "daemon off;"]
