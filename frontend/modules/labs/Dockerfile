@@ -9,6 +9,7 @@ COPY tsconfig.base.json ../tsconfig.base.json
 # Copy package files and module source
 COPY modules/labs/package*.json ./
 COPY modules/labs/src ./src
+COPY modules/labs/angular.json ./
 COPY modules/labs/webpack.config.js ./
 COPY modules/labs/tsconfig.json ./
 

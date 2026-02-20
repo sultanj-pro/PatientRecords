@@ -9,8 +9,9 @@ COPY tsconfig.base.json ../tsconfig.base.json
 # Copy package files and module source
 COPY modules/vitals/package*.json ./
 COPY modules/vitals/src ./src
-COPY modules/vitals/webpack.config.js ./
+COPY modules/vitals/angular.json ./
 COPY modules/vitals/tsconfig.json ./
+COPY modules/vitals/webpack.config.js ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund

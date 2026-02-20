@@ -28,6 +28,7 @@
     "@angular/cli": "^17.0.0",
     "@angular/compiler-cli": "^17.0.0",
     "@angular-builders/custom-webpack": "^17.0.0",
+    "@angular-architects/module-federation": "^17.0.0",
     "@nrwl/angular": "^17.0.0",
     "@types/jasmine": "^5.0.0",
     "jasmine-core": "^5.0.0",

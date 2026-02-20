@@ -7,10 +7,11 @@ COPY shared ../shared
 COPY tsconfig.base.json ../tsconfig.base.json
 
 # Copy package files and module source
-COPY modules/medications/package*.json ./
-COPY modules/medications/src ./src
-COPY modules/medications/webpack.config.js ./
-COPY modules/medications/tsconfig*.json ./
+COPY modules/demographics/package*.json ./
+COPY modules/demographics/src ./src
+COPY modules/demographics/angular.json ./
+COPY modules/demographics/webpack.config.js ./
+COPY modules/demographics/tsconfig*.json ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund

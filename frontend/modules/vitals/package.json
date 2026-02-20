@@ -5,7 +5,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --port 4202",
-    "build": "webpack --mode production --config webpack.config.js",
+    "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -27,6 +27,8 @@
     "@angular-devkit/build-angular": "^17.0.0",
     "@angular/cli": "^17.0.0",
     "@angular/compiler-cli": "^17.0.0",
+    "@angular-builders/custom-webpack": "^17.0.0",
+    "@angular-architects/module-federation": "^17.0.0",
     "@types/jasmine": "^5.0.0",
     "jasmine-core": "^5.0.0",
     "karma": "^6.4.0",

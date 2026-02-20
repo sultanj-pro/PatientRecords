@@ -9,6 +9,7 @@ COPY tsconfig.base.json ../tsconfig.base.json
 # Copy package files and module source
 COPY modules/visits/package*.json ./
 COPY modules/visits/src ./src
+COPY modules/visits/angular.json ./
 COPY modules/visits/webpack.config.js ./
 COPY modules/visits/tsconfig.json ./
 
