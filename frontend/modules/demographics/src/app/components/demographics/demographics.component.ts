@@ -1,17 +1,186 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
+
+// Patient interface (defined locally to avoid module resolution issues)
+interface Patient {
+  patientid?: number;
+  id?: number;
+  firstname?: string;
+  lastName?: string;
+  firstname_upper?: string;
+  lastname_upper?: string;
+  dateOfBirth?: Date | string;
+  dob?: Date | string;
+  gender?: string;
+  mrn?: string;
+  email?: string;
+  phone?: string;
+  [key: string]: any;
+}
 
 @Component({
   selector: 'app-demographics',
   standalone: true,
-  template: `
-    <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif; background: #e3f2fd; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-      <h1 style="color: #1976d2; font-size: 48px; margin: 0 0 20px 0;">Hi from the demographics module</h1>
-      <p style="color: #424242; font-size: 18px; margin: 0 0 10px 0;">This is the demographics micro-frontend module</p>
-      <p style="color: #1976d2; font-weight: bold; font-size: 20px; margin: 0;">✓ Module is rendering successfully!</p>
-    </div>
-  `,
-  styles: []
+  imports: [CommonModule],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: JwtInterceptor,
+      multi: true
+    }
+  ],
+  templateUrl: './demographics.component.html',
+  styleUrls: ['./demographics.component.css']
 })
-export class DemographicsComponent {
-  constructor() { }
+export class DemographicsComponent implements OnInit, OnDestroy {
+  currentPatient: Patient | null = null;
+  loading = true;
+  error: string | null = null;
+  displayAge = 0;
+  
+  private destroy$ = new Subject<void>();
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadPatientData();
+  }
+
+  private loadPatientData(): void {
+    this.loading = true;
+    this.error = null;
+
+    // Get patient ID from various sources
+    const patientId = this.getPatientIdFromStorage();
+    
+    if (!patientId) {
+      this.loading = false;
+      this.error = 'No patient selected. Please select a patient from the dashboard.';
+      return;
+    }
+
+    // Call backend API to get patient data
+    const apiUrl = `http://localhost:5001/api/patients/${patientId}`;
+    
+    this.http.get<any>(apiUrl)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (patient) => {
+          if (patient) {
+            // Map backend fields to local Patient interface
+            this.currentPatient = {
+              patientid: patient.patientid || patient.id,
+              firstname: patient.firstname,
+              lastname: patient.lastname,
+              dateOfBirth: patient.dateOfBirth || patient.dob || new Date(),
+              gender: patient.gender,
+              email: patient.email,
+              phone: patient.phone
+            };
+            
+            // Ensure dateOfBirth is a Date object
+            if (typeof this.currentPatient.dateOfBirth === 'string') {
+              this.currentPatient.dateOfBirth = new Date(this.currentPatient.dateOfBirth);
+            }
+            
+            // Only calculate age if dateOfBirth is valid
+            if (this.currentPatient.dateOfBirth) {
+              this.displayAge = this.calculateAge(this.currentPatient.dateOfBirth);
+            }
+            this.loading = false;
+          } else {
+            this.error = 'No patient data found';
+            this.loading = false;
+          }
+        },
+        error: (err) => {
+          console.error('Error loading patient:', err);
+          this.error = `Failed to load patient data: ${err.message || 'Unknown error'}`;
+          this.loading = false;
+        }
+      });
+  }
+
+  private getPatientIdFromStorage(): string | null {
+    // 1. First, try to get from shell app's shared patient context (__PATIENT_CONTEXT__)
+    const contextStr = localStorage.getItem('__PATIENT_CONTEXT__');
+    if (contextStr) {
+      try {
+        const context = JSON.parse(contextStr);
+        if (context.patientId) {
+          return context.patientId;
+        }
+      } catch (e) {
+        console.warn('Failed to parse patient context:', e);
+      }
+    }
+
+    // 2. Try sessionStorage (set by shell app during navigation)
+    let patientId = sessionStorage.getItem('selectedPatientId');
+    if (patientId) return patientId;
+    
+    // 3. Check localStorage (fallback)
+    patientId = localStorage.getItem('selectedPatientId');
+    if (patientId) return patientId;
+    
+    // 4. Check URL (if accessed directly)
+    const urlParams = new URLSearchParams(window.location.search);
+    patientId = urlParams.get('patientId');
+    if (patientId) return patientId;
+    
+    // 5. Try to extract from current URL path (e.g., /dashboard/:patientId)
+    const pathMatch = window.location.pathname.match(/\/dashboard\/([^\/]+)/);
+    if (pathMatch && pathMatch[1]) {
+      return pathMatch[1];
+    }
+    
+    return null;
+  }
+
+  calculateAge(dateOfBirth: Date | string): number {
+    if (!dateOfBirth) return 0;
+    const today = new Date();
+    const dob = new Date(dateOfBirth);
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    
+    return age;
+  }
+
+  getPatientFullName(): string {
+    if (!this.currentPatient) return 'N/A';
+    const firstname = this.currentPatient['firstname'] || '';
+    const lastname = this.currentPatient['lastname'] || '';
+    return `${firstname} ${lastname}`.trim();
+  }
+
+  retryLoad(): void {
+    this.loadPatientData();
+  }
+
+  formatDate(date: Date | string | undefined | null): string {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'N/A';
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return d.toLocaleDateString('en-US', options);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 }
+

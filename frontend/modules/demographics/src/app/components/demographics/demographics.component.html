@@ -1,52 +1,75 @@
 <div class="demographics-container">
-  <div class="loading" *ngIf="loading">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="spinner-container">
     <div class="spinner"></div>
-    <p>Loading demographics...</p>
+    <p>Loading patient demographics...</p>
   </div>
 
-  <div class="demographics-content" *ngIf="!loading">
-    <div class="info-section">
-      <h3>Personal Information</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <label>Full Name:</label>
-          <span>{{ getFullName() }}</span>
-        </div>
-        <div class="info-item">
-          <label>MRN:</label>
-          <span>{{ getMRN() }}</span>
-        </div>
-        <div class="info-item">
-          <label>Date of Birth:</label>
-          <span>{{ patient?.dateOfBirth | date: 'long' }}</span>
-        </div>
-        <div class="info-item">
-          <label>Age:</label>
-          <span>{{ getAge() }} years</span>
-        </div>
-        <div class="info-item" *ngIf="patient?.gender">
-          <label>Gender:</label>
-          <span>{{ patient.gender }}</span>
-        </div>
-      </div>
-    </div>
+  <!-- Error State -->
+  <div *ngIf="!loading && error" class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h2>Unable to Load Demographics</h2>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="retryLoad()">Try Again</button>
+  </div>
 
-    <div class="contact-section" *ngIf="patient?.phone || patient?.email || patient?.address">
-      <h3>Contact Information</h3>
-      <div class="info-grid">
-        <div class="info-item" *ngIf="patient?.phone">
-          <label>Phone:</label>
-          <span>{{ patient.phone }}</span>
+  <!-- Content State -->
+  <div *ngIf="!loading && currentPatient && !error" class="content-container">
+    <h1 class="page-title">Patient Demographics</h1>
+    
+    <!-- Personal Information Section -->
+    <section class="demographics-section">
+      <h2 class="section-title">👤 Personal Information</h2>
+      <div class="demographics-grid">
+        <div class="info-card">
+          <label>Full Name</label>
+          <p class="info-value">{{ getPatientFullName() }}</p>
         </div>
-        <div class="info-item" *ngIf="patient?.email">
-          <label>Email:</label>
-          <span>{{ patient.email }}</span>
+        
+        <div class="info-card">
+          <label>Date of Birth</label>
+          <p class="info-value">{{ formatDate(currentPatient['dateOfBirth']) }}</p>
         </div>
-        <div class="info-item" *ngIf="patient?.address">
-          <label>Address:</label>
-          <span>{{ patient.address }}</span>
+        
+        <div class="info-card">
+          <label>Age</label>
+          <p class="info-value">{{ displayAge }} years old</p>
+        </div>
+        
+        <div class="info-card">
+          <label>Gender</label>
+          <p class="info-value">{{ currentPatient['gender'] || 'Not specified' }}</p>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- Contact Information Section -->
+    <section class="demographics-section">
+      <h2 class="section-title">📞 Contact Information</h2>
+      <div class="demographics-grid">
+        <div class="info-card">
+          <label>Email Address</label>
+          <p class="info-value" *ngIf="currentPatient['email']">
+            <a href="mailto:{{ currentPatient['email'] }}" class="contact-link">{{ currentPatient['email'] }}</a>
+          </p>
+          <p class="info-value" *ngIf="!currentPatient['email']">Not provided</p>
+        </div>
+        
+        <div class="info-card">
+          <label>Phone Number</label>
+          <p class="info-value" *ngIf="currentPatient['phone']">
+            <a href="tel:{{ currentPatient['phone'] }}" class="contact-link">{{ currentPatient['phone'] }}</a>
+          </p>
+          <p class="info-value" *ngIf="!currentPatient['phone']">Not provided</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Empty State (shouldn't normally show) -->
+  <div *ngIf="!loading && !currentPatient && !error" class="empty-state-container">
+    <div class="empty-state-icon">👤</div>
+    <h2>No Patient Selected</h2>
+    <p>Please select a patient from the dashboard to view demographics information.</p>
   </div>
 </div>

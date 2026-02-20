@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/out-tsc/modules/medications",
-    "baseUrl": ".",
-    "paths": {
-      "@patient-records/shared": ["../shared"]
-    }
+    "outDir": "../../dist/out-tsc/modules/demographics"
   },
   "include": ["src/**/*.ts"]
 }
