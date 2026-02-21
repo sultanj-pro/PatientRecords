@@ -1,37 +1,674 @@
-# PatientRecords
+# PatientRecords - Micro-Frontend Medical Records System
 
-Modernized patient records dashboard.
+A modern, scalable healthcare information system built with Angular 17, Module Federation, and microservices architecture.
 
-## Structure
+## 📋 Table of Contents
 
-- frontend/ — Angular app (components, routing, services)
-- frontend/ — Lightweight placeholder SPA served by nginx (temporary). The full Angular CLI project is planned under `frontend/`.
-- backend/ — Node/NestJS API (auth, RBAC, Spark client)
-- spark-service/ — Spark + Livy service (Delta connectors)
-- docs/ — design docs and plans
-- scripts/ — local dev and utility scripts
-- .github/workflows/ — CI pipelines (to be added)
+- [Overview](#overview)
+- [System Architecture](#system-architecture)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [Development](#development)
+- [Deployment](#deployment)
+- [API Documentation](#api-documentation)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
 
-## Next
+## 🎯 Overview
 
-- Scaffold Angular/NestJS projects
-- Add Dockerfiles and dev compose
-- Implement Spark-only CRUD and RBAC dashboard
+PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
 
-## Local run
+### Key Capabilities
+- **Multi-module clinical system** with demographics, vitals, medications, visits, and labs
+- **Real-time session management** with automatic token refresh
+- **Role-based access control** (RBAC) for clinical workflows
+- **Responsive web design** for desktop and tablet use
+- **Containerized deployment** using Docker and Docker Compose
+- **Comprehensive API** with OpenAPI/Swagger documentation
 
-To run the local dev stack (frontend, backend, spark-service, minio):
+## 🏗️ System Architecture
 
-```powershell
-cd PatientRecords
-docker compose up -d --build pr-frontend pr-backend spark-service minio
+### Micro-Frontend Design
+
+The system uses Angular Module Federation to isolate clinical modules within a shell application:
+
+```
+┌─────────────────────────────────────┐
+│     Shell App (Port 4200)            │
+│  - Authentication & Authorization    │
+│  - Navigation Shell                  │
+│  - Session Management                │
+│  - Shared Services                   │
+└──────────────┬──────────────────────┘
+     │         │         │       │        │
+     ↓         ↓         ↓       ↓        ↓
+┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+│Demographics│ │Vitals  │ │Medications│ │Lab Results│ │Visits │
+│(4201)   │ │(4202)  │ │(4204)    │ │(4203)  │ │(4205)│
+└────────┘ └────────┘ └────────┘ └────────┘ └────────┘
+     │         │         │       │        │
+     └─────────┴─────────┴───────┴────────┘
+                    │
+           ┌────────▼────────┐
+           │  Backend API    │
+           │  (Express.js)   │
+           │  (Port 5001)    │
+           └────────┬────────┘
+                    │
+           ┌────────▼────────┐
+           │   MongoDB       │
+           │  (Port 27017)   │
+           └─────────────────┘
 ```
 
-The UI placeholder is served at http://localhost:8081 and the backend API at http://localhost:3001.
+### Authentication & Session Management
 
-CI / Integration tests
-----------------------
+#### Token Refresh Strategy (Phase 5d)
 
-The repository contains an integration workflow that brings up the compose stack and runs provider tests. Add the CI secrets described in `docs/CI-SECRETS.md` before running the workflow in GitHub Actions.
+Two-tier approach for uninterrupted user experience:
 
-See [docs/CI-SECRETS.md](docs/CI-SECRETS.md#L1) for exact secret names and quick verification steps.
+**Tier 1: Proactive Refresh**
+- Client checks if JWT expiring within 5 minutes
+- Automatically refreshes token before expiration
+- User continues working without interruption
+
+**Tier 2: Reactive Refresh**
+- On any 401 response, attempt immediate token refresh
+- Retry original request with new token
+- Fallback to login only if refresh fails
+
+**JWT Token Format**
+```json
+{
+  "sub": "user_id",
+  "email": "user@example.com",
+  "roles": ["doctor", "admin"],
+  "iat": 1234567890,
+  "exp": 1234571490
+}
+```
+
+**Expiration**: 1 hour (3600 seconds)
+**Refresh Endpoint**: `POST /auth/refresh` with current token
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+- Node.js 18+ (for local development)
+
+### Running with Docker
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/sultanj-pro/PatientRecords.git
+   cd PatientRecords
+   ```
+
+2. **Start all services**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Verify services are running**
+   ```bash
+   docker compose ps
+   ```
+
+   Expected output:
+   ```
+   NAME                STATUS          PORTS
+   patientrecord-shell      Up      0.0.0.0:4200->4200/tcp
+   patientrecord-demographics Up    0.0.0.0:4201->4201/tcp
+   patientrecord-vitals     Up      0.0.0.0:4202->4202/tcp
+   patientrecord-labs       Up      0.0.0.0:4203->4203/tcp
+   patientrecord-medications Up     0.0.0.0:4204->4204/tcp
+   patientrecord-visits     Up      0.0.0.0:4205->4205/tcp
+   patientrecord-backend    Up      0.0.0.0:5001->5001/tcp
+   patientrecord-mongo      Up      0.0.0.0:27017->27017/tcp
+   ```
+
+4. **Access the application**
+
+   - **Web UI**: http://localhost:4200
+   - **API Documentation**: http://localhost:5001/api-docs
+   - **Backend Health**: http://localhost:5001/health
+
+5. **Default credentials**
+   ```
+   Email: test@example.com
+   Password: password123
+   ```
+
+### Local Development
+
+1. **Install dependencies**
+   ```bash
+   # Shell App
+   cd frontend/shell-app
+   npm install
+
+   # Shared Library
+   cd ../shared
+   npm install
+
+   # Individual Module (example: demographics)
+   cd ../modules/demographics
+   npm install
+
+   # Backend
+   cd backend
+   npm install
+   ```
+
+2. **Run development servers**
+   ```bash
+   # Terminal 1: Shell App
+   cd frontend/shell-app
+   npm start
+
+   # Terminal 2: Demographics Module
+   cd frontend/modules/demographics
+   npm start
+
+   # Terminal 3: Backend API
+   cd backend
+   npm start
+   ```
+
+3. **Access during development**
+   - Shell: http://localhost:4200
+   - Demographics: http://localhost:4201
+   - Backend: http://localhost:5001
+
+## 📁 Project Structure
+
+```
+patricents
+├── frontend/
+│   ├── shell-app/              # Main application shell
+│   │   ├── src/
+│   │   │   ├── app/
+│   │   │   │   ├── core/       # Services, guards, interceptors
+│   │   │   │   ├── components/ # Login, dashboard, error pages
+│   │   │   │   └── app.routes.ts # Protected routes with AuthGuard
+│   │   │   └── main.ts
+│   │   ├── angular.json
+│   │   └── Dockerfile
+│   │
+│   ├── modules/                # Micro-frontend modules
+│   │   ├── demographics/       # Patient demographics module
+│   │   ├── vitals/            # Vital signs module
+│   │   ├── medications/       # Medications module
+│   │   ├── labs/              # Laboratory results module
+│   │   └── visits/            # Clinical visits module
+│   │
+│   └── shared/                 # Shared library
+│       └── lib/
+│           ├── services/       # TokenService, AuthService
+│           ├── models/         # DTO, interface definitions
+│           └── index.ts
+│
+├── backend/
+│   ├── server.js              # Express application
+│   ├── routes/
+│   │   ├── auth.js            # /auth/login, /auth/refresh, /auth/logout
+│   │   ├── patients.js        # CRUD operations
+│   │   └── vitals.js          # Vital signs endpoints
+│   ├── middlewares/           # Authentication, error handling
+│   ├── init-db.js             # MongoDB initialization
+│   └── Dockerfile
+│
+├── mongo/                      # MongoDB container setup
+│   └── Dockerfile
+│
+├── migrations/
+│   └── 001_init.sql           # Database initialization
+│
+├── scripts/
+│   ├── apply_migrations.ps1   # Database schema setup
+│   └── smoke_check.js         # Service health validation
+│
+├── docker-compose.yml         # Multi-container orchestration
+├── docker-compose.override.postgres.yml # Alternative DB config
+└── README.md                  # This file
+```
+
+## ✨ Features
+
+### Clinical Modules
+
+**Demographics Module**
+- Patient personal information management
+- Contact details and emergency contacts
+- Insurance and billing information
+- Medical history
+
+**Vitals Module**
+- Blood pressure, temperature, heart rate monitoring
+- Respiratory rate tracking
+- Real-time trend visualization
+- Historical audit trail
+
+**Medications Module**
+- Active medication inventory
+- Prescription history
+- Drug interaction checking
+- Dosage management
+
+**Labs Module**
+- Laboratory test results
+- Report generation
+- Result trending
+- Integration with lab systems
+
+**Visits Module**
+- Clinical encounter documentation
+- Chief complaint and assessment
+- Treatment plan tracking
+- Follow-up scheduling
+
+### Platform Features
+
+**Authentication & Authorization**
+- JWT-based secure authentication
+- Automatic token refresh with 5-minute buffer
+- Session timeout protection
+- Role-based access control (RBAC)
+- Graceful session expiration handling
+
+**User Experience**
+- Responsive design for multiple devices
+- Persistent login across module reloads
+- Return URL navigation after login
+- Session expiration notifications
+- Comprehensive error handling
+
+**Development**
+- TypeScript for type safety
+- Standalone Angular components
+- Module Federation for independent deployment
+- Shared services across modules
+- Unit test coverage with Jest
+
+**Operations**
+- Docker containerization
+- Docker Compose orchestration
+- Health check monitoring
+- Environment configuration via .env
+- Comprehensive logging
+
+## 💻 Development
+
+### Adding a New Clinical Module
+
+1. **Create module structure**
+   ```bash
+   cd frontend/modules
+   mkdir new-module
+   cd new-module
+   ```
+
+2. **Generate Angular module** (using Angular CLI templates)
+   ```bash
+   ng generate @nrwl/angular:app new-module
+   ```
+
+3. **Configure Module Federation** in `webpack.config.js`:
+   ```javascript
+   module.exports = withModuleFederation({
+     name: 'new-module',
+     filename: 'remoteEntry.js',
+     exposes: {
+       './Module': './src/app/app.module.ts',
+     },
+     shared: share({
+       '@angular/core': { singleton: true, strictVersion: true },
+       '@angular/common': { singleton: true, strictVersion: true },
+       'rxjs': { singleton: true, strictVersion: true },
+     }),
+   });
+   ```
+
+4. **Update shell-app routing** to load new module:
+   ```typescript
+   {
+     path: 'new-module',
+     loadChildren: () => loadRemoteModule({
+       type: 'module',
+       remoteEntry: 'http://localhost:PORT/remoteEntry.js',
+       exposedModule: './Module'
+     }).then(m => m.AppModule)
+   }
+   ```
+
+### Running Tests
+
+```bash
+# Shell App
+cd frontend/shell-app
+npm test
+
+# Individual Module
+cd frontend/modules/demographics
+npm test
+
+# Backend
+cd backend
+npm test
+
+# With Coverage
+npm run test:cov
+```
+
+### Code Style
+
+- **Language**: TypeScript 5.0+
+- **Formatter**: Prettier (config in workspace root)
+- **Linter**: ESLint
+- **Angular Version**: 17 (standalone components)
+
+## 🐳 Deployment
+
+### Docker Build Process
+
+Each module follows a multi-stage build:
+
+```dockerfile
+# Stage 1: Build
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY . .
+COPY shared ../shared
+RUN cd ../shared && npm install
+RUN npm install
+RUN npm run build
+
+# Stage 2: Serve
+FROM node:24-alpine
+COPY --from=builder /app/dist /app
+EXPOSE 4200
+CMD ["node", "main.js"]
+```
+
+### Environment Configuration
+
+Create `.env` file in root:
+```env
+NODE_ENV=production
+API_URL=http://backend:5001
+JWT_SECRET=your_secret_key_here
+JWT_EXPIRATION=3600
+MONGO_URL=mongodb://mongo:27017/patient-records
+```
+
+### Docker Compose Workflow
+
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f patientrecord-backend
+
+# Stop services
+docker compose down
+
+# Rebuild images (fresh build)
+docker compose build --no-cache
+
+# Scale services
+docker compose up -d --scale patientrecord-demographics=3
+```
+
+### Health Checks
+
+Each container includes health checks:
+
+```bash
+# Check shell app
+curl -f http://localhost:4200/index.html || exit 1
+
+# Check backend API
+curl -f http://localhost:5001/health || exit 1
+
+# Check MongoDB
+nc -z localhost 27017 || exit 1
+```
+
+## 📡 API Documentation
+
+### Base URL
+```
+http://localhost:5001/api
+```
+
+### Authentication Endpoints
+
+**Login**
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+Response:
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "expiresIn": 3600,
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "roles": ["doctor"]
+  }
+}
+```
+
+**Refresh Token**
+```http
+POST /auth/refresh
+Authorization: Bearer <current_token>
+
+Response:
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "expiresIn": 3600
+}
+```
+
+**Logout**
+```http
+POST /auth/logout
+Authorization: Bearer <token>
+
+Response: { "success": true }
+```
+
+### Patient Endpoints
+
+**List Patients**
+```http
+GET /patients
+Authorization: Bearer <token>
+```
+
+**Get Patient Details**
+```http
+GET /patients/:id
+Authorization: Bearer <token>
+```
+
+**Create Patient**
+```http
+POST /patients
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "dob": "1990-01-15",
+  "gender": "M"
+}
+```
+
+### OpenAPI/Swagger
+
+Full API documentation available at:
+```
+http://localhost:5001/api-docs
+```
+
+## 🛠️ Troubleshooting
+
+### Container Issues
+
+**Symptom**: Container exits immediately
+```bash
+# Check logs
+docker compose logs patientrecord-shell
+
+# Rebuild without cache
+docker compose build --no-cache
+
+# Start with verbose logging
+docker compose up --verbose
+```
+
+**Symptom**: Port already in use
+```bash
+# Find process using port 4200
+lsof -i :4200
+
+# Kill process
+kill -9 <PID>
+
+# Or change port in docker-compose.yml
+```
+
+### Module Loading Issues
+
+**Symptom**: Module Federation remote entry not loading
+```
+Error: Unable to resolve remoteEntry.js
+```
+
+**Solution**:
+1. Verify module container is running: `docker compose ps`
+2. Check module build completed: `docker compose logs patientrecord-demographics`
+3. Verify port mapping correct in docker-compose.yml
+4. Clear browser cache (Ctrl+Shift+Delete)
+
+### Authentication Issues
+
+**Symptom**: Session expires after 1 hour
+```
+Redirected to /login with sessionTimeout
+```
+
+**Expected behavior**: This is normal. User will be redirected to login with return URL automatically preserved.
+
+**Customization**: Adjust token expiration in backend:
+```javascript
+// backend/routes/auth.js
+const token = jwt.sign(payload, SECRET, { expiresIn: '2h' }); // Change duration
+```
+
+### Database Issues
+
+**Symptom**: MongoDB connection refused
+```
+Error: connect ECONNREFUSED 127.0.0.1:27017
+```
+
+**Solution**:
+```bash
+# Check MongoDB container running
+docker compose ps patientrecord-mongo
+
+# Restart MongoDB
+docker compose restart patientrecord-mongo
+
+# Check logs
+docker compose logs patientrecord-mongo
+```
+
+### Build Failures
+
+**Symptom**: TypeScript compilation errors
+```
+ERROR in src/app/app.component.ts (2, 30)
+  TS2307: Cannot find module '@angular/core'
+```
+
+**Solution**: Rebuild shared library dependencies
+```bash
+# Shell App
+cd frontend/shell-app
+npm install
+
+# Shared Library
+cd ../shared
+npm install
+
+# Retry rebuild
+docker compose build --no-cache patientrecord-shell
+```
+
+## 🗺️ Roadmap
+
+### Phase 6 (Planning)
+- [ ] Advanced search and filtering
+- [ ] Patient data export (PDF, Excel)
+- [ ] Audit logging for HIPAA compliance
+- [ ] Multi-language support
+
+### Phase 7 (Planned)
+- [ ] Real-time notifications
+- [ ] Appointment scheduling module
+- [ ] Telemedicine integration
+- [ ] Mobile app (React Native)
+
+### Phase 8 (Future)
+- [ ] AI-powered clinical decision support
+- [ ] Interoperability with external EHR systems (HL7/FHIR)
+- [ ] Advanced analytics and reporting
+- [ ] Blockchain for record verification
+
+## 📚 Additional Resources
+
+- [Architecture Decision Records](./docs/PROVIDERS.md)
+- [Session Timeout Implementation](./SESSION_TIMEOUT_IMPLEMENTATION.md)
+- [Micro-Frontend Architecture](./MICRO_FRONTEND_ARCHITECTURE.md)
+- [Backend README](./backend/README.md)
+- [Frontend README](./frontend/README.md)
+
+## 👥 Contributing
+
+1. Create feature branch: `git checkout -b feature/your-feature`
+2. Make changes and test locally
+3. Build Docker images: `docker compose build`
+4. Commit with descriptive message
+5. Push to remote and create pull request
+
+## 📝 License
+
+This project is proprietary healthcare software. All rights reserved.
+
+## 📞 Support
+
+For issues, questions, or suggestions:
+- Create an issue on GitHub
+- Contact the development team
+- Check existing documentation
+
+---
+
+**Last Updated**: Phase 5d (Session Timeout & Token Refresh - Complete)
+**System Status**: ✅ All services operational
+**Latest Commit**: 25131e9
