@@ -2,8 +2,11 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 
-# Copy shared library
+# Copy shared library and install its dependencies
 COPY shared ../shared
+RUN cd ../shared && npm install --no-audit --no-fund
+
+# Copy workspace config
 COPY tsconfig.base.json ../tsconfig.base.json
 
 # Copy package files and shell app source

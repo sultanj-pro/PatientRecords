@@ -3,6 +3,10 @@
     <h1>Patient Records System</h1>
     <h2>Login</h2>
 
+    <div *ngIf="sessionExpired" class="session-expired-banner">
+      ⚠️ Your session has expired. Please log in again.
+    </div>
+
     <form (ngSubmit)="onLogin()" class="login-form">
       <div class="form-group">
         <label for="username">Username:</label>

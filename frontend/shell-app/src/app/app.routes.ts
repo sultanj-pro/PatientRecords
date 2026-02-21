@@ -8,31 +8,34 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
+    canActivate: [authGuard],
     children: [
       {
         path: 'demographics',
+        canActivate: [authGuard],
         loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
       },
       {
         path: 'vitals',
+        canActivate: [authGuard],
         loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
       },
       {
         path: 'labs',
+        canActivate: [authGuard],
         loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
       },
       {
         path: 'visits',
+        canActivate: [authGuard],
         loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
       },
       {
         path: 'medications',
-        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+        canActivate: [authGuard],        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
       }
     ]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' }
 ];
-
-

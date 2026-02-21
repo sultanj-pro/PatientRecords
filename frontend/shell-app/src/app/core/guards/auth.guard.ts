@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Router, CanActivateFn } from '@angular/router';
+import { Router, CanActivateFn, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
-import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -13,22 +12,40 @@ export class AuthGuard {
     private router: Router
   ) {}
 
-  canActivate(): boolean {
-    if (this.authService.isAuthenticatedSync()) {
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+    if (this.authService.hasValidToken()) {
       return true;
     }
-    this.router.navigate(['/login']);
+
+    // Save current URL for returning after login
+    this.authService.saveReturnUrl(state.url);
+    
+    // Redirect to login with returnUrl query param
+    this.router.navigate(['/login'], {
+      queryParams: { returnUrl: state.url }
+    });
     return false;
   }
 }
 
-export const authGuard: CanActivateFn = (route, state) => {
+/**
+ * Functional guard version for use in route configuration
+ * Example: { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] }
+ */
+export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isAuthenticatedSync()) {
+  if (authService.hasValidToken()) {
     return true;
   }
-  router.navigate(['/login']);
+
+  // Save current URL for returning after login
+  authService.saveReturnUrl(state.url);
+  
+  // Redirect to login with returnUrl query param
+  router.navigate(['/login'], {
+    queryParams: { returnUrl: state.url }
+  });
   return false;
 };
