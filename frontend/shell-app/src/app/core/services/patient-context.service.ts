@@ -5,6 +5,8 @@ export interface Patient {
   patientid: number;
   firstname: string;
   lastname: string;
+  mrn?: number;
+  dateOfBirth?: string;
 }
 
 @Injectable({

@@ -190,8 +190,22 @@ app.get('/api/patients', authMiddleware, async (req, res) => {
       query.$or = query.$or.filter(cond => Object.values(cond)[0] !== undefined);
     }
     
-    const patients = await Patient.find(query).select('patientid firstname lastname');
-    res.json(patients);
+    const patients = await Patient.find(query).select('patientid firstname lastname demographics');
+    
+    // Transform to include MRN and DOB extracted from demographics
+    const transformed = patients.map(patient => {
+      const dob = patient.demographics?.find(d => d.description === 'Date of Birth')?.value || null;
+      return {
+        id: patient._id,
+        patientid: patient.patientid,
+        firstname: patient.firstname,
+        lastname: patient.lastname,
+        mrn: patient.patientid, // MRN is the patient ID
+        dateOfBirth: dob
+      };
+    });
+    
+    res.json(transformed);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch patients', detail: err.message });
   }
@@ -258,7 +272,15 @@ app.get('/api/patients/:id/labs', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    const labs = (patient.labs || []).filter(l => !l.deletedAt);
+    const labs = (patient.labs || []).filter(l => !l.deletedAt).map(lab => ({
+      testName: lab.test_name,
+      testCode: lab.test_code,
+      value: lab.result,
+      unit: lab.unit,
+      referenceRange: lab.reference_range,
+      resultDate: lab.date,
+      labName: lab.lab_name
+    }));
     res.json(labs);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch labs', detail: err.message });
@@ -294,7 +316,16 @@ app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
-    const visits = (patient.visits || []).filter(v => !v.deletedAt);
+    const visits = (patient.visits || []).filter(v => !v.deletedAt).map(visit => ({
+      id: visit._id?.toString(),
+      visitDate: visit.date,
+      visitType: visit.visitType,
+      reason: visit.reason,
+      notes: visit.notes,
+      provider: visit.provider_name,
+      department: visit.facility_name,
+      discharge_status: visit.discharge_status
+    }));
     res.json(visits);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch visits', detail: err.message });

@@ -71,25 +71,34 @@ export class DemographicsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (patient) => {
           if (patient) {
+            // Extract values from demographics array
+            const demographics = patient.demographics || [];
+            const getDemographicValue = (description: string): string | undefined => {
+              const item = demographics.find((d: any) => d.description === description);
+              return item?.value;
+            };
+            
             // Map backend fields to local Patient interface
             this.currentPatient = {
               patientid: patient.patientid || patient.id,
               firstname: patient.firstname,
               lastname: patient.lastname,
-              dateOfBirth: patient.dateOfBirth || patient.dob || new Date(),
-              gender: patient.gender,
-              email: patient.email,
-              phone: patient.phone
+              dateOfBirth: getDemographicValue('Date of Birth'),
+              gender: getDemographicValue('Gender'),
+              email: getDemographicValue('Email'),
+              phone: getDemographicValue('Phone')
             };
             
-            // Ensure dateOfBirth is a Date object
-            if (typeof this.currentPatient.dateOfBirth === 'string') {
-              this.currentPatient.dateOfBirth = new Date(this.currentPatient.dateOfBirth);
-            }
+            console.log('Date of Birth string:', this.currentPatient.dateOfBirth);
             
-            // Only calculate age if dateOfBirth is valid
+            // Ensure dateOfBirth is a Date object if present
             if (this.currentPatient.dateOfBirth) {
+              if (typeof this.currentPatient.dateOfBirth === 'string') {
+                this.currentPatient.dateOfBirth = new Date(this.currentPatient.dateOfBirth);
+                console.log('Converted to Date object:', this.currentPatient.dateOfBirth);
+              }
               this.displayAge = this.calculateAge(this.currentPatient.dateOfBirth);
+              console.log('Calculated age:', this.displayAge);
             }
             this.loading = false;
           } else {
@@ -145,6 +154,10 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     if (!dateOfBirth) return 0;
     const today = new Date();
     const dob = new Date(dateOfBirth);
+    
+    // Check if date is valid
+    if (isNaN(dob.getTime())) return 0;
+    
     let age = today.getFullYear() - dob.getFullYear();
     const monthDiff = today.getMonth() - dob.getMonth();
     

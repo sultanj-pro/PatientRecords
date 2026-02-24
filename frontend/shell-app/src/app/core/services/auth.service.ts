@@ -35,11 +35,11 @@ export class AuthService {
       .post<AuthResponse>(`${this.apiUrl}/auth/login`, { username })
       .pipe(
         tap((response) => {
-          console.log('Login response received:', response);
+          console.log('AuthService.login() - Login response received:', response);
           localStorage.setItem(this.tokenKey, response.accessToken);
           localStorage.setItem(this.roleKey, response.role);
           localStorage.setItem(this.usernameKey, username);
-          console.log('Token stored in localStorage:', response.accessToken.substring(0, 20) + '...');
+          console.log('AuthService.login() - Token stored in localStorage');
           this.isAuthenticated$.next(true);
           this.currentRole$.next(response.role);
           this.currentUsername$.next(username);
@@ -117,6 +117,8 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.roleKey);
     localStorage.removeItem(this.usernameKey);
+    // Also clear window object token
+    delete (window as any).__JWT_TOKEN__;
     this.isAuthenticated$.next(false);
     this.currentRole$.next(null);
     this.currentUsername$.next(null);
