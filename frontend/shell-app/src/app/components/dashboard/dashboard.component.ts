@@ -78,6 +78,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     localStorage.setItem('__PATIENT_CONTEXT__', JSON.stringify(patientContext));
+    
+    // Broadcast event so micro-frontends can listen and reload
+    window.dispatchEvent(new CustomEvent('patient-context-changed', {
+      detail: patientContext
+    }));
+    
     console.log('Patient context shared:', patientContext);
   }
 

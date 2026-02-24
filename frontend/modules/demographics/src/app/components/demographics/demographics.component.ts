@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -43,19 +43,30 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   displayAge = 0;
   
   private destroy$ = new Subject<void>();
-  private patientContextListener: ((event: any) => void) | null = null;
+  private lastPatientId: string | null = null;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Initial load
     this.loadPatientData();
     
-    // Listen for patient context changes from shell app
-    this.patientContextListener = (event: any) => {
-      console.log('Demographics: Patient context changed, reloading data...', event.detail);
-      this.loadPatientData();
-    };
-    window.addEventListener('patient-context-changed', this.patientContextListener);
+    // Use Angular's interval Observable to watch for patient changes
+    // When patient context changes in localStorage, reload the data
+    // This is necessary because demographics persists when switching tabs
+    interval(500)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const currentPatientId = this.getPatientIdFromStorage();
+        if (currentPatientId && currentPatientId !== this.lastPatientId) {
+          console.log('Demographics: Patient changed, reloading data', {
+            old: this.lastPatientId,
+            new: currentPatientId
+          });
+          this.lastPatientId = currentPatientId;
+          this.loadPatientData();
+        }
+      });
   }
 
   private loadPatientData(): void {
@@ -109,6 +120,7 @@ export class DemographicsComponent implements OnInit, OnDestroy {
               this.displayAge = this.calculateAge(this.currentPatient.dateOfBirth);
               console.log('Calculated age:', this.displayAge);
             }
+            this.lastPatientId = patientId; // Track loaded patient
             this.loading = false;
           } else {
             this.error = 'No patient data found';
@@ -201,11 +213,7 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Remove event listener
-    if (this.patientContextListener) {
-      window.removeEventListener('patient-context-changed', this.patientContextListener);
-    }
-    
+    // RxJS subscription is automatically cleaned up via takeUntil
     this.destroy$.next();
     this.destroy$.complete();
   }
