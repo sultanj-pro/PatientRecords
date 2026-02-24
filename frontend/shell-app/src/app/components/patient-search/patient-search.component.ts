@@ -147,11 +147,13 @@ export class PatientSearchComponent implements OnInit {
   }
 
   selectPatient(patient: any): void {
+    console.log('PatientSearch: Selecting patient', patient);
     this.patientContextService.setSelectedPatient(patient);
     // Keep search query and results cached, just close the dropdown
     this.showResults = false;
     this.highlightedIndex = -1;
-    this.router.navigate(['/dashboard', patient.id || patient.patientid]);
+    // Navigate to demographics tab when patient is selected
+    this.router.navigate(['/dashboard/demographics']);
   }
 
   isHighlighted(index: number): boolean {

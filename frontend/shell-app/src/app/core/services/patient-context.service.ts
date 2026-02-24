@@ -18,6 +18,7 @@ export class PatientContextService {
   constructor() {}
 
   setSelectedPatient(patient: Patient): void {
+    console.log('PatientContextService: Setting selected patient', patient);
     this.selectedPatient$.next(patient);
   }
 

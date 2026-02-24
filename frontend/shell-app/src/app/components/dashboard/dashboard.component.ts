@@ -45,9 +45,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Watch for route changes to update selected module
     this.router.events.pipe(takeUntil(this.destroy$)).subscribe(() => {
-      const urlSegments = this.router.url.split('/');
-      const moduleName = urlSegments[urlSegments.length - 1];
-      this.selectedModule = moduleName;
+      const urlSegments = this.router.url.split('/').filter(s => s);
+      // Get the module name (after /dashboard/)
+      // URL format: /dashboard/demographics/20003 -> module is 'demographics'
+      if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
+        this.selectedModule = urlSegments[1];
+      }
     });
   }
 

@@ -62,9 +62,16 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
     this.patientContextService.getSelectedPatient()
       .pipe(takeUntil(this.destroy$))
       .subscribe(patient => {
+        console.log('ModulesDashboard: Patient context changed', patient);
         this.patient = patient;
         // Share patient context with micro-frontends
         this.sharePatientContextWithMicroFrontends(patient);
+        
+        // When a patient is selected, automatically select Demographics tab
+        if (patient && this.modules.length > 0) {
+          console.log('ModulesDashboard: Auto-selecting Demographics tab');
+          this.selectModule(this.modules[0].name);
+        }
       });
 
     // Select first module by default
