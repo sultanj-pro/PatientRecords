@@ -99,6 +99,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  getPatientAge(): string {
+    if (!this.patient || !this.patient.dateOfBirth) return 'N/A';
+    const today = new Date();
+    const dob = new Date(this.patient.dateOfBirth);
+    
+    if (isNaN(dob.getTime())) return 'N/A';
+    
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    
+    return age > 0 ? age.toString() : 'N/A';
+  }
+
+  getPatientGender(): string {
+    return this.patient?.gender || 'N/A';
+  }
+
   navigateToModule(moduleName: string): void {
     this.selectedModule = moduleName;
     this.router.navigate([`/dashboard/${moduleName}`]);

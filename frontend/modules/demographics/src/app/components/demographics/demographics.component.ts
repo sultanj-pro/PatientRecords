@@ -43,11 +43,19 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   displayAge = 0;
   
   private destroy$ = new Subject<void>();
+  private patientContextListener: ((event: any) => void) | null = null;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
     this.loadPatientData();
+    
+    // Listen for patient context changes from shell app
+    this.patientContextListener = (event: any) => {
+      console.log('Demographics: Patient context changed, reloading data...', event.detail);
+      this.loadPatientData();
+    };
+    window.addEventListener('patient-context-changed', this.patientContextListener);
   }
 
   private loadPatientData(): void {
@@ -86,7 +94,8 @@ export class DemographicsComponent implements OnInit, OnDestroy {
               dateOfBirth: getDemographicValue('Date of Birth'),
               gender: getDemographicValue('Gender'),
               email: getDemographicValue('Email'),
-              phone: getDemographicValue('Phone')
+              phone: getDemographicValue('Phone'),
+              address: getDemographicValue('Address')
             };
             
             console.log('Date of Birth string:', this.currentPatient.dateOfBirth);
@@ -192,6 +201,11 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Remove event listener
+    if (this.patientContextListener) {
+      window.removeEventListener('patient-context-changed', this.patientContextListener);
+    }
+    
     this.destroy$.next();
     this.destroy$.complete();
   }

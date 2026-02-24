@@ -2,8 +2,6 @@
   <div *ngIf="loading" class="loading-spinner"></div>
   
   <div *ngIf="!loading" class="visits-content">
-    <h2 class="section-title">Visits & Appointments</h2>
-    
     <!-- Filter Section -->
     <div *ngIf="getVisitTypes().length > 0" class="filter-section">
       <label for="visitType" class="filter-label">Filter by Visit Type:</label>

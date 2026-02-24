@@ -2,8 +2,6 @@
   <div *ngIf="loading" class="loading-spinner"></div>
   
   <div *ngIf="!loading" class="labs-content">
-    <h2 class="section-title">Laboratory Results</h2>
-    
     <!-- Filter Section -->
     <div *ngIf="getTestTypeOptions().length > 0" class="filter-section">
       <label for="testType" class="filter-label">Filter by Test Type:</label>

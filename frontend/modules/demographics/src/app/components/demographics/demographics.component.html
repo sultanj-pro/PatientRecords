@@ -15,34 +15,6 @@
 
   <!-- Content State -->
   <div *ngIf="!loading && currentPatient && !error" class="content-container">
-    <h1 class="page-title">Patient Demographics</h1>
-    
-    <!-- Personal Information Section -->
-    <section class="demographics-section">
-      <h2 class="section-title">👤 Personal Information</h2>
-      <div class="demographics-grid">
-        <div class="info-card">
-          <label>Full Name</label>
-          <p class="info-value">{{ getPatientFullName() }}</p>
-        </div>
-        
-        <div class="info-card">
-          <label>Date of Birth</label>
-          <p class="info-value">{{ formatDate(currentPatient['dateOfBirth']) }}</p>
-        </div>
-        
-        <div class="info-card">
-          <label>Age</label>
-          <p class="info-value">{{ displayAge }} years old</p>
-        </div>
-        
-        <div class="info-card">
-          <label>Gender</label>
-          <p class="info-value">{{ currentPatient['gender'] || 'Not specified' }}</p>
-        </div>
-      </div>
-    </section>
-
     <!-- Contact Information Section -->
     <section class="demographics-section">
       <h2 class="section-title">📞 Contact Information</h2>
@@ -61,6 +33,14 @@
             <a href="tel:{{ currentPatient['phone'] }}" class="contact-link">{{ currentPatient['phone'] }}</a>
           </p>
           <p class="info-value" *ngIf="!currentPatient['phone']">Not provided</p>
+        </div>
+        
+        <div class="info-card">
+          <label>Home Address</label>
+          <p class="info-value" *ngIf="currentPatient['address']">
+            {{ currentPatient['address'] }}
+          </p>
+          <p class="info-value" *ngIf="!currentPatient['address']">Not provided</p>
         </div>
       </div>
     </section>
