@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -34,13 +34,30 @@ export class MedicationsComponent implements OnInit, OnDestroy {
   loading = true;
   error: string | null = null;
   patientName = 'Patient';
+  private lastPatientId: string | null = null;
 
   private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Initial load
     this.loadMedications();
+    
+    // Use Angular's interval Observable to watch for patient changes
+    interval(500)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const currentPatientId = this.getPatientIdFromStorage();
+        if (currentPatientId && currentPatientId !== this.lastPatientId) {
+          console.log('Medications: Patient changed, reloading data', {
+            old: this.lastPatientId,
+            new: currentPatientId
+          });
+          this.lastPatientId = currentPatientId;
+          this.loadMedications();
+        }
+      });
   }
 
   private loadMedications(): void {
@@ -64,6 +81,7 @@ export class MedicationsComponent implements OnInit, OnDestroy {
           // Handle array response or object with data property
           const medsArray = Array.isArray(data) ? data : data.medications || data.data || [];
           this.medications = medsArray;
+          this.lastPatientId = patientId; // Track loaded patient
           this.loading = false;
         },
         error: (err) => {
@@ -84,7 +102,7 @@ export class MedicationsComponent implements OnInit, OnDestroy {
           this.patientName = context.firstName && context.lastName 
             ? `${context.firstName} ${context.lastName}` 
             : 'Patient';
-          return context.patientId;
+          return String(context.patientId);
         }
       } catch (e) {
         console.warn('Failed to parse patient context:', e);
@@ -101,7 +119,8 @@ export class MedicationsComponent implements OnInit, OnDestroy {
     patientId = urlParams.get('patientId');
     if (patientId) return patientId;
 
-    const pathMatch = window.location.pathname.match(/\/dashboard\/([^\/]+)/);
+    // Extract patientId from URL pattern: /dashboard/:module/:patientId
+    const pathMatch = window.location.pathname.match(/\/dashboard\/[^\/]+\/([^\/]+)/);
     if (pathMatch && pathMatch[1]) {
       return pathMatch[1];
     }

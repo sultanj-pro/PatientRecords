@@ -162,8 +162,8 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     patientId = urlParams.get('patientId');
     if (patientId) return patientId;
     
-    // 5. Try to extract from current URL path (e.g., /dashboard/:patientId)
-    const pathMatch = window.location.pathname.match(/\/dashboard\/([^\/]+)/);
+    // 5. Extract patientId from URL pattern: /dashboard/:module/:patientId
+    const pathMatch = window.location.pathname.match(/\/dashboard\/[^\/]+\/([^\/]+)/);
     if (pathMatch && pathMatch[1]) {
       return pathMatch[1];
     }

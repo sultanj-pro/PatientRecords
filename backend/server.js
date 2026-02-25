@@ -216,6 +216,17 @@ app.get('/api/patients/:id', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
     if (!patient) return res.status(404).json({ error: 'not found' });
+    
+    // Ensure MRN is in demographics
+    const hasMRN = patient.demographics && patient.demographics.some(d => d.description === 'MRN');
+    if (!hasMRN) {
+      if (!patient.demographics) patient.demographics = [];
+      patient.demographics.push({
+        description: 'MRN',
+        value: patient.patientid.toString()
+      });
+    }
+    
     res.json(patient);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch patient', detail: err.message });

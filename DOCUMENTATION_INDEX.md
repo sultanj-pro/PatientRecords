@@ -94,6 +94,7 @@
 
 ### "I want comprehensive UI documentation"
 → Read [UI_OVERVIEW.md](./UI_OVERVIEW.md)
+   - Includes shareable patient URL format and login redirect behavior
 
 ---
 

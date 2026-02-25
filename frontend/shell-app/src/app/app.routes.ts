@@ -16,7 +16,17 @@ export const routes: Routes = [
         loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
       },
       {
+        path: 'demographics/:patientId',
+        canActivate: [authGuard],
+        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
+      },
+      {
         path: 'vitals',
+        canActivate: [authGuard],
+        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
+      },
+      {
+        path: 'vitals/:patientId',
         canActivate: [authGuard],
         loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
       },
@@ -26,13 +36,29 @@ export const routes: Routes = [
         loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
       },
       {
+        path: 'labs/:patientId',
+        canActivate: [authGuard],
+        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
+      },
+      {
         path: 'visits',
         canActivate: [authGuard],
         loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
       },
       {
+        path: 'visits/:patientId',
+        canActivate: [authGuard],
+        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
+      },
+      {
         path: 'medications',
-        canActivate: [authGuard],        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+        canActivate: [authGuard],
+        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+      },
+      {
+        path: 'medications/:patientId',
+        canActivate: [authGuard],
+        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
       }
     ]
   },

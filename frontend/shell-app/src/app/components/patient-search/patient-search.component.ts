@@ -148,12 +148,27 @@ export class PatientSearchComponent implements OnInit {
 
   selectPatient(patient: any): void {
     console.log('PatientSearch: Selecting patient', patient);
-    this.patientContextService.setSelectedPatient(patient);
+    // Don't pre-set the patient here - let the URL change trigger the API load
+    // This ensures syncPatientFromUrl() will fetch fresh data from the backend
     // Keep search query and results cached, just close the dropdown
     this.showResults = false;
     this.highlightedIndex = -1;
-    // Navigate to demographics tab when patient is selected
-    this.router.navigate(['/dashboard/demographics']);
+    // Keep the current tab and include patientId for shareable URLs
+    const currentModule = this.getCurrentModuleFromUrl() || 'demographics';
+    const patientId = patient?.patientid || patient?.id;
+    if (patientId) {
+      this.router.navigateByUrl(`/dashboard/${currentModule}/${patientId}`);
+    } else {
+      this.router.navigateByUrl(`/dashboard/${currentModule}`);
+    }
+  }
+
+  private getCurrentModuleFromUrl(): string | null {
+    const urlSegments = this.router.url.split('/').filter(s => s);
+    if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
+      return urlSegments[1];
+    }
+    return null;
   }
 
   isHighlighted(index: number): boolean {

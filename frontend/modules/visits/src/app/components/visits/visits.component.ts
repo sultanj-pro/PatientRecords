@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -36,12 +36,29 @@ export class VisitsComponent implements OnInit, OnDestroy {
   error: string | null = null;
   selectedVisitType = 'all';
   expandedVisit: string | null = null;
+  private lastPatientId: string | null = null;
   private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Initial load
     this.loadVisitData();
+    
+    // Use Angular's interval Observable to watch for patient changes
+    interval(500)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const currentPatientId = this.getPatientIdFromStorage();
+        if (currentPatientId && currentPatientId !== this.lastPatientId) {
+          console.log('Visits: Patient changed, reloading data', {
+            old: this.lastPatientId,
+            new: currentPatientId
+          });
+          this.lastPatientId = currentPatientId;
+          this.loadVisitData();
+        }
+      });
   }
 
   private loadVisitData(): void {
@@ -74,6 +91,7 @@ export class VisitsComponent implements OnInit, OnDestroy {
             ...v,
             id: v.id || `visit-${idx}`
           }));
+          this.lastPatientId = patientId; // Track loaded patient
           this.loading = false;
         },
         error: (err) => {
@@ -90,7 +108,7 @@ export class VisitsComponent implements OnInit, OnDestroy {
       try {
         const context = JSON.parse(contextStr);
         if (context.patientId) {
-          return context.patientId;
+          return String(context.patientId);
         }
       } catch (e) {
         console.warn('Failed to parse patient context:', e);

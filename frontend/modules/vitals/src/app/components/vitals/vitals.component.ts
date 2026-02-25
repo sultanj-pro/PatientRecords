@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -38,11 +38,28 @@ export class VitalsComponent implements OnInit, OnDestroy {
   patientName = 'Patient';
 
   private destroy$ = new Subject<void>();
+  private lastPatientId: string | null = null;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Initial load
     this.loadVitals();
+    
+    // Use Angular's interval Observable to watch for patient changes
+    interval(500)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const currentPatientId = this.getPatientIdFromStorage();
+        if (currentPatientId && currentPatientId !== this.lastPatientId) {
+          console.log('Vitals: Patient changed, reloading data', {
+            old: this.lastPatientId,
+            new: currentPatientId
+          });
+          this.lastPatientId = currentPatientId;
+          this.loadVitals();
+        }
+      });
   }
 
   private loadVitals(): void {
@@ -65,7 +82,12 @@ export class VitalsComponent implements OnInit, OnDestroy {
         next: (data) => {
           // Handle array response or object with data property
           const vitalsArray = Array.isArray(data) ? data : data.vitals || data.data || [];
-          this.vitals = vitalsArray;
+          
+          // Transform API response into component format
+          this.vitals = this.transformVitals(vitalsArray);
+          
+          console.log('Transformed vitals:', this.vitals);
+          this.lastPatientId = patientId; // Track loaded patient
           this.loading = false;
         },
         error: (err) => {
@@ -74,6 +96,63 @@ export class VitalsComponent implements OnInit, OnDestroy {
           this.loading = false;
         }
       });
+  }
+
+  /**
+   * Transform API response vitals into component format
+   * Groups related vitals and extracts values based on vital_description
+   */
+  private transformVitals(apiVitals: any[]): Vital[] {
+    // Sort by date, most recent first
+    const sorted = [...apiVitals].sort((a, b) => {
+      const dateA = new Date(a.dateofobservation || '').getTime();
+      const dateB = new Date(b.dateofobservation || '').getTime();
+      return dateB - dateA;
+    });
+
+    // Group by date to combine related vitals
+    const groupedByDate: { [key: string]: any[] } = {};
+    sorted.forEach(vital => {
+      const dateKey = vital.dateofobservation || 'unknown';
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = [];
+      }
+      groupedByDate[dateKey].push(vital);
+    });
+
+    // Transform grouped vitals into component format
+    const transformed: Vital[] = [];
+    
+    Object.entries(groupedByDate).forEach(([date, vitals]) => {
+      const vital: Vital = {
+        recordedAt: date
+      };
+
+      vitals.forEach((v: any) => {
+        const description = (v.vital_description || '').toLowerCase();
+        const value = parseFloat(v.value) || 0;
+
+        if (description.includes('temperature')) {
+          vital.temperature = value;
+        } else if (description.includes('blood pressure') || description.includes('systolic')) {
+          vital.bpSystolic = value;
+        } else if (description.includes('diastolic')) {
+          vital.bpDiastolic = value;
+        } else if (description.includes('heart rate') || description.includes('pulse')) {
+          vital.heartRate = value;
+        } else if (description.includes('respiratory rate') || description.includes('respiration')) {
+          vital.respiratoryRate = value;
+        } else if (description.includes('oxygen') || description.includes('o2 saturation') || description.includes('spo2')) {
+          vital.o2Saturation = value;
+        }
+      });
+
+      if (Object.keys(vital).length > 1) { // More than just recordedAt
+        transformed.push(vital);
+      }
+    });
+
+    return transformed;
   }
 
   private getPatientIdFromStorage(): string | null {
@@ -103,7 +182,8 @@ export class VitalsComponent implements OnInit, OnDestroy {
     patientId = urlParams.get('patientId');
     if (patientId) return patientId;
 
-    const pathMatch = window.location.pathname.match(/\/dashboard\/([^\/]+)/);
+    // Extract patientId from URL pattern: /dashboard/:module/:patientId
+    const pathMatch = window.location.pathname.match(/\/dashboard\/[^\/]+\/([^\/]+)/);
     if (pathMatch && pathMatch[1]) {
       return pathMatch[1];
     }

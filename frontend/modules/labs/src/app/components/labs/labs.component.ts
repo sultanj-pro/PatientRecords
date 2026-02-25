@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -38,11 +38,28 @@ export class LabsComponent implements OnInit, OnDestroy {
   error: string | null = null;
   selectedTestType = 'all';
   private destroy$ = new Subject<void>();
+  private lastPatientId: string | null = null;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Initial load
     this.loadLabData();
+    
+    // Use Angular's interval Observable to watch for patient changes
+    interval(500)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        const currentPatientId = this.getPatientIdFromStorage();
+        if (currentPatientId && currentPatientId !== this.lastPatientId) {
+          console.log('Labs: Patient changed, reloading data', {
+            old: this.lastPatientId,
+            new: currentPatientId
+          });
+          this.lastPatientId = currentPatientId;
+          this.loadLabData();
+        }
+      });
   }
 
   private loadLabData(): void {
@@ -72,6 +89,7 @@ export class LabsComponent implements OnInit, OnDestroy {
           // Handle array response or object with data property
           const labsArray = Array.isArray(data) ? data : data.labs || data.data || [];
           this.labs = labsArray;
+          this.lastPatientId = patientId; // Track loaded patient
           this.loading = false;
         },
         error: (err) => {
@@ -88,7 +106,7 @@ export class LabsComponent implements OnInit, OnDestroy {
       try {
         const context = JSON.parse(contextStr);
         if (context.patientId) {
-          return context.patientId;
+          return String(context.patientId);
         }
       } catch (e) {
         console.warn('Failed to parse patient context:', e);

@@ -6,6 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 import { PatientContextService } from '../../core/services/patient-context.service';
 import { AuthService } from '../../core/services/auth.service';
 import { getModulesForRole } from '../../core/config/role-module-config';
+import { PatientService } from '../../core/services/patient.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,7 +25,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     private patientContextService: PatientContextService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private patientService: PatientService
   ) {}
 
   ngOnInit(): void {
@@ -45,13 +47,32 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Watch for route changes to update selected module
     this.router.events.pipe(takeUntil(this.destroy$)).subscribe(() => {
-      const urlSegments = this.router.url.split('/').filter(s => s);
-      // Get the module name (after /dashboard/)
-      // URL format: /dashboard/demographics/20003 -> module is 'demographics'
-      if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
-        this.selectedModule = urlSegments[1];
-      }
+      this.syncFromCurrentRoute();
     });
+
+    // Also sync on initial load
+    this.syncFromCurrentRoute();
+  }
+
+  private syncFromCurrentRoute(): void {
+    const urlSegments = this.router.url.split('/').filter(s => s);
+    console.log('[Dashboard] syncFromCurrentRoute called. URL:', this.router.url, 'Segments:', urlSegments);
+    
+    // Get the module name (after /dashboard/)
+    // URL format: /dashboard/demographics/20003 -> module is 'demographics'
+    if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
+      this.selectedModule = urlSegments[1];
+      console.log('[Dashboard] Selected module set to:', this.selectedModule);
+    }
+
+    const patientId = urlSegments.length >= 3 ? urlSegments[2] : null;
+    console.log('[Dashboard] PatientId extracted from URL:', patientId);
+    
+    if (patientId) {
+      this.syncPatientFromUrl(patientId);
+    } else {
+      console.log('[Dashboard] No patientId in URL');
+    }
   }
 
   ngOnDestroy(): void {
@@ -92,13 +113,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${this.patient.firstname || ''} ${this.patient.lastname || ''}`;
   }
 
+  private getDemographicValue(description: string): string | undefined {
+    if (!this.patient?.demographics) return undefined;
+    const item = this.patient.demographics.find((d: any) => d.description === description);
+    return item?.value;
+  }
+
   getMRN(): string {
-    return this.patient?.mrn || 'N/A';
+    return this.getDemographicValue('Medical Record Number') || 
+           this.getDemographicValue('MRN') || 
+           this.patient?.mrn || 
+           this.patient?.patientid?.toString() || 
+           this.patient?.patientid?.toString() || 'N/A';
   }
 
   getDOB(): string {
     if (!this.patient) return 'N/A';
-    return new Date(this.patient.dateOfBirth || '').toLocaleDateString('en-US', {
+    const dobValue = this.getDemographicValue('Date of Birth') || this.patient.dateOfBirth;
+    if (!dobValue) return 'N/A';
+    
+    const dob = new Date(dobValue);
+    if (isNaN(dob.getTime())) return 'N/A';
+    
+    return dob.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -106,12 +143,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getPatientAge(): string {
-    if (!this.patient || !this.patient.dateOfBirth) return 'N/A';
-    const today = new Date();
-    const dob = new Date(this.patient.dateOfBirth);
+    if (!this.patient) return 'N/A';
+    const dobValue = this.getDemographicValue('Date of Birth') || this.patient.dateOfBirth;
+    if (!dobValue) return 'N/A';
     
+    const dob = new Date(dobValue);
     if (isNaN(dob.getTime())) return 'N/A';
     
+    const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
     const monthDiff = today.getMonth() - dob.getMonth();
     
@@ -123,11 +162,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getPatientGender(): string {
-    return this.patient?.gender || 'N/A';
+    return this.getDemographicValue('Gender') || this.patient?.gender || 'N/A';
   }
 
   navigateToModule(moduleName: string): void {
     this.selectedModule = moduleName;
-    this.router.navigate([`/dashboard/${moduleName}`]);
+    const patientId = this.getCurrentPatientId();
+    if (patientId) {
+      this.router.navigateByUrl(`/dashboard/${moduleName}/${patientId}`);
+    } else {
+      this.router.navigateByUrl(`/dashboard/${moduleName}`);
+    }
+  }
+
+  private syncPatientFromUrl(patientId: string): void {
+    console.log('[Dashboard] syncPatientFromUrl called with patientId:', patientId);
+    
+    const currentPatient = this.patientContextService.getCurrentPatient();
+    const currentId = currentPatient?.patientid?.toString();
+    console.log('[Dashboard] Current patient ID:', currentId, 'URL patient ID:', patientId);
+    
+    // Always fetch if different patient, to ensure fresh data from backend
+    if (currentId === patientId) {
+      console.log('[Dashboard] PatientId matches current, skipping load');
+      return;
+    }
+
+    console.log('[Dashboard] Calling patientService.getPatientById for patient:', patientId);
+    this.patientService.getPatientById(Number(patientId)).subscribe({
+      next: (patient) => {
+        console.log('[Dashboard] Patient loaded successfully:', patient);
+        this.patientContextService.setSelectedPatient(patient);
+        // Ensure localStorage is updated for modules listening to patient changes
+        this.sharePatientContext(patient);
+      },
+      error: (err) => {
+        console.error('[Dashboard] Failed to load patient from URL:', err);
+        console.error('[Dashboard] Error status:', err?.status);
+        console.error('[Dashboard] Error message:', err?.message);
+      }
+    });
+  }
+
+  private getCurrentPatientId(): string | null {
+    const currentPatient = this.patientContextService.getCurrentPatient();
+    if (!currentPatient) return null;
+    return (currentPatient.patientid || (currentPatient as any).id || '').toString();
   }
 }

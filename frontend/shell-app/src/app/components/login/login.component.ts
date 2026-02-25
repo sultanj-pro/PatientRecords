@@ -30,12 +30,12 @@ export class LoginComponent implements OnInit {
       this.returnUrl = params['returnUrl'] || '/dashboard';
       // If returnUrl exists in query params, session expired
       this.sessionExpired = !!params['returnUrl'];
-    });
 
-    // If already authenticated and have valid token, redirect to dashboard
-    if (this.authService.hasValidToken()) {
-      this.router.navigate(['/dashboard']);
-    }
+      // If already authenticated and have valid token, redirect to returnUrl or dashboard
+      if (this.authService.hasValidToken()) {
+        this.router.navigateByUrl(this.returnUrl || '/dashboard');
+      }
+    });
   }
 
   onLogin(): void {
@@ -51,7 +51,7 @@ export class LoginComponent implements OnInit {
       () => {
         this.loading = false;
         // Navigate to returnUrl or dashboard
-        this.router.navigate([this.returnUrl]);
+        this.router.navigateByUrl(this.returnUrl || '/dashboard');
       },
       (err) => {
         this.loading = false;

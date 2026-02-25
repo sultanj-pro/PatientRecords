@@ -152,6 +152,26 @@ INFRASTRUCTURE
 │ ✕ Visits (Error)        [Retry]                          │
 └────────────────────────────────────────────────────────────┘
 ```
+---
+
+## Shareable Patient URLs
+
+Patient context is encoded in the URL so tabs stay consistent and links are shareable:
+
+```
+http://localhost:4200/dashboard/<module>/<patientId>
+```
+
+**Example:**
+```
+http://localhost:4200/dashboard/vitals/20001
+```
+
+**Behavior:**
+- Selecting a new patient keeps the current tab and updates the URL.
+- Switching tabs preserves the `patientId`.
+- If the user is logged out, the app redirects to login and returns to the requested URL after authentication.
+
 
 ---
 
