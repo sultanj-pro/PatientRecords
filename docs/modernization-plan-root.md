@@ -2,8 +2,7 @@
 
 ## Objectives
 - Modernize the legacy AngularJS app to latest Angular with a modular, testable architecture.
-- Introduce a Node.js backend and a Spark-service for all CRUD and analytics against Delta Lake tables.
-- Make storage pluggable: MinIO for dev; S3, ADLS Gen2, or GCS for production via configuration only.
+- Introduce a Node.js backend for all CRUD operations with MongoDB storage.
 - Provide a configurable, role-based dashboard (Physician, Nurse, Physical Therapist, Admin) with user overrides.
 - Enforce soft deletes, auditability, security baselines, observability, and performance SLAs.
 
@@ -14,19 +13,15 @@ Services and data flow (ports shown):
 Frontend (Angular/Nginx :8080)
         |
         v
-Backend API (NestJS :3000, JWT/RBAC)
+Backend API (Express.js :5001, JWT/RBAC)
         |
         v
-Spark-Service (Livy+Spark :8998, Delta connectors)
-        |
-        v
-Object Storage (MinIO dev / S3 / ADLS / GCS)
-       (Delta Lake tables)
+MongoDB (:27017)
 ```
 
 Key principles:
-- Backend never touches object storage directly; all reads/writes go through Spark-service.
-- Storage provider is selected via environment; credentials are isolated to the Spark-service.
+- Backend handles all data access through MongoDB.
+- Micro-frontend architecture using Module Federation for independent deployment.
 
 ## Frontend (Angular)
 - Latest Angular using standalone components, Angular CDK for drag-drop, Material or Bootstrap for UI.

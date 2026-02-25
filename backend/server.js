@@ -18,7 +18,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
-const SPARK_SERVICE_URL = process.env.SPARK_SERVICE_URL || process.env.SPARK_URL || 'http://spark-service:8998';
 
 // Define Patient schema
 const patientSchema = new mongoose.Schema({
@@ -429,17 +428,6 @@ app.post('/api/patients/:id/visits', authMiddleware, async (req, res) => {
     res.status(201).json(newVisit);
   } catch (err) {
     res.status(500).json({ error: 'failed to create visit', detail: err.message });
-  }
-});
-
-// Proxy endpoint to spark-service
-app.get('/api/provider-options', authMiddleware, async (req, res) => {
-  try {
-    const resp = await fetch(`${SPARK_SERVICE_URL}/provider-options`);
-    const json = await resp.json();
-    res.json(json);
-  } catch (err) {
-    res.status(502).json({ error: 'failed to reach spark-service', detail: err.message });
   }
 });
 
