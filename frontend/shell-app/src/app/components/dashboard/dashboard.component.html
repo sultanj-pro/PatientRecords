@@ -16,6 +16,9 @@
         <span class="info-item">
           <strong>Gender:</strong> {{ getPatientGender() }}
         </span>
+        <span class="info-item" [ngClass]="'allergy-' + getHighestAllergySeverity()">
+          <strong>Allergies:</strong> {{ getPatientAllergies() }}
+        </span>
       </div>
     </div>
   </div>

@@ -161,6 +161,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return demographics?.gender || this.patient?.gender || 'N/A';
   }
 
+  getPatientAllergies(): string {
+    const allergies = this.patient?.allergies || [];
+    if (allergies.length === 0) {
+      return 'No known allergies';
+    }
+    return allergies.map((a: any) => a.substance).join(', ');
+  }
+
+  getHighestAllergySeverity(): string {
+    const allergies = this.patient?.allergies || [];
+    if (allergies.length === 0) return 'none';
+    
+    const severityOrder = { 'life-threatening': 4, 'severe': 3, 'moderate': 2, 'mild': 1 };
+    let highest = 'none';
+    let highestScore = 0;
+    
+    allergies.forEach((a: any) => {
+      const score = severityOrder[a.severity as keyof typeof severityOrder] || 0;
+      if (score > highestScore) {
+        highestScore = score;
+        highest = a.severity;
+      }
+    });
+    
+    return highest;
+  }
+
   navigateToModule(moduleName: string): void {
     this.selectedModule = moduleName;
     const patientId = this.getCurrentPatientId();

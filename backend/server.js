@@ -129,6 +129,15 @@ const patientSchema = new mongoose.Schema({
       discharge_status: String,
       deletedAt: { type: Date, default: null }
     }
+  ],
+  allergies: [
+    {
+      type: { type: String, enum: ['drug', 'food', 'environmental'], required: true },
+      substance: { type: String, required: true },
+      severity: { type: String, enum: ['mild', 'moderate', 'severe', 'life-threatening'] },
+      reaction: String,
+      dateReported: Date
+    }
   ]
 }, { timestamps: true });
 

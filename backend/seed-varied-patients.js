@@ -112,6 +112,15 @@ const patientSchema = new mongoose.Schema({
       facility_name: String,
       discharge_status: String
     }
+  ],
+  allergies: [
+    {
+      type: String,
+      substance: String,
+      severity: String,
+      reaction: String,
+      dateReported: Date
+    }
   ]
 }, { timestamps: true });
 
@@ -162,7 +171,11 @@ const patientBaseData = [
           expirationDate: new Date('2026-12-31')
         }
       ]
-    }
+    },
+    allergies: [
+      { type: 'drug', substance: 'Penicillin', severity: 'severe', reaction: 'Anaphylaxis', dateReported: new Date('2020-05-10') },
+      { type: 'food', substance: 'Shellfish', severity: 'moderate', reaction: 'Hives and swelling' }
+    ]
   },
   {
     patientid: 20002,
@@ -216,7 +229,10 @@ const patientBaseData = [
           expirationDate: new Date('2027-08-31')
         }
       ]
-    }
+    },
+    allergies: [
+      { type: 'drug', substance: 'Lisinopril', severity: 'moderate', reaction: 'Persistent dry cough' }
+    ]
   },
   {
     patientid: 20003,
@@ -261,7 +277,8 @@ const patientBaseData = [
           expirationDate: new Date('2026-01-31')
         }
       ]
-    }
+    },
+    allergies: []
   },
   {
     patientid: 20004,
@@ -316,7 +333,10 @@ const patientBaseData = [
           expirationDate: new Date('2030-05-30')
         }
       ]
-    }
+    },
+    allergies: [
+      { type: 'environmental', substance: 'Latex', severity: 'severe', reaction: 'Contact dermatitis and swelling' }
+    ]
   },
   {
     patientid: 20005,
@@ -360,7 +380,11 @@ const patientBaseData = [
           expirationDate: new Date('2027-02-28')
         }
       ]
-    }
+    },
+    allergies: [
+      { type: 'drug', substance: 'Aspirin', severity: 'mild', reaction: 'Stomach upset' },
+      { type: 'food', substance: 'Peanuts', severity: 'severe', reaction: 'Anaphylaxis', dateReported: new Date('2018-03-22') }
+    ]
   }
 ];
 

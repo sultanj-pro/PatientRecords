@@ -16,42 +16,6 @@
   <!-- Content State -->
   <div *ngIf="!loading && currentPatient && currentDemographics && !error" class="content-container">
     
-    <!-- Page Header -->
-    <div class="page-header">
-      <h1>Patient Demographics</h1>
-      <p class="patient-id">MRN: {{ currentDemographics.mrn || 'Not assigned' }}</p>
-    </div>
-
-    <!-- Basic Information Section (Always Visible) -->
-    <div class="basic-info-card">
-      <div class="basic-info-header">
-        <div class="patient-name">
-          <h2>{{ getFullName() }}</h2>
-          <p class="preferred-name" *ngIf="getPreferredName() !== 'N/A'">
-            Preferred: {{ getPreferredName() }}
-          </p>
-        </div>
-        <div class="patient-vitals">
-          <div class="vital-badge">
-            <span class="label">Age</span>
-            <span class="value">{{ displayAge }}</span>
-          </div>
-          <div class="vital-badge">
-            <span class="label">Gender</span>
-            <span class="value">{{ currentDemographics.gender || 'N/A' }}</span>
-          </div>
-          <div class="vital-badge" *ngIf="currentDemographics.bloodType">
-            <span class="label">Blood Type</span>
-            <span class="value">{{ currentDemographics.bloodType }}</span>
-          </div>
-          <div class="vital-badge" *ngIf="currentDemographics.mrn">
-            <span class="label">MRN</span>
-            <span class="value">{{ currentDemographics.mrn }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Contact Information Section -->
     <app-collapsible-section 
       title="📞 Contact Information" 
