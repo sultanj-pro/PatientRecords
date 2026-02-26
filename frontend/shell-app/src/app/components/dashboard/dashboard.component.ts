@@ -113,23 +113,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${this.patient.firstname || ''} ${this.patient.lastname || ''}`;
   }
 
-  private getDemographicValue(description: string): string | undefined {
-    if (!this.patient?.demographics) return undefined;
-    const item = this.patient.demographics.find((d: any) => d.description === description);
-    return item?.value;
-  }
-
   getMRN(): string {
-    return this.getDemographicValue('Medical Record Number') || 
-           this.getDemographicValue('MRN') || 
+    const demographics = this.patient?.demographics;
+    return demographics?.mrn || 
            this.patient?.mrn || 
-           this.patient?.patientid?.toString() || 
            this.patient?.patientid?.toString() || 'N/A';
   }
 
   getDOB(): string {
     if (!this.patient) return 'N/A';
-    const dobValue = this.getDemographicValue('Date of Birth') || this.patient.dateOfBirth;
+    const demographics = this.patient?.demographics;
+    const dobValue = demographics?.dateOfBirth || this.patient.dateOfBirth;
     if (!dobValue) return 'N/A';
     
     const dob = new Date(dobValue);
@@ -144,7 +138,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getPatientAge(): string {
     if (!this.patient) return 'N/A';
-    const dobValue = this.getDemographicValue('Date of Birth') || this.patient.dateOfBirth;
+    const demographics = this.patient?.demographics;
+    const dobValue = demographics?.dateOfBirth || this.patient.dateOfBirth;
     if (!dobValue) return 'N/A';
     
     const dob = new Date(dobValue);
@@ -162,7 +157,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getPatientGender(): string {
-    return this.getDemographicValue('Gender') || this.patient?.gender || 'N/A';
+    const demographics = this.patient?.demographics;
+    return demographics?.gender || this.patient?.gender || 'N/A';
   }
 
   navigateToModule(moduleName: string): void {

@@ -24,12 +24,65 @@ const patientSchema = new mongoose.Schema({
   patientid: { type: Number, unique: true, required: true },
   firstname: { type: String },
   lastname: { type: String },
-  demographics: [
-    {
-      description: String,
-      value: String
-    }
-  ],
+  demographics: {
+    // Basic Information
+    legalName: {
+      first: String,
+      middle: String,
+      last: String
+    },
+    preferredName: String,
+    dateOfBirth: Date,
+    gender: { type: String, enum: ['Male', 'Female'] },
+    sexAssignedAtBirth: { type: String, enum: ['Male', 'Female'] },
+    
+    // Identification
+    ssn: String, // Will be masked in responses
+    mrn: String,
+    bloodType: String,
+    
+    // Contact Information
+    primaryPhone: String,
+    secondaryPhone: String,
+    email: String,
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      zip: String,
+      country: String
+    },
+    
+    // Emergency Contacts
+    emergencyContacts: [
+      {
+        name: String,
+        relationship: String,
+        phone: String,
+        isPrimary: { type: Boolean, default: false }
+      }
+    ],
+    
+    // Cultural & Social
+    preferredLanguage: String,
+    race: String,
+    ethnicity: String,
+    maritalStatus: String,
+    
+    // Insurance
+    insurance: [
+      {
+        type: { type: String, enum: ['primary', 'secondary', 'tertiary'] },
+        provider: String,
+        policyNumber: String,
+        groupNumber: String,
+        subscriberName: String,
+        subscriberRelationship: String,
+        effectiveDate: Date,
+        expirationDate: Date
+      }
+    ]
+  },
   vitals: [
     {
       dateofobservation: String,
@@ -193,19 +246,21 @@ app.get('/api/patients', authMiddleware, async (req, res) => {
     
     // Transform to include MRN and DOB extracted from demographics
     const transformed = patients.map(patient => {
-      const dob = patient.demographics?.find(d => d.description === 'Date of Birth')?.value || null;
+      const dob = patient.demographics?.dateOfBirth || null;
+      const mrn = patient.demographics?.mrn || patient.patientid;
       return {
         id: patient._id,
         patientid: patient.patientid,
         firstname: patient.firstname,
         lastname: patient.lastname,
-        mrn: patient.patientid, // MRN is the patient ID
+        mrn: mrn,
         dateOfBirth: dob
       };
     });
     
     res.json(transformed);
   } catch (err) {
+    console.error('Search patients error:', err);
     res.status(500).json({ error: 'failed to fetch patients', detail: err.message });
   }
 });
@@ -217,17 +272,13 @@ app.get('/api/patients/:id', authMiddleware, async (req, res) => {
     if (!patient) return res.status(404).json({ error: 'not found' });
     
     // Ensure MRN is in demographics
-    const hasMRN = patient.demographics && patient.demographics.some(d => d.description === 'MRN');
-    if (!hasMRN) {
-      if (!patient.demographics) patient.demographics = [];
-      patient.demographics.push({
-        description: 'MRN',
-        value: patient.patientid.toString()
-      });
+    if (patient.demographics && !patient.demographics.mrn) {
+      patient.demographics.mrn = `MRN-${patient.patientid}`;
     }
     
     res.json(patient);
   } catch (err) {
+    console.error('Get patient by id error:', err);
     res.status(500).json({ error: 'failed to fetch patient', detail: err.message });
   }
 });
