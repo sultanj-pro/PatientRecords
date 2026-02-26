@@ -112,10 +112,10 @@ cp .env.default .env
 nano .env  # Edit: Change passwords, configure your domain
 
 # 3. Deploy
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose up -d
 
 # 4. Verify
-docker-compose -f docker-compose.prod.yml ps
+docker-compose ps
 # All 8 containers should show "Up"
 
 # 5. Access
@@ -136,10 +136,10 @@ Copy-Item .env.default .env
 notepad .env  # Edit: Change passwords, configure your domain
 
 # 3. Deploy
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose up -d
 
 # 4. Verify
-docker-compose -f docker-compose.prod.yml ps
+docker-compose ps
 # All 8 containers should show "Up"
 
 # 5. Access
