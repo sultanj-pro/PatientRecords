@@ -70,6 +70,20 @@ PatientRecords is a containerized healthcare information system delivered as pre
 | Docker Compose | 2.0+ | Included with Docker Desktop |
 | git | 2.20+ | https://git-scm.com/downloads |
 
+### Administrator Privileges Required
+
+**⚠️ IMPORTANT**: All Docker operations require administrator or elevated privileges:
+
+- **Windows**: Run PowerShell as Administrator (right-click PowerShell → Run as Administrator)
+- **Linux**: Use `sudo` before docker commands, OR add your user to the docker group:
+  ```bash
+  sudo usermod -aG docker $USER
+  # Log out and back in for group changes to take effect
+  ```
+- **macOS**: Docker Desktop will prompt for your password. Ensure your user has sudo privileges.
+
+Without proper privileges, Docker commands will fail with "permission denied" errors. Contact your system administrator if you lack the required access.
+
 ### Registry Access
 
 You need access to pull images from our image registry:
@@ -83,6 +97,8 @@ Registry: registry.patientrecords.local
 ---
 
 ## Quick Start (15 minutes)
+
+> **⚠️ Before you start**: Ensure you have administrator/elevated privileges on your system. See [Administrator Privileges Required](#administrator-privileges-required) above.
 
 ### For Linux/macOS
 
@@ -107,6 +123,8 @@ docker-compose -f docker-compose.prod.yml ps
 ```
 
 ### For Windows (PowerShell)
+
+**Important**: Right-click PowerShell and select "Run as Administrator" before proceeding.
 
 ```powershell
 # 1. Clone or extract package
