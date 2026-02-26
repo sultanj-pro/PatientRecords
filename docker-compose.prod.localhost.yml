@@ -1,0 +1,222 @@
+version: '3.9'
+
+# PatientRecords Production Deployment - Localhost Registry Test
+# Uses pre-built images from localhost:5000 registry (for testing)
+# 
+# For production: Replace localhost:5000 with registry.patientrecords.local
+# Generated for: v1.0.0
+# Registry: localhost:5000 (for this test)
+# Date: February 26, 2026
+
+services:
+  # Shell App (Main Application Host)
+  # Orchestrates all micro-frontend modules
+  # Port: 4200 (internal), 4200 (external)
+  patientrecord-shell:
+    image: localhost:5000/patientrecords/shell:v1.0.0
+    container_name: patientrecord-shell
+    ports:
+      - "4200:4200"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Demographics Micro-Frontend Module
+  # Patient personal information
+  # Port: 4201
+  patientrecord-demographics:
+    image: localhost:5000/patientrecords/demographics:v1.0.0
+    container_name: patientrecord-demographics
+    ports:
+      - "4201:4200"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Vitals Micro-Frontend Module
+  # Blood pressure, heart rate, temperature monitoring
+  # Port: 4202
+  patientrecord-vitals:
+    image: localhost:5000/patientrecords/vitals:v1.0.0
+    container_name: patientrecord-vitals
+    ports:
+      - "4202:4200"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Labs Micro-Frontend Module
+  # Laboratory test results and reports
+  # Port: 4203
+  patientrecord-labs:
+    image: localhost:5000/patientrecords/labs:v1.0.0
+    container_name: patientrecord-labs
+    ports:
+      - "4203:4200"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Medications Micro-Frontend Module
+  # Active medications and prescription history
+  # Port: 4204
+  patientrecord-medications:
+    image: localhost:5000/patientrecords/medications:v1.0.0
+    container_name: patientrecord-medications
+    ports:
+      - "4204:4200"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Visits Micro-Frontend Module
+  # Clinical encounters and visit documentation
+  # Port: 4205
+  patientrecord-visits:
+    image: localhost:5000/patientrecords/visits:v1.0.0
+    container_name: patientrecord-visits
+    ports:
+      - "4205:4200"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Backend REST API
+  # Handles all data operations and authentication
+  # Port: 5001
+  patientrecord-backend:
+    image: localhost:5000/patientrecords/backend:v1.0.0
+    container_name: patientrecord-backend
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=5001
+      - MONGODB_URI=${MONGODB_URI:-mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin}
+      - JWT_SECRET=${JWT_SECRET:-MUST_CHANGE_THIS}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-3600}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200,http://localhost:4201,http://localhost:4202,http://localhost:4203,http://localhost:4204,http://localhost:4205}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+    ports:
+      - "5001:5001"
+    depends_on:
+      patientrecord-mongodb:
+        condition: service_healthy
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # MongoDB Database
+  # Primary data store for all patient records
+  # Port: 27017
+  patientrecord-mongodb:
+    image: localhost:5000/patientrecords/mongodb:v1.0.0
+    container_name: patientrecord-mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-admin}
+    ports:
+      - "27017:27017"
+    volumes:
+      # Using named volume for persistent data
+      # Data survives container restart
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "-u", "admin", "-p", "${MONGO_INITDB_ROOT_PASSWORD:-admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+# Named volumes persist data even when containers are removed
+volumes:
+  # MongoDB data directory
+  # Location: /var/lib/docker/volumes/patientrecords_mongo_data/_data
+  # On Windows/Mac: Docker Desktop VM storage
+  mongo_data:
+    driver: local
+
+  # MongoDB configuration directory
+  mongo_config:
+    driver: local
+
+# Bridge network connects all containers
+# Allows services to communicate by container name
+networks:
+  app-net:
+    driver: bridge
