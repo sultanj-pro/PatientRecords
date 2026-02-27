@@ -5,35 +5,46 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PatientContextService } from '../../core/services/patient-context.service';
 import { AuthService } from '../../core/services/auth.service';
-import { getModulesForRole } from '../../core/config/role-module-config';
+import { PluginRegistryService, ModuleMetadata } from '../../core/services/plugin-registry.service';
+import { SideNavigationComponent } from '../side-navigation/side-navigation.component';
 import { PatientService } from '../../core/services/patient.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SideNavigationComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   patient: any = null;
   userRole: string = 'nurse';
-  availableModules: any[] = [];
+  availableModules: ModuleMetadata[] = [];
   selectedModule: string | null = null;
+  registryLoaded = false;
   private destroy$ = new Subject<void>();
 
   constructor(
     private patientContextService: PatientContextService,
     private authService: AuthService,
     private router: Router,
-    private patientService: PatientService
+    private patientService: PatientService,
+    private pluginRegistry: PluginRegistryService
   ) {}
 
-  ngOnInit(): void {
-    // Get user role and load available modules
-    const role = this.authService.getRole();
-    this.userRole = role || 'nurse';
-    this.availableModules = getModulesForRole(this.userRole);
+  async ngOnInit(): Promise<void> {
+    // Load registry and get available modules for user
+    try {
+      await this.pluginRegistry.loadRegistry();
+      const role = this.authService.getRole();
+      this.userRole = role || 'nurse';
+      this.availableModules = this.pluginRegistry.getAvailableModulesForRole(this.userRole);
+      this.registryLoaded = true;
+      console.log('[Dashboard] Available modules loaded:', this.availableModules);
+    } catch (error) {
+      console.error('[Dashboard] Failed to load module registry:', error);
+      this.registryLoaded = false;
+    }
 
     // Subscribe to patient changes and share with micro-frontends
     this.patientContextService
@@ -232,4 +243,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!currentPatient) return null;
     return (currentPatient.patientid || (currentPatient as any).id || '').toString();
   }
+
+  /**
+   * Handle module selection from side navigation
+   */
+  onModuleSelected(module: ModuleMetadata): void {
+    this.selectedModule = module.id;
+    console.log('[Dashboard] Module selected:', module.id );
+  }
+
+  /**
+   * Handle logout from side navigation
+   */
+  onLogout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
 }
+

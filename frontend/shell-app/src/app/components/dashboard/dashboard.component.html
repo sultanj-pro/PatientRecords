@@ -1,48 +1,53 @@
 <div class="dashboard-wrapper">
-  <!-- Patient Header -->
-  <div class="patient-header" *ngIf="patient; else noPatient">
-    <div class="patient-details">
-      <h2>{{ getFullName() }}</h2>
-      <div class="patient-info">
-        <span class="info-item">
-          <strong>MRN:</strong> {{ getMRN() }}
-        </span>
-        <span class="info-item">
-          <strong>DOB:</strong> {{ getDOB() }}
-        </span>
-        <span class="info-item">
-          <strong>Age:</strong> {{ getPatientAge() }}
-        </span>
-        <span class="info-item">
-          <strong>Gender:</strong> {{ getPatientGender() }}
-        </span>
-        <span class="info-item" [ngClass]="'allergy-' + getHighestAllergySeverity()">
-          <strong>Allergies:</strong> {{ getPatientAllergies() }}
-        </span>
+  <!-- Side Navigation -->
+  <app-side-navigation 
+    *ngIf="registryLoaded && availableModules.length > 0"
+    [modules]="availableModules"
+    [selectedModule]="selectedModule || ''"
+    (moduleSelected)="onModuleSelected($event)"
+    (logout)="onLogout()">
+  </app-side-navigation>
+
+  <!-- Main Content Area -->
+  <div class="dashboard-content">
+    <!-- Patient Header -->
+    <div class="patient-header" *ngIf="patient; else noPatient">
+      <div class="patient-details">
+        <h2>{{ getFullName() }}</h2>
+        <div class="patient-info">
+          <span class="info-item">
+            <strong>MRN:</strong> {{ getMRN() }}
+          </span>
+          <span class="info-item">
+            <strong>DOB:</strong> {{ getDOB() }}
+          </span>
+          <span class="info-item">
+            <strong>Age:</strong> {{ getPatientAge() }}
+          </span>
+          <span class="info-item">
+            <strong>Gender:</strong> {{ getPatientGender() }}
+          </span>
+          <span class="info-item" [ngClass]="'allergy-' + getHighestAllergySeverity()">
+            <strong>Allergies:</strong> {{ getPatientAllergies() }}
+          </span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <ng-template #noPatient>
-    <div class="alert alert-warning">
-      No patient selected. Please use the search function to select a patient.
+    <ng-template #noPatient>
+      <div class="alert alert-warning">
+        No patient selected. Please use the search function to select a patient.
+      </div>
+    </ng-template>
+
+    <!-- Module Content (loaded via router) -->
+    <div class="module-content">
+      <router-outlet></router-outlet>
     </div>
-  </ng-template>
-
-  <!-- Module Navigation Tabs -->
-  <div class="module-tabs" *ngIf="patient && availableModules.length > 0">
-    <button 
-      *ngFor="let module of availableModules"
-      class="tab-button"
-      [class.active]="selectedModule === module.name.toLowerCase()"
-      (click)="navigateToModule(module.name.toLowerCase())">
-      <span class="tab-icon">{{ module.icon }}</span>
-      <span class="tab-label">{{ module.name }}</span>
-    </button>
   </div>
 
-  <!-- Module Content (loaded via router) -->
-  <div class="module-content">
-    <router-outlet></router-outlet>
+  <!-- Loading state -->
+  <div *ngIf="!registryLoaded" class="loading-message">
+    Loading modules...
   </div>
 </div>

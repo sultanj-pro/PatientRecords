@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "description": "PatientRecords Module Registry - defines available micro-frontend modules",
+  "modules": [
+    {
+      "id": "demographics",
+      "name": "Demographics",
+      "description": "Patient demographics and identity information",
+      "icon": "👤",
+      "path": "demographics",
+      "enabled": true,
+      "roles": ["admin", "physician", "nurse"],
+      "order": 1,
+      "version": "1.0.0"
+    },
+    {
+      "id": "vitals",
+      "name": "Vital Signs",
+      "description": "Patient vital signs and measurements",
+      "icon": "❤️",
+      "path": "vitals",
+      "enabled": true,
+      "roles": ["admin", "physician", "nurse"],
+      "order": 2,
+      "version": "1.0.0"
+    },
+    {
+      "id": "labs",
+      "name": "Labs",
+      "description": "Laboratory test results",
+      "icon": "🔬",
+      "path": "labs",
+      "enabled": true,
+      "roles": ["admin", "physician"],
+      "order": 3,
+      "version": "1.0.0"
+    },
+    {
+      "id": "medications",
+      "name": "Medications",
+      "description": "Current and historical medications",
+      "icon": "💊",
+      "path": "medications",
+      "enabled": true,
+      "roles": ["admin", "physician"],
+      "order": 4,
+      "version": "1.0.0"
+    },
+    {
+      "id": "visits",
+      "name": "Visits",
+      "description": "Clinical visit records",
+      "icon": "📋",
+      "path": "visits",
+      "enabled": true,
+      "roles": ["admin", "physician"],
+      "order": 5,
+      "version": "1.0.0"
+    },
+    {
+      "id": "care-team",
+      "name": "Care Team",
+      "description": "Care team members and assignments",
+      "icon": "👥",
+      "path": "care-team",
+      "enabled": false,
+      "roles": ["admin", "physician"],
+      "order": 6,
+      "version": "1.0.0"
+    },
+    {
+      "id": "procedures",
+      "name": "Procedures",
+      "description": "Surgical and clinical procedures",
+      "icon": "🏥",
+      "path": "procedures",
+      "enabled": false,
+      "roles": ["admin", "physician"],
+      "order": 7,
+      "version": "1.0.0"
+    }
+  ]
+}

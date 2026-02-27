@@ -1,4 +1,16 @@
 services:
+  # Module Registry Service
+  patientrecord-registry:
+    build:
+      context: ./registry
+      dockerfile: Dockerfile
+    image: patientrecord-registry
+    container_name: patientrecord-registry
+    ports:
+      - "5000:5000"
+    networks:
+      - app-net
+
   # Shell App (Host) - Orchestrator
   patientrecord-shell:
     build:
