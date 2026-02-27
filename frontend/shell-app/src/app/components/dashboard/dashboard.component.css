@@ -12,8 +12,6 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
   background: white;
   min-width: 0; /* Prevents flex children from overflowing */
 }
@@ -72,8 +70,66 @@
 /* Module Content */
 .module-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Module Header */
+.module-header {
+  background: linear-gradient(135deg, #e8dff7 0%, #f0e5f9 100%);
+  padding: 1rem 24px;
+  border-bottom: 2px solid #d4c5e8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.module-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #333;
+}
+
+.module-icon {
+  font-size: 24px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.module-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Module Viewport - scrollable area */
+.module-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styling */
+.module-viewport::-webkit-scrollbar {
+  width: 10px;
+}
+
+.module-viewport::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.module-viewport::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.module-viewport::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 /* Loading message */

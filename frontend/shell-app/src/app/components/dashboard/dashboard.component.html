@@ -42,7 +42,17 @@
 
     <!-- Module Content (loaded via router) -->
     <div class="module-content">
-      <router-outlet></router-outlet>
+      <!-- Module Header -->
+      <div class="module-header" *ngIf="selectedModuleMetadata">
+        <div class="module-header-content">
+          <span class="module-icon">{{ selectedModuleMetadata.icon }}</span>
+          <span class="module-name">{{ selectedModuleMetadata.name }}</span>
+        </div>
+      </div>
+
+      <div class="module-viewport">
+        <router-outlet></router-outlet>
+      </div>
     </div>
   </div>
 

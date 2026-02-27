@@ -21,6 +21,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   userRole: string = 'nurse';
   availableModules: ModuleMetadata[] = [];
   selectedModule: string | null = null;
+  selectedModuleMetadata: ModuleMetadata | null = null;
   registryLoaded = false;
   private destroy$ = new Subject<void>();
 
@@ -73,6 +74,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // URL format: /dashboard/demographics/20003 -> module is 'demographics'
     if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
       this.selectedModule = urlSegments[1];
+      this.updateSelectedModuleMetadata();
       console.log('[Dashboard] Selected module set to:', this.selectedModule);
     }
 
@@ -249,6 +251,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
    */
   onModuleSelected(module: ModuleMetadata): void {
     this.selectedModule = module.id;
+    this.selectedModuleMetadata = module;
     console.log('[Dashboard] Module selected:', module.id );
   }
 
@@ -258,6 +261,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
   onLogout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  /**
+   * Update the selected module's metadata based on current selectedModule
+   */
+  private updateSelectedModuleMetadata(): void {
+    if (!this.selectedModule) {
+      this.selectedModuleMetadata = null;
+      return;
+    }
+    
+    const module = this.availableModules.find(m => m.id === this.selectedModule);
+    this.selectedModuleMetadata = module || null;
+    console.log('[Dashboard] Module metadata updated:', this.selectedModuleMetadata);
   }
 }
 
