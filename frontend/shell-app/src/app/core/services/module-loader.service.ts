@@ -284,8 +284,8 @@ export class ModuleLoaderService {
     const current = this.loadedModules$.value;
     const existing = current.get(moduleName) || {
       config: this.moduleConfigs.get(moduleName)!,
-      module: null,
-      component: null,
+      moduleRef: null,
+      componentType: null,
       loaded: false,
       loading: false,
       error: null
@@ -294,7 +294,7 @@ export class ModuleLoaderService {
     const updated: LoadedModule = {
       ...existing,
       ...updates
-    };
+    } as LoadedModule;
     
     const newMap = new Map(current);
     newMap.set(moduleName, updated);

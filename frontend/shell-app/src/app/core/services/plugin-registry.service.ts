@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, timeout } from 'rxjs';
 
 /**
  * Module metadata from registry
@@ -34,7 +34,7 @@ export interface ModuleRegistry {
   providedIn: 'root'
 })
 export class PluginRegistryService {
-  private registryUrl = '/modules/registry.json';
+  private registryUrl = '/registry/registry.json';
   private registry: ModuleRegistry | null = null;
   private loadedModules = new Map<string, any>();
   private registrySubject = new BehaviorSubject<ModuleRegistry | null>(null);
@@ -53,14 +53,24 @@ export class PluginRegistryService {
     try {
       console.log('Loading module registry from:', this.registryUrl);
       this.registry = await firstValueFrom(
-        this.http.get<ModuleRegistry>(this.registryUrl)
+        this.http.get<ModuleRegistry>(this.registryUrl).pipe(
+          timeout(5000)
+        )
       );
       this.registrySubject.next(this.registry);
       console.log('Module registry loaded successfully:', this.registry.modules.length, 'modules');
       return this.registry;
     } catch (error) {
-      console.error('Failed to load module registry:', error);
-      throw new Error('Unable to load module registry');
+      console.error('Failed to load module registry from', this.registryUrl, ':', error);
+      // Provide default empty registry on error
+      const defaultRegistry: ModuleRegistry = {
+        version: '1.0.0',
+        description: 'Default empty registry (failed to load)',
+        modules: []
+      };
+      this.registry = defaultRegistry;
+      this.registrySubject.next(defaultRegistry);
+      return defaultRegistry;
     }
   }
 

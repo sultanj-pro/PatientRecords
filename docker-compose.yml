@@ -101,6 +101,21 @@ services:
     networks:
       - app-net
 
+  # Care Team Micro-Frontend (Independent Container)
+  patientrecord-care-team:
+    build:
+      context: ./frontend
+      dockerfile: modules/care-team/Dockerfile
+    image: patientrecord-care-team
+    container_name: patientrecord-care-team
+    ports:
+      - "4206:4200"
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+
   patientrecord-backend:
     build:
       context: ./backend

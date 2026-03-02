@@ -1,7 +1,85 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { provideRouter, Routes } from '@angular/router';
+import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { importProvidersFrom } from '@angular/core';
 import { AppComponent } from './app/app.component';
-import { appConfig } from './app/app.config';
+import { JwtInterceptor } from './app/core/interceptors/jwt.interceptor';
 
-bootstrapApplication(AppComponent, appConfig).catch((err) =>
-  console.error(err)
-);
+/**
+ * Bootstrap configuration
+ */
+const baseRoutes: Routes = [
+  { path: 'login', loadComponent: () => import('./app/components/login/login.component').then(m => m.LoginComponent) },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./app/components/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    children: [
+      {
+        path: 'demographics',
+        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
+      },
+      {
+        path: 'demographics/:patientId',
+        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
+      },
+      {
+        path: 'vitals',
+        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
+      },
+      {
+        path: 'vitals/:patientId',
+        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
+      },
+      {
+        path: 'labs',
+        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
+      },
+      {
+        path: 'labs/:patientId',
+        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
+      },
+      {
+        path: 'visits',
+        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
+      },
+      {
+        path: 'visits/:patientId',
+        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
+      },
+      {
+        path: 'medications',
+        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+      },
+      {
+        path: 'medications/:patientId',
+        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+      },
+      {
+        path: 'care-team',
+        // @ts-ignore - Module Federation dynamic import
+        loadChildren: () => import('careTeamApp/CareTeamRoutes').then(m => m.CARE_TEAM_ROUTES)
+      },
+      {
+        path: 'care-team/:patientId',
+        // @ts-ignore - Module Federation dynamic import
+        loadChildren: () => import('careTeamApp/CareTeamRoutes').then(m => m.CARE_TEAM_ROUTES)
+      }
+    ]
+  },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: '**', redirectTo: '/login' }
+];
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(baseRoutes),
+    provideHttpClient(withInterceptorsFromDi()),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: JwtInterceptor,
+      multi: true
+    },
+    importProvidersFrom(BrowserAnimationsModule)
+  ]
+}).catch((err) => console.error('Failed to bootstrap app:', err));

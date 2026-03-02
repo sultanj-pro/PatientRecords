@@ -63,7 +63,7 @@
       "description": "Care team members and assignments",
       "icon": "👥",
       "path": "care-team",
-      "enabled": false,
+      "enabled": true,
       "roles": ["admin", "physician"],
       "order": 6,
       "version": "1.0.0"

@@ -138,6 +138,20 @@ const patientSchema = new mongoose.Schema({
       reaction: String,
       dateReported: Date
     }
+  ],
+  careTeam: [
+    {
+      name: { type: String, required: true },
+      role: { type: String, required: true }, // e.g., "Primary Care Physician", "Cardiologist", etc.
+      specialty: String,
+      phone: String,
+      email: String,
+      organization: String,
+      startDate: Date,
+      endDate: { type: Date, default: null },
+      isPrimary: { type: Boolean, default: false },
+      deletedAt: { type: Date, default: null }
+    }
   ]
 }, { timestamps: true });
 
@@ -402,6 +416,29 @@ app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/patients/:id/care-team - get patient care team members
+app.get('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    const careTeam = (patient.careTeam || []).filter(m => !m.deletedAt).map(member => ({
+      id: member._id?.toString(),
+      name: member.name,
+      role: member.role,
+      specialty: member.specialty,
+      phone: member.phone,
+      email: member.email,
+      organization: member.organization,
+      startDate: member.startDate,
+      endDate: member.endDate,
+      isPrimary: member.isPrimary
+    }));
+    res.json(careTeam);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch care team', detail: err.message });
+  }
+});
+
 // POST /api/patients/:id/vitals - create new vital record (retires old reading with same vital_description)
 app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   try {
@@ -488,6 +525,118 @@ app.post('/api/patients/:id/visits', authMiddleware, async (req, res) => {
     res.status(201).json(newVisit);
   } catch (err) {
     res.status(500).json({ error: 'failed to create visit', detail: err.message });
+  }
+});
+
+// POST /api/patients/:id/care-team - add new care team member
+app.post('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newMember = req.body;
+    if (!newMember.name || !newMember.role) {
+      return res.status(400).json({ error: 'name and role are required' });
+    }
+    
+    // If marking as primary, unmark other primaries
+    if (newMember.isPrimary) {
+      patient.careTeam.forEach(member => {
+        if (!member.deletedAt) {
+          member.isPrimary = false;
+        }
+      });
+    }
+    
+    patient.careTeam.push(newMember);
+    patient.markModified('careTeam');
+    await patient.save();
+    
+    const savedMember = patient.careTeam[patient.careTeam.length - 1];
+    res.status(201).json({
+      id: savedMember._id?.toString(),
+      name: savedMember.name,
+      role: savedMember.role,
+      specialty: savedMember.specialty,
+      phone: savedMember.phone,
+      email: savedMember.email,
+      organization: savedMember.organization,
+      startDate: savedMember.startDate,
+      endDate: savedMember.endDate,
+      isPrimary: savedMember.isPrimary
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create care team member', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/care-team/:memberId - update care team member
+app.put('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const member = patient.careTeam.find(m => m._id?.toString() === req.params.memberId && !m.deletedAt);
+    if (!member) return res.status(404).json({ error: 'care team member not found' });
+    
+    // Update fields
+    if (req.body.name) member.name = req.body.name;
+    if (req.body.role) member.role = req.body.role;
+    if (req.body.specialty !== undefined) member.specialty = req.body.specialty;
+    if (req.body.phone !== undefined) member.phone = req.body.phone;
+    if (req.body.email !== undefined) member.email = req.body.email;
+    if (req.body.organization !== undefined) member.organization = req.body.organization;
+    if (req.body.startDate !== undefined) member.startDate = req.body.startDate;
+    if (req.body.endDate !== undefined) member.endDate = req.body.endDate;
+    
+    // If marking as primary, unmark other primaries
+    if (req.body.isPrimary === true) {
+      patient.careTeam.forEach(m => {
+        if (m._id?.toString() !== req.params.memberId && !m.deletedAt) {
+          m.isPrimary = false;
+        }
+      });
+      member.isPrimary = true;
+    } else if (req.body.isPrimary === false) {
+      member.isPrimary = false;
+    }
+    
+    patient.markModified('careTeam');
+    await patient.save();
+    
+    res.json({
+      id: member._id?.toString(),
+      name: member.name,
+      role: member.role,
+      specialty: member.specialty,
+      phone: member.phone,
+      email: member.email,
+      organization: member.organization,
+      startDate: member.startDate,
+      endDate: member.endDate,
+      isPrimary: member.isPrimary
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update care team member', detail: err.message });
+  }
+});
+
+// DELETE /api/patients/:id/care-team/:memberId - soft delete care team member
+app.delete('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const member = patient.careTeam.find(m => m._id?.toString() === req.params.memberId && !m.deletedAt);
+    if (!member) return res.status(404).json({ error: 'care team member not found' });
+    
+    member.deletedAt = new Date();
+    patient.markModified('careTeam');
+    await patient.save();
+    
+    res.json({ success: true, message: 'care team member removed' });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to delete care team member', detail: err.message });
   }
 });
 

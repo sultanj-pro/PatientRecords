@@ -20,6 +20,7 @@ RUN npm run build
 # Serve stage
 FROM nginx:alpine
 COPY --from=builder /app/shell-app/dist/shell-app /usr/share/nginx/html
+COPY modules/registry.json /usr/share/nginx/html/modules/registry.json
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 4200
 CMD ["nginx", "-g", "daemon off;"]

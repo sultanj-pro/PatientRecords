@@ -59,7 +59,8 @@ export const routes: Routes = [
         path: 'medications/:patientId',
         canActivate: [authGuard],
         loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
-      }
+      },
+
     ]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },

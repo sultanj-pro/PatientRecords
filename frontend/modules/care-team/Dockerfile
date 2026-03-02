@@ -9,13 +9,12 @@ RUN cd ../shared && npm install --no-audit --no-fund
 # Copy workspace config
 COPY tsconfig.base.json ../tsconfig.base.json
 
-# Copy package files and shell app source
-COPY shell-app/package*.json ./
-COPY shell-app/src ./src
-COPY shell-app/angular.json ./
-COPY shell-app/tsconfig*.json ./
-COPY shell-app/webpack.config.js ./
-COPY shell-app/federation.config.js ./
+# Copy package files and module source
+COPY modules/care-team/package*.json ./
+COPY modules/care-team/src ./src
+COPY modules/care-team/angular.json ./
+COPY modules/care-team/webpack.config.js ./
+COPY modules/care-team/tsconfig*.json ./
 
 # Install dependencies and build
 RUN npm install --no-audit --no-fund
@@ -23,8 +22,7 @@ RUN npm run build
 
 # Serve stage
 FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist/shell-app /usr/share/nginx/html
-
 EXPOSE 4200
 CMD ["nginx", "-g", "daemon off;"]
