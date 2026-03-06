@@ -18,6 +18,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
+const TOKEN_EXPIRATION_MINUTES = parseInt(process.env.TOKEN_EXPIRATION_MINUTES || '60', 10);
+const TOKEN_EXPIRATION_SECONDS = TOKEN_EXPIRATION_MINUTES * 60;
 
 // Define Patient schema
 const patientSchema = new mongoose.Schema({
@@ -200,7 +202,7 @@ mongoose.connect(MONGODB_URI)
   });
 
 function signToken(username, role) {
-  return jwt.sign({ sub: username, role }, JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ sub: username, role }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_SECONDS });
 }
 
 app.get('/health', (req, res) => {
@@ -215,7 +217,7 @@ app.post('/auth/login', (req, res) => {
   // Assign role based on username pattern
   const role = username === 'admin' ? 'admin' : username.startsWith('doc') ? 'physician' : 'nurse';
   const token = signToken(username, role);
-  res.json({ accessToken: token, tokenType: 'Bearer', expiresIn: 3600, role });
+  res.json({ accessToken: token, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS, role });
 });
 
 // Refresh token: accepts { token }
@@ -225,7 +227,7 @@ app.post('/auth/refresh', (req, res) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
     const newToken = signToken(payload.sub, payload.role || 'nurse');
-    return res.json({ accessToken: newToken, tokenType: 'Bearer', expiresIn: 3600 });
+    return res.json({ accessToken: newToken, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS });
   } catch (err) {
     return res.status(401).json({ error: 'invalid token' });
   }
