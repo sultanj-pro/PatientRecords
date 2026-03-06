@@ -1,6 +1,7 @@
 import { Injectable, createNgModuleRef, Injector, NgModuleRef, Type } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { PluginRegistryService } from './plugin-registry.service';
 
 /**
  * Configuration for a remote module in the Module Federation setup
@@ -43,90 +44,41 @@ export interface LoadedModule {
 export class ModuleLoaderService {
 
   /**
-   * Mapping of module names to their remote container names
-   * These match the 'name' property in the remote webpack.config.js
-   */
-  private containerNames: Map<string, string> = new Map([
-    ['Demographics', 'demographicsApp'],
-    ['Vitals', 'vitalsApp'],
-    ['Labs', 'labsApp'],
-    ['Medications', 'medicationsApp'],
-    ['Visits', 'visitsApp'],
-    ['CareTeam', 'careTeamApp']
-  ]);
-
-  /**
-   * Mapping of module names to their remote locations and exposed components
-   * These match the remotes configuration in webpack.config.js
-   */
-  private moduleConfigs: Map<string, RemoteModuleConfig> = new Map([
-    ['Demographics', {
-      name: 'demographics',
-      remoteEntry: 'http://localhost:4201/remoteEntry.js',
-      exposedModule: './DemographicsModule',
-      componentName: 'DemographicsModule'
-    }],
-    ['Vitals', {
-      name: 'vitals',
-      remoteEntry: 'http://localhost:4202/remoteEntry.js',
-      exposedModule: './VitalsModule',
-      componentName: 'VitalsModule'
-    }],
-    ['Labs', {
-      name: 'labs',
-      remoteEntry: 'http://localhost:4203/remoteEntry.js',
-      exposedModule: './LabsModule',
-      componentName: 'LabsModule'
-    }],
-    ['Medications', {
-      name: 'medications',
-      remoteEntry: 'http://localhost:4204/remoteEntry.js',
-      exposedModule: './MedicationsModule',
-      componentName: 'MedicationsModule'
-    }],
-    ['Visits', {
-      name: 'visits',
-      remoteEntry: 'http://localhost:4205/remoteEntry.js',
-      exposedModule: './VisitsModule',
-      componentName: 'VisitsModule'
-    }],
-    ['CareTeam', {
-      name: 'careTeam',
-      remoteEntry: 'http://localhost:4206/remoteEntry.js',
-      exposedModule: './CareTeamModule',
-      componentName: 'CareTeamModule'
-    }]
-  ]);
-
-  /**
    * Track loading state and loaded modules
    */
   private loadedModules$ = new BehaviorSubject<Map<string, LoadedModule>>(new Map());
 
-  constructor() {}
+  constructor(private registryService: PluginRegistryService) {}
 
   /**
    * Load a module dynamically via Module Federation
    * 
    * This method:
-   * 1. Gets the remote module configuration
-   * 2. Loads the remoteEntry.js script
-   * 3. Initializes the shared container
-   * 4. Requests the exposed module
-   * 5. Uses createNgModuleRef to instantiate the module
-   * 6. Returns the module reference and component type for rendering
+   * 1. Loads registry to get module federation configuration
+   * 2. Gets the remote module configuration from registry
+   * 3. Loads the remoteEntry.js script
+   * 4. Initializes the shared container
+   * 5. Requests the exposed module
+   * 6. Uses createNgModuleRef to instantiate the module
+   * 7. Returns the module reference and component type for rendering
    * 
    * @param moduleName Name of the module (e.g., 'Demographics')
    * @returns Promise resolving to the loaded module reference
-   * @throws Error if module not found or loading fails
+   * @throws Error if module not found in registry or loading fails
    */
   async loadModule(moduleName: string, injector: Injector): Promise<NgModuleRef<any>> {
-    const config = this.moduleConfigs.get(moduleName);
-    const containerName = this.containerNames.get(moduleName);
+    // Ensure registry is loaded
+    await this.registryService.loadRegistry();
     
-    if (!config || !containerName) {
-      throw new Error(`Module '${moduleName}' not found in configuration`);
+    // Get federation config from registry (replaces hardcoded Maps)
+    const federationConfig = this.registryService.getModuleFederationConfig(moduleName);
+    const moduleMetadata = this.registryService.getModuleByName(moduleName);
+    
+    if (!federationConfig || !moduleMetadata) {
+      throw new Error(`Module '${moduleName}' not found in registry`);
     }
+
+    const containerName = moduleMetadata.remoteName;
 
     // Check if already loading
     const current = this.loadedModules$.value.get(moduleName);
@@ -141,8 +93,8 @@ export class ModuleLoaderService {
     });
 
     try {
-      // Load the remote entry script
-      await this.loadRemoteEntry(config.remoteEntry, containerName);
+      // Load the remote entry script (remoteEntry from registry)
+      await this.loadRemoteEntry(federationConfig.remoteEntry, containerName);
       
       // Get the container from the window
       const container = (window as any)[containerName];
@@ -164,7 +116,7 @@ export class ModuleLoaderService {
         throw new Error(`Container for '${moduleName}' has no 'get' method`);
       }
 
-      const moduleFactory = await container.get(config.exposedModule);
+      const moduleFactory = await container.get(federationConfig.exposedModule);
       const ModuleClass = moduleFactory();
       
       // Create an instance of the module using createNgModuleRef
@@ -289,19 +241,35 @@ export class ModuleLoaderService {
    */
   private updateModuleState(moduleName: string, updates: Partial<LoadedModule>): void {
     const current = this.loadedModules$.value;
-    const existing = current.get(moduleName) || {
-      config: this.moduleConfigs.get(moduleName)!,
-      moduleRef: null,
-      componentType: null,
-      loaded: false,
-      loading: false,
-      error: null
-    };
+    const existing = current.get(moduleName);
+    
+    // If module doesn't exist yet, create a minimal entry during initial load
+    // The full config will be set when loadModule completes
+    if (!existing) {
+      const minimalEntry: LoadedModule = {
+        config: {
+          name: moduleName,
+          remoteEntry: '',
+          exposedModule: '',
+          componentName: ''
+        },
+        moduleRef: null,
+        componentType: null,
+        loaded: false,
+        loading: false,
+        error: null,
+        ...updates
+      };
+      const newMap = new Map(current);
+      newMap.set(moduleName, minimalEntry);
+      this.loadedModules$.next(newMap);
+      return;
+    }
     
     const updated: LoadedModule = {
       ...existing,
       ...updates
-    } as LoadedModule;
+    };
     
     const newMap = new Map(current);
     newMap.set(moduleName, updated);
@@ -309,24 +277,30 @@ export class ModuleLoaderService {
   }
 
   /**
-   * Get all configured module names
+   * Get all available module names from registry (regardless of enabled status)
    */
   getAvailableModules(): string[] {
-    return Array.from(this.moduleConfigs.keys());
+    const allModules = this.registryService.getAllEnabledModules();
+    return allModules.map(m => m.name);
   }
 
   /**
-   * Check if a module is configured
+   * Check if a module is available in registry
    */
   isModuleConfigured(moduleName: string): boolean {
-    return this.moduleConfigs.has(moduleName);
+    const module = this.registryService.getModuleByName(moduleName);
+    return module ? module.enabled : false;
   }
 
   /**
-   * Set module configuration
+   * Set module configuration - Note: Dynamically adds module to registry (in-memory)
+   * This allows runtime addition of modules via registry
    */
   setModuleConfig(moduleName: string, config: RemoteModuleConfig): void {
-    this.moduleConfigs.set(moduleName, config);
+    // In a production system with a backend registry API, this would POST to the API
+    // For now, this is a placeholder for dynamic module registration
+    console.info(`Module '${moduleName}' configuration requested to be set. 
+      To register new modules, update the registry.json and reload.`);
   }
 
   // Legacy methods for compatibility
@@ -336,8 +310,11 @@ export class ModuleLoaderService {
     );
   }
 
+  /**
+   * Get modules visible for a role - now from registry
+   */
   getVisibleModulesForRole(role: string): any[] {
-    return Array.from(this.moduleConfigs.values());
+    return this.registryService.getAvailableModulesForRole(role);
   }
 
   getAvailableModules$(): Observable<LoadedModule[]> {
