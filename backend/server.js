@@ -231,6 +231,18 @@ app.post('/auth/refresh', (req, res) => {
   }
 });
 
+// Validate token: check if a token is still valid
+app.post('/auth/validate', (req, res) => {
+  const { token } = req.body || {};
+  if (!token) return res.status(400).json({ error: 'token required' });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    res.json({ valid: true, username: payload.sub, role: payload.role });
+  } catch (err) {
+    return res.status(401).json({ valid: false, error: 'token invalid or expired' });
+  }
+});
+
 // Protected middleware
 function authMiddleware(req, res, next) {
   const auth = req.headers.authorization;

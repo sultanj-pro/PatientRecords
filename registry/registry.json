@@ -1,6 +1,7 @@
 {
   "version": "1.0.0",
   "description": "PatientRecords Module Registry - defines available micro-frontend modules",
+  "baseUrl": "http://localhost",
   "modules": [
     {
       "id": "demographics",
@@ -11,7 +12,10 @@
       "enabled": true,
       "roles": ["admin", "physician", "nurse"],
       "order": 1,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4201,
+      "remoteName": "demographicsApp",
+      "exposedModule": "./DemographicsModule"
     },
     {
       "id": "vitals",
@@ -22,7 +26,10 @@
       "enabled": true,
       "roles": ["admin", "physician", "nurse"],
       "order": 2,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4202,
+      "remoteName": "vitalsApp",
+      "exposedModule": "./VitalsModule"
     },
     {
       "id": "labs",
@@ -33,7 +40,10 @@
       "enabled": true,
       "roles": ["admin", "physician"],
       "order": 3,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4203,
+      "remoteName": "labsApp",
+      "exposedModule": "./LabsModule"
     },
     {
       "id": "medications",
@@ -44,7 +54,10 @@
       "enabled": true,
       "roles": ["admin", "physician"],
       "order": 4,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4204,
+      "remoteName": "medicationsApp",
+      "exposedModule": "./MedicationsModule"
     },
     {
       "id": "visits",
@@ -55,7 +68,10 @@
       "enabled": true,
       "roles": ["admin", "physician"],
       "order": 5,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4205,
+      "remoteName": "visitsApp",
+      "exposedModule": "./VisitsModule"
     },
     {
       "id": "care-team",
@@ -66,7 +82,10 @@
       "enabled": true,
       "roles": ["admin", "physician"],
       "order": 6,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4206,
+      "remoteName": "careTeamApp",
+      "exposedModule": "./CareTeamModule"
     },
     {
       "id": "procedures",
@@ -77,7 +96,10 @@
       "enabled": false,
       "roles": ["admin", "physician"],
       "order": 7,
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "port": 4207,
+      "remoteName": "proceduresApp",
+      "exposedModule": "./ProceduresModule"
     }
   ]
 }

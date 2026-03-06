@@ -34,18 +34,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    // Load registry and get available modules for user
-    try {
-      await this.pluginRegistry.loadRegistry();
-      const role = this.authService.getRole();
-      this.userRole = role || 'nurse';
-      this.availableModules = this.pluginRegistry.getAvailableModulesForRole(this.userRole);
-      this.registryLoaded = true;
-      console.log('[Dashboard] Available modules loaded:', this.availableModules);
-    } catch (error) {
-      console.error('[Dashboard] Failed to load module registry:', error);
-      this.registryLoaded = false;
+    // IMPORTANT: Validate token with backend on dashboard load
+    // This ensures stale tokens (from service restarts) are caught immediately
+    const isTokenValid = await this.authService.validateTokenWithBackend().toPromise();
+    if (!isTokenValid) {
+      console.warn('[Dashboard] Token validation failed, redirecting to login');
+      this.router.navigate(['/login']);
+      return; // Stop initialization if token is invalid
     }
+
+    // Set default user role immediately
+    const role = this.authService.getRole();
+    this.userRole = role || 'nurse';
+    this.registryLoaded = true;
+
+    // Load registry in background (don't block initialization)
+    this.pluginRegistry.loadRegistry()
+      .then(() => {
+        this.availableModules = this.pluginRegistry.getAvailableModulesForRole(this.userRole);
+        console.log('[Dashboard] Available modules loaded:', this.availableModules);
+      })
+      .catch((error) => {
+        console.error('[Dashboard] Failed to load module registry:', error);
+        this.availableModules = [];
+      });
 
     // Subscribe to patient changes and share with micro-frontends
     this.patientContextService

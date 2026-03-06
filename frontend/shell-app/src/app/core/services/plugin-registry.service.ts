@@ -52,11 +52,17 @@ export class PluginRegistryService {
 
     try {
       console.log('Loading module registry from:', this.registryUrl);
-      this.registry = await firstValueFrom(
-        this.http.get<ModuleRegistry>(this.registryUrl).pipe(
-          timeout(5000)
-        )
+      
+      // Use Promise.race with timeout to prevent hanging requests
+      const registryPromise = firstValueFrom(
+        this.http.get<ModuleRegistry>(this.registryUrl)
       );
+      
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Registry request timeout after 5 seconds')), 5000)
+      );
+      
+      this.registry = await Promise.race([registryPromise, timeoutPromise]);
       this.registrySubject.next(this.registry);
       console.log('Module registry loaded successfully:', this.registry.modules.length, 'modules');
       return this.registry;

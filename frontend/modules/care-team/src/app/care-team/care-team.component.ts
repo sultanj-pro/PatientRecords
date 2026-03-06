@@ -88,10 +88,21 @@ export class CareTeamComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Listen for patient context changes from the dashboard
+    window.addEventListener('patient-context-changed', (event: any) => {
+      console.log('Care Team: Received patient-context-changed event', event.detail);
+      const newPatientId = event.detail?.patientId?.toString();
+      if (newPatientId && newPatientId !== this.lastPatientId) {
+        this.lastPatientId = newPatientId;
+        this.currentPatientId = parseInt(newPatientId, 10);
+        this.loadCareTeam();
+      }
+    });
+
     // Initial load
     this.loadPatientData();
     
-    // Watch for patient changes every 500ms
+    // Watch for patient changes every 500ms (as fallback)
     interval(500)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {

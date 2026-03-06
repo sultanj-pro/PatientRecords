@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
-import { TokenService } from '../../../../../shared/lib/services/token.service';
+import { TokenService } from '@patient-records/shared';
 
 export interface AuthResponse {
   accessToken: string;
@@ -98,6 +98,42 @@ export class AuthService {
       );
     }
     return of(false);
+  }
+
+  /**
+   * Validate token with backend on app startup
+   * Ensures token is still valid after service restarts or session expiration
+   * This prevents stale tokens from causing frozen UI
+   */
+  validateTokenWithBackend(): Observable<boolean> {
+    const token = this.getToken();
+    
+    // If no token, user is not authenticated
+    if (!token) {
+      console.log('No token found - not authenticated');
+      return of(false);
+    }
+
+    console.log('Validating token with backend...');
+    return this.http
+      .post<{ valid: boolean; username?: string; role?: string }>(
+        `${this.apiUrl}/auth/validate`,
+        { token }
+      )
+      .pipe(
+        tap((response) => {
+          console.log('Token validation successful:', response);
+          // Token is valid, update observables
+          this.isAuthenticated$.next(true);
+        }),
+        map(() => true),
+        catchError((error: HttpErrorResponse) => {
+          console.warn('Token validation failed:', error.status, error.error);
+          // Token is invalid, clear it
+          this.logout();
+          return of(false);
+        })
+      );
   }
 
   /**

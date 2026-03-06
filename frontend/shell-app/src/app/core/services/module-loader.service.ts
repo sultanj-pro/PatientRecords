@@ -51,7 +51,8 @@ export class ModuleLoaderService {
     ['Vitals', 'vitalsApp'],
     ['Labs', 'labsApp'],
     ['Medications', 'medicationsApp'],
-    ['Visits', 'visitsApp']
+    ['Visits', 'visitsApp'],
+    ['CareTeam', 'careTeamApp']
   ]);
 
   /**
@@ -88,6 +89,12 @@ export class ModuleLoaderService {
       remoteEntry: 'http://localhost:4205/remoteEntry.js',
       exposedModule: './VisitsModule',
       componentName: 'VisitsModule'
+    }],
+    ['CareTeam', {
+      name: 'careTeam',
+      remoteEntry: 'http://localhost:4206/remoteEntry.js',
+      exposedModule: './CareTeamModule',
+      componentName: 'CareTeamModule'
     }]
   ]);
 

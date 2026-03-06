@@ -107,10 +107,20 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Listen for patient context changes from the dashboard
+    window.addEventListener('patient-context-changed', (event: any) => {
+      console.log('Demographics: Received patient-context-changed event', event.detail);
+      const newPatientId = event.detail?.patientId?.toString();
+      if (newPatientId && newPatientId !== this.lastPatientId) {
+        this.lastPatientId = newPatientId;
+        this.loadPatientData();
+      }
+    });
+
     // Initial load
     this.loadPatientData();
     
-    // Watch for patient changes
+    // Watch for patient changes (as fallback)
     interval(500)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
