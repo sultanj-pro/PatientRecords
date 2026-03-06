@@ -221,11 +221,13 @@ app.post('/auth/login', (req, res) => {
 });
 
 // Refresh token: accepts { token }
+// IMPORTANT: Does NOT accept expired tokens - enforces hard session timeout
 app.post('/auth/refresh', (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: 'token required' });
   try {
-    const payload = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+    // Verify token is STILL VALID (not expired) - do NOT use ignoreExpiration
+    const payload = jwt.verify(token, JWT_SECRET);
     const newToken = signToken(payload.sub, payload.role || 'nurse');
     return res.json({ accessToken: newToken, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS });
   } catch (err) {
