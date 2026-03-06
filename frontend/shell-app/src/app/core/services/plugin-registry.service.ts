@@ -15,7 +15,7 @@ export interface ModuleMetadata {
   roles: string[];
   order: number;
   version: string;
-  port: number;                    // Port where module is served (e.g., 4201)
+  remoteEntry: string;              // Complete URL to remoteEntry.js (e.g., 'http://localhost:4201/remoteEntry.js')
   remoteName: string;               // Container name in Module Federation (e.g., 'demographicsApp')
   exposedModule: string;            // Module path exposed (e.g., './DemographicsModule')
 }
@@ -221,25 +221,11 @@ export class PluginRegistryService {
   }
 
   /**
-   * Build remote entry URL for a module
-   * Used by ModuleLoaderService to dynamically load remoteEntry.js
+   * Get module federation configuration for a module
+   * Returns complete federation config directly from registry (no construction needed)
    * 
    * @param moduleName Display name of the module (e.g., 'Demographics')
-   * @returns Full URL to remoteEntry.js (e.g., 'http://localhost:4201/remoteEntry.js')
-   */
-  getRemoteEntryUrl(moduleName: string): string | null {
-    const module = this.getModuleByName(moduleName);
-    if (!module) {
-      console.warn(`Module '${moduleName}' not found in registry`);
-      return null;
-    }
-
-    return `http://localhost:${module.port}/remoteEntry.js`;
-  }
-
-  /**
-   * Get module federation configuration for a module
-   * Combines all data needed to dynamically load a module
+   * @returns Object with remoteEntry URL, remoteName, and exposedModule from registry
    */
   getModuleFederationConfig(moduleName: string): {
     remoteEntry: string;
@@ -248,11 +234,12 @@ export class PluginRegistryService {
   } | null {
     const module = this.getModuleByName(moduleName);
     if (!module) {
+      console.warn(`Module '${moduleName}' not found in registry`);
       return null;
     }
 
     return {
-      remoteEntry: `http://localhost:${module.port}/remoteEntry.js`,
+      remoteEntry: module.remoteEntry,    // Complete URL from registry
       remoteName: module.remoteName,
       exposedModule: module.exposedModule
     };

@@ -1,7 +1,6 @@
 {
   "version": "1.0.0",
   "description": "PatientRecords Module Registry - defines available micro-frontend modules",
-  "baseUrl": "http://localhost",
   "modules": [
     {
       "id": "demographics",
@@ -13,7 +12,7 @@
       "roles": ["admin", "physician", "nurse"],
       "order": 1,
       "version": "1.0.0",
-      "port": 4201,
+      "remoteEntry": "http://localhost:4201/remoteEntry.js",
       "remoteName": "demographicsApp",
       "exposedModule": "./DemographicsModule"
     },
@@ -27,7 +26,7 @@
       "roles": ["admin", "physician", "nurse"],
       "order": 2,
       "version": "1.0.0",
-      "port": 4202,
+      "remoteEntry": "http://localhost:4202/remoteEntry.js",
       "remoteName": "vitalsApp",
       "exposedModule": "./VitalsModule"
     },
@@ -41,7 +40,7 @@
       "roles": ["admin", "physician"],
       "order": 3,
       "version": "1.0.0",
-      "port": 4203,
+      "remoteEntry": "http://localhost:4203/remoteEntry.js",
       "remoteName": "labsApp",
       "exposedModule": "./LabsModule"
     },
@@ -55,7 +54,7 @@
       "roles": ["admin", "physician"],
       "order": 4,
       "version": "1.0.0",
-      "port": 4204,
+      "remoteEntry": "http://localhost:4204/remoteEntry.js",
       "remoteName": "medicationsApp",
       "exposedModule": "./MedicationsModule"
     },
@@ -69,7 +68,7 @@
       "roles": ["admin", "physician"],
       "order": 5,
       "version": "1.0.0",
-      "port": 4205,
+      "remoteEntry": "http://localhost:4205/remoteEntry.js",
       "remoteName": "visitsApp",
       "exposedModule": "./VisitsModule"
     },
@@ -83,7 +82,7 @@
       "roles": ["admin", "physician"],
       "order": 6,
       "version": "1.0.0",
-      "port": 4206,
+      "remoteEntry": "http://localhost:4206/remoteEntry.js",
       "remoteName": "careTeamApp",
       "exposedModule": "./CareTeamModule"
     },
@@ -97,7 +96,7 @@
       "roles": ["admin", "physician"],
       "order": 7,
       "version": "1.0.0",
-      "port": 4207,
+      "remoteEntry": "http://localhost:4207/remoteEntry.js",
       "remoteName": "proceduresApp",
       "exposedModule": "./ProceduresModule"
     }
