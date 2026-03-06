@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, firstValueFrom, timeout } from 'rxjs';
 
 /**
- * Module metadata from registry
+ * Module metadata from registry - includes Module Federation configuration
  */
 export interface ModuleMetadata {
   id: string;
@@ -15,6 +15,9 @@ export interface ModuleMetadata {
   roles: string[];
   order: number;
   version: string;
+  port: number;                    // Port where module is served (e.g., 4201)
+  remoteName: string;               // Container name in Module Federation (e.g., 'demographicsApp')
+  exposedModule: string;            // Module path exposed (e.g., './DemographicsModule')
 }
 
 /**
@@ -204,5 +207,54 @@ export class PluginRegistryService {
       module.enabled = enabled;
       this.registrySubject.next(this.registry);
     }
+  }
+
+  /**
+   * Get a specific module by display name (e.g., 'Demographics')
+   */
+  getModuleByName(name: string): ModuleMetadata | undefined {
+    if (!this.registry) {
+      return undefined;
+    }
+
+    return this.registry.modules.find(m => m.name === name);
+  }
+
+  /**
+   * Build remote entry URL for a module
+   * Used by ModuleLoaderService to dynamically load remoteEntry.js
+   * 
+   * @param moduleName Display name of the module (e.g., 'Demographics')
+   * @returns Full URL to remoteEntry.js (e.g., 'http://localhost:4201/remoteEntry.js')
+   */
+  getRemoteEntryUrl(moduleName: string): string | null {
+    const module = this.getModuleByName(moduleName);
+    if (!module) {
+      console.warn(`Module '${moduleName}' not found in registry`);
+      return null;
+    }
+
+    return `http://localhost:${module.port}/remoteEntry.js`;
+  }
+
+  /**
+   * Get module federation configuration for a module
+   * Combines all data needed to dynamically load a module
+   */
+  getModuleFederationConfig(moduleName: string): {
+    remoteEntry: string;
+    remoteName: string;
+    exposedModule: string;
+  } | null {
+    const module = this.getModuleByName(moduleName);
+    if (!module) {
+      return null;
+    }
+
+    return {
+      remoteEntry: `http://localhost:${module.port}/remoteEntry.js`,
+      remoteName: module.remoteName,
+      exposedModule: module.exposedModule
+    };
   }
 }
