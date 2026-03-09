@@ -22,6 +22,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   availableModules: ModuleMetadata[] = [];
   selectedModule: string | null = null;
   selectedModuleMetadata: ModuleMetadata | null = null;
+  currentPatientId: string | null = null; // Track patient ID from URL
   registryLoaded = false;
   private destroy$ = new Subject<void>();
 
@@ -83,18 +84,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     console.log('[Dashboard] syncFromCurrentRoute called. URL:', this.router.url, 'Segments:', urlSegments);
     
     // Get the module name (after /dashboard/)
-    // URL format: /dashboard/demographics/20003 -> module is 'demographics'
+    // URL format: /dashboard/demographics/20003 -> module is 'demographics', patient is '20003'
     if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
       this.selectedModule = urlSegments[1];
       this.updateSelectedModuleMetadata();
       console.log('[Dashboard] Selected module set to:', this.selectedModule);
     }
 
-    const patientId = urlSegments.length >= 3 ? urlSegments[2] : null;
-    console.log('[Dashboard] PatientId extracted from URL:', patientId);
+    // Extract patient ID from URL and preserve it
+    const patientIdFromUrl = urlSegments.length >= 3 ? urlSegments[2] : null;
+    if (patientIdFromUrl && patientIdFromUrl !== 'patient') {
+      this.currentPatientId = patientIdFromUrl;
+      console.log('[Dashboard] Patient ID extracted from URL:', this.currentPatientId);
+    }
+    console.log('[Dashboard] Current patient ID:', this.currentPatientId);
     
-    if (patientId) {
-      this.syncPatientFromUrl(patientId);
+    if (patientIdFromUrl) {
+      this.syncPatientFromUrl(patientIdFromUrl);
     } else {
       console.log('[Dashboard] No patientId in URL');
     }
@@ -260,11 +266,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   /**
    * Handle module selection from side navigation
+   * Navigate to the module while preserving the current patient ID
    */
   onModuleSelected(module: ModuleMetadata): void {
     this.selectedModule = module.id;
     this.selectedModuleMetadata = module;
-    console.log('[Dashboard] Module selected:', module.id );
+    console.log('[Dashboard] Module selected:', module.id, 'Current patient ID:', this.currentPatientId);
+    
+    // If we have a patient ID, navigate to the module with that patient ID
+    if (this.currentPatientId) {
+      const navigationUrl = `/dashboard/${module.path}/${this.currentPatientId}`;
+      console.log('[Dashboard] Navigating to:', navigationUrl);
+      this.router.navigateByUrl(navigationUrl);
+    } else {
+      console.warn('[Dashboard] No patient ID available for navigation');
+    }
   }
 
   /**

@@ -13,6 +13,7 @@ import { ModuleMetadata } from '../../core/services/plugin-registry.service';
 export class SideNavigationComponent implements OnInit {
   @Input() modules: ModuleMetadata[] = [];
   @Input() selectedModule: string = '';
+  @Input() currentPatientId: string | null = null; // Patient ID to preserve when navigating
   @Output() moduleSelected = new EventEmitter<ModuleMetadata>();
   @Output() logout = new EventEmitter<void>();
 
@@ -29,10 +30,10 @@ export class SideNavigationComponent implements OnInit {
 
   selectModule(module: ModuleMetadata): void {
     this.selectedModule = module.id;
+    // Emit the module selection to parent component
+    // Parent (DashboardComponent) will handle navigation with patient ID preserved
     this.moduleSelected.emit(module);
-    
-    // Navigate to module
-    this.router.navigate(['/dashboard', module.path, 'patient']);
+    console.log('[SideNav] Module selected, emitting to parent. Current patient ID:', this.currentPatientId);
   }
 
   toggleSidebar(): void {

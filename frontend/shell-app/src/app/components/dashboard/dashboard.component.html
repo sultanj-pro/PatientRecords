@@ -4,6 +4,7 @@
     *ngIf="registryLoaded && availableModules.length > 0"
     [modules]="availableModules"
     [selectedModule]="selectedModule || ''"
+    [currentPatientId]="currentPatientId"
     (moduleSelected)="onModuleSelected($event)"
     (logout)="onLogout()">
   </app-side-navigation>
