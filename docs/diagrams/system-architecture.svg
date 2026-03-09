@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1100" height="920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .registry { fill: #E3F2FD; stroke: #1976D2; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+      .shell { fill: #FFFDE7; stroke: #F57F17; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+      .module { fill: #F3E5F5; stroke: #7B1FA2; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+      .api { fill: #E8F5E9; stroke: #388E3C; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+      .database { fill: #FFE0B2; stroke: #E65100; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+      .text-bold { font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; }
+      .text-title { font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; }
+      .text-small { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #555; }
+      .text-tiny { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; color: #777; }
+      .arrow { stroke: #BDBDBD; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .icon { font-size: 24px; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#BDBDBD" />
+    </marker>
+  </defs>
+
+  <!-- Registry Section -->
+  <g>
+    <rect x="412" y="15" width="276" height="90" class="registry" rx="8"/>
+    <text x="550" y="45" text-anchor="middle" class="text-bold icon">📋</text>
+    <text x="550" y="70" text-anchor="middle" class="text-title">Module Registry</text>
+    <text x="550" y="85" text-anchor="middle" class="text-tiny">Port 5000 • Centralized manifest • Dynamic module loading</text>
+  </g>
+
+  <!-- Arrow Registry to Shell -->
+  <path d="M 550 105 L 550 135" class="arrow" stroke-width="2.5"/>
+
+  <!-- Shell App Section -->
+  <g>
+    <rect x="382" y="135" width="336" height="130" class="shell" rx="8"/>
+    <text x="550" y="165" text-anchor="middle" class="text-bold icon">🏠</text>
+    <text x="550" y="190" text-anchor="middle" class="text-title">Shell App</text>
+    <text x="550" y="207" text-anchor="middle" class="text-small">Port 4200</text>
+    <text x="550" y="225" text-anchor="middle" class="text-tiny">Authentication • Navigation • Session Management</text>
+    <text x="550" y="240" text-anchor="middle" class="text-tiny">Patient Context Sync • Shared Services</text>
+  </g>
+
+  <!-- Arrows from Shell to Modules -->
+  <g>
+    <path d="M 442 265 L 90 360" class="arrow"/>
+    <path d="M 472 265 L 240 360" class="arrow"/>
+    <path d="M 520 265 L 390 360" class="arrow"/>
+    <path d="M 580 265 L 540 360" class="arrow"/>
+    <path d="M 628 265 L 690 360" class="arrow"/>
+    <path d="M 658 265 L 840 360" class="arrow"/>
+  </g>
+
+  <!-- Modules Row -->
+  <!-- Demographics -->
+  <g>
+    <rect x="20" y="360" width="140" height="68" class="module" rx="7"/>
+    <text x="90" y="382" text-anchor="middle" class="text-bold icon">👥</text>
+    <text x="90" y="399" text-anchor="middle" class="text-title">Demographics</text>
+    <text x="90" y="414" text-anchor="middle" class="text-tiny">Port 4201</text>
+  </g>
+
+  <!-- Vitals -->
+  <g>
+    <rect x="170" y="360" width="140" height="68" class="module" rx="7"/>
+    <text x="240" y="382" text-anchor="middle" class="text-bold icon">❤️</text>
+    <text x="240" y="399" text-anchor="middle" class="text-title">Vitals</text>
+    <text x="240" y="414" text-anchor="middle" class="text-tiny">Port 4202</text>
+  </g>
+
+  <!-- Labs -->
+  <g>
+    <rect x="320" y="360" width="140" height="68" class="module" rx="7"/>
+    <text x="390" y="382" text-anchor="middle" class="text-bold icon">🧪</text>
+    <text x="390" y="399" text-anchor="middle" class="text-title">Labs</text>
+    <text x="390" y="414" text-anchor="middle" class="text-tiny">Port 4203</text>
+  </g>
+
+  <!-- Medications -->
+  <g>
+    <rect x="470" y="360" width="140" height="68" class="module" rx="7"/>
+    <text x="540" y="382" text-anchor="middle" class="text-bold icon">💊</text>
+    <text x="540" y="399" text-anchor="middle" class="text-title">Medications</text>
+    <text x="540" y="414" text-anchor="middle" class="text-tiny">Port 4204</text>
+  </g>
+
+  <!-- Visits -->
+  <g>
+    <rect x="620" y="360" width="140" height="68" class="module" rx="7"/>
+    <text x="690" y="382" text-anchor="middle" class="text-bold icon">📅</text>
+    <text x="690" y="399" text-anchor="middle" class="text-title">Visits</text>
+    <text x="690" y="414" text-anchor="middle" class="text-tiny">Port 4205</text>
+  </g>
+
+  <!-- Care Team -->
+  <g>
+    <rect x="770" y="360" width="140" height="68" class="module" rx="7"/>
+    <text x="840" y="382" text-anchor="middle" class="text-bold icon">👨‍⚕️</text>
+    <text x="840" y="399" text-anchor="middle" class="text-title">Care Team</text>
+    <text x="840" y="414" text-anchor="middle" class="text-tiny">Port 4206</text>
+  </g>
+
+  <!-- Arrows from Modules to Backend -->
+  <g>
+    <path d="M 90 428 L 550 540" class="arrow"/>
+    <path d="M 240 428 L 550 540" class="arrow"/>
+    <path d="M 390 428 L 550 540" class="arrow"/>
+    <path d="M 540 428 L 550 540" class="arrow"/>
+    <path d="M 690 428 L 550 540" class="arrow"/>
+    <path d="M 840 428 L 550 540" class="arrow"/>
+  </g>
+
+  <!-- Backend API Section -->
+  <g>
+    <rect x="352" y="540" width="396" height="115" class="api" rx="8"/>
+    <text x="550" y="570" text-anchor="middle" class="text-bold icon">🌐</text>
+    <text x="550" y="595" text-anchor="middle" class="text-title">Backend API</text>
+    <text x="550" y="612" text-anchor="middle" class="text-small">Express.js • Port 5001</text>
+    <text x="550" y="630" text-anchor="middle" class="text-tiny">Authentication • Patient Data • Demographics • Vitals • Labs</text>
+    <text x="550" y="643" text-anchor="middle" class="text-tiny">Medications • Visits • Care Team Data</text>
+  </g>
+
+  <!-- Arrow from Backend to Database -->
+  <path d="M 550 655 L 550 705" class="arrow" stroke-width="2.5"/>
+
+  <!-- MongoDB Section -->
+  <g>
+    <rect x="460" y="705" width="180" height="100" class="database" rx="8"/>
+    <text x="550" y="735" text-anchor="middle" class="text-bold icon">🗄️</text>
+    <text x="550" y="758" text-anchor="middle" class="text-title">MongoDB</text>
+    <text x="550" y="775" text-anchor="middle" class="text-small">Port 27017</text>
+    <text x="550" y="792" text-anchor="middle" class="text-tiny">All Clinical Data Storage</text>
+  </g>
+</svg>

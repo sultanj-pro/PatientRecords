@@ -1,10 +1,13 @@
 # PatientRecords - Micro-Frontend Medical Records System
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sultanj-pro/PatientRecords/blob/main/LICENSE)
+
 A modern, scalable healthcare information system built with Angular 17, Module Federation, and microservices architecture.
 
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Technology Stack](#-technology-stack)
 - [System Architecture](#system-architecture)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
@@ -20,7 +23,7 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
 
 ### Key Capabilities
-- **Multi-module clinical system** with demographics, vitals, medications, visits, and labs
+- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, and care team
 - **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
 - **Real-time patient context sync** across all modules using Observable pattern
 - **Real-time session management** with automatic token refresh
@@ -29,40 +32,47 @@ PatientRecords is a next-generation electronic health record (EHR) system design
 - **Containerized deployment** using Docker and Docker Compose
 - **Comprehensive API** with OpenAPI/Swagger documentation
 
+## 🛠️ Technology Stack
+
+### Frontend
+- **Angular 17** — Modern web framework with component-based architecture
+- **Module Federation** — Micro-frontend orchestration via @angular-architects/module-federation
+- **TypeScript 5** — Type-safe JavaScript development
+- **RxJS 7** — Reactive programming with Observables
+- **Karma & Jasmine** — Unit testing framework
+- **Nginx** — Reverse proxy and HTTP server for production deployments
+
+### Backend
+- **Node.js 18+** — JavaScript runtime environment
+- **Express.js** — Lightweight web application framework
+- **MongoDB with Mongoose** — NoSQL database and ODM
+- **JWT (jsonwebtoken)** — Token-based authentication and authorization
+- **Swagger/OpenAPI** — API documentation and validation
+- **Jest** — Testing framework with coverage reporting
+
+### Infrastructure & DevOps
+- **Docker** — Containerization for consistent deployments
+- **Docker Compose** — Multi-container orchestration
+- **Docker Registry** — Private container image registry
+- **PostgreSQL** — Relational database support for migrations
+- **Alpine Linux** — Lightweight base images
+
+### Build & Development Tools
+- **Angular CLI 17** — Angular development and build tooling
+- **Nx** — Monorepo management with task orchestration
+- **npm Workspaces** — Monorepo organization
+
 ## 🏗️ System Architecture
 
 ### Micro-Frontend Design
 
 The system uses Angular Module Federation to isolate clinical modules within a shell application:
 
-```
-┌─────────────────────────────────────┐
-│     Shell App (Port 4200)            │
-│  - Authentication & Authorization    │
-│  - Navigation Shell                  │
-│  - Session Management                │
-│  - Shared Services                   │
-└──────────────┬──────────────────────┘
-     │         │         │       │        │
-     ↓         ↓         ↓       ↓        ↓
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│Demographics│ │Vitals  │ │Medications│ │Lab Results│ │Visits │
-│(4201)   │ │(4202)  │ │(4204)    │ │(4203)  │ │(4205)│
-└────────┘ └────────┘ └────────┘ └────────┘ └────────┘
-     │         │         │       │        │
-     └─────────┴─────────┴───────┴────────┘
-                    │
-           ┌────────▼────────┐
-           │  Backend API    │
-           │  (Express.js)   │
-           │  (Port 5001)    │
-           └────────┬────────┘
-                    │
-           ┌────────▼────────┐
-           │   MongoDB       │
-           │  (Port 27017)   │
-           └─────────────────┘
-```
+<div align="center">
+
+![PatientRecords System Architecture](docs/diagrams/system-architecture.svg)
+
+</div>
 
 ### Patient Context Sharing & URL-Based Routing
 
