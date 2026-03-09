@@ -686,17 +686,89 @@ docker compose build --no-cache patientrecord-shell
 - [ ] Audit logging for HIPAA compliance
 - [ ] Multi-language support
 
-### Phase 7 (Planned)
-- [ ] Real-time notifications
-- [ ] Appointment scheduling module
-- [ ] Telemedicine integration
-- [ ] Mobile app (React Native)
+### Phase 7 (Priority - Next)
 
-### Phase 8 (Future)
-- [ ] AI-powered clinical decision support
-- [ ] Interoperability with external EHR systems (HL7/FHIR)
-- [ ] Advanced analytics and reporting
-- [ ] Blockchain for record verification
+**Clinical Notes Module**
+
+Essential foundational capability enabling physicians to document clinical observations, assessments, and clinical decision-making during patient encounters. Clinical notes serve as the authoritative record of care and provide critical context for all downstream AI agents and analytics.
+
+#### Core Capabilities
+- **Rich Text Clinical Notes** — WYSIWYG editor for detailed clinical documentation with formatting, templates, and structured data
+- **Note Templates** — Pre-built templates for common encounter types (Physical Exam, Follow-up Visit, Procedure Note, etc.)
+- **Vital Signs & Measurement Integration** — Auto-populate vital signs, lab results, and medications from patient record into notes
+- **Historical Note Access** — View all previous clinical notes with timestamps and author attribution
+- **Full-Text Search** — Search across all patient notes for clinical keywords, diagnoses, medications mentioned
+- **Note Versioning & Audit Trail** — Track all note modifications with before/after versions for compliance
+
+#### Clinical Context Integration
+- Notes linked to specific visits and encounters
+- Automatic timestamps and clinician attribution
+- Cross-reference to labs, medications, and vital signs
+- Patient-accessible summary view (patient portal integration future phase)
+
+#### Compliance & Documentation
+- HIPAA-compliant storage with encryption
+- Complete audit trail of all note access and modifications
+- Standardized formatting for regulatory requirements
+- Meaningful Use and documentation standards support
+
+#### System Architecture
+- New "Clinical Notes" module on port 4207
+- Backend storage with full-text indexing for search performance
+- Integration with Visits module for encounter context
+- Real-time sync with PatientContextService
+
+---
+
+### Phase 8 (Planned)
+
+**Autonomous Clinical Decision Support Agents**
+
+A suite of AI-driven autonomous agents that provide intelligent recommendations to healthcare professionals for enhanced diagnostic accuracy, prognosis, and treatment planning. All agent recommendations require explicit healthcare professional approval before implementation.
+
+**Enabled by Phase 7**: Agents analyze clinical notes alongside structured patient data for comprehensive, context-aware recommendations.
+
+#### Core Agent Capabilities
+- **Medication Recommendation Agent** — Analyzes patient history, current medications, vitals, clinical notes, and lab results to recommend medication adjustments or changes
+- **Diagnostic Data Agent** — Recommends specific labs, imaging, or other health data collection needed for better diagnosis based on clinical presentation
+- **Treatment Planning Agent** — Suggests evidence-based treatment protocols based on patient conditions, comorbidities, clinical notes, and clinical guidelines
+- **Care Coordination Agent** — Recommends specialist referrals or additional clinical team members based on patient needs documented in notes
+- **Orchestration Agent** — Coordinates recommendations across all agents, prioritizes actions, manages dependencies, and ensures coherent multi-agent workflows
+
+#### Approval Workflow
+- All agent recommendations display in a review queue within the dashboard
+- Healthcare professionals review recommendations with evidence-based reasoning displayed
+- Clinician explicitly approves, modifies, or rejects recommendations before any action
+- Approved recommendations generate orders (medication, lab requests, referrals)
+- All agent interactions and approvals logged for compliance and audit trails
+
+#### Data Sources & Intelligence
+- **Clinical Notes** — Full clinical documentation from Phase 7 module
+- **Patient Data** — Current medications, vitals, lab results, visit history, diagnoses, allergies
+- **Clinical Guidelines** — Evidence-based treatment protocols and best practices
+- **Drug Interaction Database** — Real-time interaction checking and contraindication warnings
+- **Patient Outcomes** — Historical treatment outcomes for similar patient profiles
+
+#### System Architecture
+- Agents implemented as independent microservices or serverless functions
+- Real-time patient data synchronization via PatientContextService
+- Integration with Phase 7 clinical notes for context
+- Integration with backend clinical database for rule evaluation
+- Secure API communication with approval workflow engine
+
+#### Safety & Compliance
+- All recommendations include confidence scores and evidence citations
+- Recommendations never auto-execute; human approval always required
+- Complete audit trail of all AI decisions and clinician actions
+- Explainability features show reasoning behind each recommendation
+- HIPAA-compliant logging and data handling
+
+#### Future Enhancements
+- Machine learning models trained on historical patient outcomes
+- Natural language processing for advanced clinical notes analysis
+- Advanced predictive analytics for early intervention
+- Multi-specialty collaboration recommendations
+- Real-time alerts for critical clinical conditions
 
 ## 📚 Additional Resources
 
