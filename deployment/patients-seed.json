@@ -1,0 +1,146 @@
+[
+  {
+    "patientid": 1,
+    "firstname": "John",
+    "lastname": "Smith",
+    "demographics": {
+      "dateOfBirth": "1965-03-15",
+      "gender": "Male",
+      "bloodType": "O+",
+      "mrn": "MRN-1001",
+      "ssn": "123-45-6789",
+      "preferredLanguage": "English",
+      "maritalStatus": "Married",
+      "race": "Caucasian",
+      "ethnicity": "Non-Hispanic",
+      "primaryPhone": "555-0101",
+      "email": "john.smith@email.com",
+      "address": {
+        "street": "123 Main St",
+        "city": "Springfield",
+        "state": "IL",
+        "zip": "62701",
+        "country": "USA"
+      }
+    },
+    "vitals": [
+      {"dateofobservation": "2026-02-20", "observationcode": "BP", "vital_description": "Blood Pressure", "unit": "mmHg", "value": "120/80"},
+      {"dateofobservation": "2026-02-20", "observationcode": "HR", "vital_description": "Heart Rate", "unit": "bpm", "value": "72"},
+      {"dateofobservation": "2026-02-20", "observationcode": "TEMP", "vital_description": "Temperature", "unit": "°F", "value": "98.6"},
+      {"dateofobservation": "2026-02-19", "observationcode": "RR", "vital_description": "Respiratory Rate", "unit": "breaths/min", "value": "16"}
+    ],
+    "labs": [
+      {"date": "2026-02-15", "test_name": "Complete Blood Count", "test_code": "CBC", "result": "4.5", "unit": "million cells/mcL", "reference_range": "4.5-5.5"},
+      {"date": "2026-02-15", "test_name": "Hemoglobin", "test_code": "HGB", "result": "14.2", "unit": "g/dL", "reference_range": "13.5-17.5"},
+      {"date": "2026-02-10", "test_name": "Glucose", "test_code": "GLU", "result": "95", "unit": "mg/dL", "reference_range": "70-100"},
+      {"date": "2026-02-10", "test_name": "Total Cholesterol", "test_code": "CHOL", "result": "185", "unit": "mg/dL", "reference_range": "<200"}
+    ],
+    "medications": [
+      {"startDate": "2026-01-01", "name": "Lisinopril", "dose": "10mg", "frequency": "Once daily", "indication": "Hypertension"},
+      {"startDate": "2026-01-15", "name": "Atorvastatin", "dose": "20mg", "frequency": "Once daily", "indication": "High cholesterol"},
+      {"startDate": "2025-09-01", "name": "Aspirin", "dose": "81mg", "frequency": "Once daily", "indication": "Cardiovascular protection"}
+    ],
+    "visits": [
+      {"date": "2026-02-20", "visitType": "clinic", "reason": "Annual checkup", "notes": "Patient in good health", "provider_name": "Dr. Johnson", "facility_name": "City Medical Center"},
+      {"date": "2026-01-10", "visitType": "office", "reason": "Follow-up", "notes": "BP monitoring", "provider_name": "Dr. Johnson", "facility_name": "Medical Office"}
+    ],
+    "allergies": [
+      {"type": "drug", "substance": "Penicillin", "severity": "severe", "reaction": "Anaphylaxis"}
+    ]
+  },
+  {
+    "patientid": 2,
+    "firstname": "Mary",
+    "lastname": "Johnson",
+    "demographics": {
+      "dateOfBirth": "1972-07-22",
+      "gender": "Female",
+      "bloodType": "A+",
+      "mrn": "MRN-1002",
+      "ssn": "234-56-7890",
+      "preferredLanguage": "English",
+      "maritalStatus": "Single",
+      "race": "Asian",
+      "ethnicity": "Non-Hispanic",
+      "primaryPhone": "555-0102",
+      "email": "mary.johnson@email.com",
+      "address": {
+        "street": "456 Oak Ave",
+        "city": "Portland",
+        "state": "OR",
+        "zip": "97201",
+        "country": "USA"
+      }
+    },
+    "vitals": [
+      {"dateofobservation": "2026-02-18", "observationcode": "BP", "vital_description": "Blood Pressure", "unit": "mmHg", "value": "118/76"},
+      {"dateofobservation": "2026-02-18", "observationcode": "HR", "vital_description": "Heart Rate", "unit": "bpm", "value": "68"},
+      {"dateofobservation": "2026-02-18", "observationcode": "TEMP", "vital_description": "Temperature", "unit": "°F", "value": "98.2"},
+      {"dateofobservation": "2026-02-17", "observationcode": "RR", "vital_description": "Respiratory Rate", "unit": "breaths/min", "value": "14"}
+    ],
+    "labs": [
+      {"date": "2026-02-12", "test_name": "Thyroid Panel", "test_code": "TSH", "result": "2.4", "unit": "mIU/L", "reference_range": "0.4-4.0"},
+      {"date": "2026-02-12", "test_name": "Free T4", "test_code": "FT4", "result": "0.9", "unit": "ng/dL", "reference_range": "0.7-1.9"},
+      {"date": "2026-02-05", "test_name": "A1C", "test_code": "A1C", "result": "6.8", "unit": "%", "reference_range": "<5.7"}
+    ],
+    "medications": [
+      {"startDate": "2025-06-01", "name": "Metformin", "dose": "500mg", "frequency": "Twice daily", "indication": "Type 2 Diabetes"},
+      {"startDate": "2025-06-15", "name": "Levothyroxine", "dose": "50mcg", "frequency": "Once daily", "indication": "Hypothyroidism"}
+    ],
+    "visits": [
+      {"date": "2026-02-18", "visitType": "clinic", "reason": "Diabetes management", "notes": "A1c check completed", "provider_name": "Dr. Smith", "facility_name": "City Medical Center"},
+      {"date": "2025-12-15", "visitType": "office", "reason": "Thyroid checkup", "notes": "TSH normal", "provider_name": "Dr. Williams", "facility_name": "Medical Office"}
+    ],
+    "allergies": []
+  },
+  {
+    "patientid": 3,
+    "firstname": "Robert",
+    "lastname": "Williams",
+    "demographics": {
+      "dateOfBirth": "1958-11-05",
+      "gender": "Male",
+      "bloodType": "B+",
+      "mrn": "MRN-1003",
+      "ssn": "345-67-8901",
+      "preferredLanguage": "English",
+      "maritalStatus": "Divorced",
+      "race": "African American",
+      "ethnicity": "Non-Hispanic",
+      "primaryPhone": "555-0103",
+      "email": "robert.williams@email.com",
+      "address": {
+        "street": "789 Pine Rd",
+        "city": "Atlanta",
+        "state": "GA",
+        "zip": "30303",
+        "country": "USA"
+      }
+    },
+    "vitals": [
+      {"dateofobservation": "2026-02-16", "observationcode": "BP", "vital_description": "Blood Pressure", "unit": "mmHg", "value": "135/85"},
+      {"dateofobservation": "2026-02-16", "observationcode": "HR", "vital_description": "Heart Rate", "unit": "bpm", "value": "76"},
+      {"dateofobservation": "2026-02-16", "observationcode": "TEMP", "vital_description": "Temperature", "unit": "°F", "value": "98.4"},
+      {"dateofobservation": "2026-02-15", "observationcode": "RR", "vital_description": "Respiratory Rate", "unit": "breaths/min", "value": "18"}
+    ],
+    "labs": [
+      {"date": "2026-02-08", "test_name": "Lipid Panel - Total Cholesterol", "test_code": "CHOL", "result": "240", "unit": "mg/dL", "reference_range": "<200"},
+      {"date": "2026-02-08", "test_name": "LDL Cholesterol", "test_code": "LDL", "result": "160", "unit": "mg/dL", "reference_range": "<100"},
+      {"date": "2026-02-08", "test_name": "HDL Cholesterol", "test_code": "HDL", "result": "35", "unit": "mg/dL", "reference_range": ">40"},
+      {"date": "2026-02-08", "test_name": "Triglycerides", "test_code": "TRIG", "result": "200", "unit": "mg/dL", "reference_range": "<150"}
+    ],
+    "medications": [
+      {"startDate": "2024-03-01", "name": "Amlodipine", "dose": "5mg", "frequency": "Once daily", "indication": "Hypertension"},
+      {"startDate": "2024-03-01", "name": "Atorvastatin", "dose": "40mg", "frequency": "Once daily", "indication": "High cholesterol"},
+      {"startDate": "2024-06-15", "name": "Metoprolol", "dose": "50mg", "frequency": "Twice daily", "indication": "Hypertension and heart rate control"}
+    ],
+    "visits": [
+      {"date": "2026-02-16", "visitType": "clinic", "reason": "Blood pressure check", "notes": "Slightly elevated, increase monitoring", "provider_name": "Dr. Green", "facility_name": "City Medical Center"},
+      {"date": "2025-12-10", "visitType": "hospital", "reason": "Cardiac evaluation", "notes": "EKG normal, continue current medications", "provider_name": "Dr. Green", "facility_name": "City Hospital"},
+      {"date": "2025-10-20", "visitType": "office", "reason": "Routine checkup", "notes": "Blood work ordered", "provider_name": "Dr. Brown", "facility_name": "Medical Office"}
+    ],
+    "allergies": [
+      {"type": "drug", "substance": "Sulfonamides", "severity": "moderate", "reaction": "Rash"}
+    ]
+  }
+]

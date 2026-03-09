@@ -1,4 +1,16 @@
 services:
+  # Module Registry Service
+  patientrecord-registry:
+    build:
+      context: ./registry
+      dockerfile: Dockerfile
+    image: patientrecord-registry
+    container_name: patientrecord-registry
+    ports:
+      - "5000:5000"
+    networks:
+      - app-net
+
   # Shell App (Host) - Orchestrator
   patientrecord-shell:
     build:
@@ -89,6 +101,21 @@ services:
     networks:
       - app-net
 
+  # Care Team Micro-Frontend (Independent Container)
+  patientrecord-care-team:
+    build:
+      context: ./frontend
+      dockerfile: modules/care-team/Dockerfile
+    image: patientrecord-care-team
+    container_name: patientrecord-care-team
+    ports:
+      - "4206:4200"
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - app-net
+
   patientrecord-backend:
     build:
       context: ./backend
@@ -99,6 +126,7 @@ services:
       - NODE_ENV=development
       - PORT=5001
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - TOKEN_EXPIRATION_MINUTES=3
     ports:
       - "5001:5001"
     volumes:

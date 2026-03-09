@@ -14,7 +14,6 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  padding: 0 1rem;
 }
 
 .search-area {
@@ -34,7 +33,6 @@
 
 @media (max-width: 768px) {
   .authenticated-layout {
-    padding: 0 0.5rem;
   }
 
   .search-area {

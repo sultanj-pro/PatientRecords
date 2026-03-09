@@ -21,8 +21,7 @@
             "styles": ["src/styles.css"],
             "scripts": [],
             "customWebpackConfig": {
-              "path": "./webpack.config.js",
-              "mergeStrategies": { "plugins": "replace" }
+              "path": "./webpack.config.js"
             }
           },
           "configurations": {

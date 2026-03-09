@@ -1,0 +1,337 @@
+<div class="care-team-container">
+  <!-- Header -->
+  <div class="care-team-header">
+    <h2>Care Team Management</h2>
+    <button class="btn btn-primary" (click)="toggleAddForm()" *ngIf="!showAddForm">
+      + Add Team Member
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="error">
+    <strong>Error:</strong> {{ error }}
+    <button class="close-btn" (click)="error = null">&times;</button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading care team data...</p>
+  </div>
+
+  <!-- Add Form -->
+  <div class="add-member-form" *ngIf="showAddForm && !loading">
+    <h3>Add Care Team Member</h3>
+    <div class="form-group">
+      <label for="name">Name *</label>
+      <input 
+        type="text" 
+        id="name" 
+        class="form-control" 
+        [(ngModel)]="newMemberForm.name"
+        placeholder="Full name"
+      >
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="role">Role *</label>
+        <select id="role" class="form-control" [(ngModel)]="newMemberForm.role">
+          <option value="">Select a role</option>
+          <option *ngFor="let role of commonRoles" [value]="role">{{ role }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="specialty">Specialty</label>
+        <select id="specialty" class="form-control" [(ngModel)]="newMemberForm.specialty">
+          <option value="">Select or enter specialty</option>
+          <option *ngFor="let spec of commonSpecialties" [value]="spec">{{ spec }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="phone">Phone</label>
+        <input 
+          type="tel" 
+          id="phone" 
+          class="form-control" 
+          [(ngModel)]="newMemberForm.phone"
+          placeholder="(555) 123-4567"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          class="form-control" 
+          [(ngModel)]="newMemberForm.email"
+          placeholder="member@hospital.com"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="organization">Organization</label>
+      <input 
+        type="text" 
+        id="organization" 
+        class="form-control" 
+        [(ngModel)]="newMemberForm.organization"
+        placeholder="Hospital name"
+      >
+    </div>
+
+    <div class="form-check">
+      <input 
+        type="checkbox" 
+        id="isPrimary" 
+        class="form-check-input" 
+        [(ngModel)]="newMemberForm.isPrimary"
+      >
+      <label for="isPrimary" class="form-check-label">
+        Set as Primary Care Provider
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-success" (click)="addCareTeamMember()" [disabled]="loading">
+        Add Member
+      </button>
+      <button class="btn btn-secondary" (click)="toggleAddForm()">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Primary Care Provider Section -->
+  <div class="primary-provider-section" *ngIf="getPrimaryMember() && !loading">
+    <h3>Primary Care Provider</h3>
+    <div class="member-card primary">
+      <div class="member-header">
+        <div class="member-info">
+          <h4>{{ getPrimaryMember()!.name }}</h4>
+          <p class="role">{{ getPrimaryMember()!.role }}</p>
+          <p class="specialty" *ngIf="getPrimaryMember()!.specialty">
+            {{ getPrimaryMember()!.specialty }}
+          </p>
+        </div>
+        <div class="badge-primary">Primary</div>
+      </div>
+
+      <div class="member-details">
+        <p *ngIf="getPrimaryMember()!.phone">
+          <strong>Phone:</strong> 
+          <a [href]="'tel:' + getPrimaryMember()!.phone">
+            {{ getPrimaryMember()!.phone }}
+          </a>
+        </p>
+        <p *ngIf="getPrimaryMember()!.email">
+          <strong>Email:</strong> 
+          <a [href]="'mailto:' + getPrimaryMember()!.email">
+            {{ getPrimaryMember()!.email }}
+          </a>
+        </p>
+        <p *ngIf="getPrimaryMember()!.organization">
+          <strong>Organization:</strong> {{ getPrimaryMember()!.organization }}
+        </p>
+        <p *ngIf="getPrimaryMember()!.startDate">
+          <strong>Start Date:</strong> {{ formatDate(getPrimaryMember()!.startDate) }}
+        </p>
+      </div>
+
+      <div class="member-actions">
+        <button 
+          class="btn btn-sm btn-edit" 
+          (click)="startEditing(getPrimaryMember()!)"
+          *ngIf="editingMemberId !== getPrimaryMember()!.id"
+        >
+          Edit
+        </button>
+      </div>
+
+      <!-- Edit Form for Primary -->
+      <div class="edit-form" *ngIf="editingMemberId === getPrimaryMember()!.id && editingMember">
+        <div class="form-group">
+          <label>Name</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="editingMember.name"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Role</label>
+          <select class="form-control" [(ngModel)]="editingMember.role">
+            <option *ngFor="let role of commonRoles" [value]="role">{{ role }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Specialty</label>
+          <select class="form-control" [(ngModel)]="editingMember.specialty">
+            <option value="">Select specialty</option>
+            <option *ngFor="let spec of commonSpecialties" [value]="spec">{{ spec }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Phone</label>
+          <input 
+            type="tel" 
+            class="form-control" 
+            [(ngModel)]="editingMember.phone"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input 
+            type="email" 
+            class="form-control" 
+            [(ngModel)]="editingMember.email"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Organization</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="editingMember.organization"
+          >
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-success" (click)="saveEdit()" [disabled]="loading">
+            Save Changes
+          </button>
+          <button class="btn btn-secondary" (click)="cancelEditing()">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Other Care Team Members Section -->
+  <div class="other-members-section" *ngIf="getNonPrimaryMembers().length > 0 && !loading">
+    <h3>Other Care Team Members</h3>
+    <div class="members-grid">
+      <div class="member-card" *ngFor="let member of getNonPrimaryMembers()">
+        <div class="member-header">
+          <div class="member-info">
+            <h4>{{ member.name }}</h4>
+            <p class="role">{{ member.role }}</p>
+            <p class="specialty" *ngIf="member.specialty">{{ member.specialty }}</p>
+          </div>
+        </div>
+
+        <div class="member-details">
+          <p *ngIf="member.phone">
+            <strong>Phone:</strong> 
+            <a [href]="'tel:' + member.phone">{{ member.phone }}</a>
+          </p>
+          <p *ngIf="member.email">
+            <strong>Email:</strong> 
+            <a [href]="'mailto:' + member.email">{{ member.email }}</a>
+          </p>
+          <p *ngIf="member.organization">
+            <strong>Organization:</strong> {{ member.organization }}
+          </p>
+          <p *ngIf="member.startDate">
+            <strong>Start Date:</strong> {{ formatDate(member.startDate) }}
+          </p>
+        </div>
+
+        <div class="member-actions">
+          <button 
+            class="btn btn-sm btn-edit" 
+            (click)="startEditing(member)"
+            *ngIf="editingMemberId !== member.id"
+          >
+            Edit
+          </button>
+          <button 
+            class="btn btn-sm btn-delete" 
+            (click)="deletingMemberId = member.id"
+            *ngIf="deletingMemberId !== member.id && editingMemberId !== member.id"
+          >
+            Delete
+          </button>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="edit-form" *ngIf="editingMemberId === member.id && editingMember">
+          <div class="form-group">
+            <label>Name</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="editingMember.name"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Role</label>
+            <select class="form-control" [(ngModel)]="editingMember.role">
+              <option *ngFor="let role of commonRoles" [value]="role">{{ role }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Specialty</label>
+            <select class="form-control" [(ngModel)]="editingMember.specialty">
+              <option value="">Select specialty</option>
+              <option *ngFor="let spec of commonSpecialties" [value]="spec">{{ spec }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input 
+              type="email" 
+              class="form-control" 
+              [(ngModel)]="editingMember.email"
+            >
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-success" (click)="saveEdit()" [disabled]="loading">
+              Save Changes
+            </button>
+            <button class="btn btn-secondary" (click)="cancelEditing()">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Delete Confirmation -->
+        <div class="delete-confirmation" *ngIf="deletingMemberId === member.id">
+          <p>Are you sure you want to remove <strong>{{ member.name }}</strong> from the care team?</p>
+          <div class="confirmation-actions">
+            <button class="btn btn-danger" (click)="confirmedDelete(member.id)" [disabled]="loading">
+              Yes, Remove
+            </button>
+            <button class="btn btn-secondary" (click)="cancelDelete()">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="careTeamMembers.length === 0 && !loading && !showAddForm">
+    <p>No care team members assigned yet.</p>
+    <button class="btn btn-primary" (click)="toggleAddForm()">
+      + Add First Team Member
+    </button>
+  </div>
+</div>

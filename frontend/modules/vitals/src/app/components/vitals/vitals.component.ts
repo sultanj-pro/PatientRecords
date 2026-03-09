@@ -43,10 +43,20 @@ export class VitalsComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Listen for patient context changes from the dashboard
+    window.addEventListener('patient-context-changed', (event: any) => {
+      console.log('Vitals: Received patient-context-changed event', event.detail);
+      const newPatientId = event.detail?.patientId?.toString();
+      if (newPatientId && newPatientId !== this.lastPatientId) {
+        this.lastPatientId = newPatientId;
+        this.loadVitals();
+      }
+    });
+
     // Initial load
     this.loadVitals();
     
-    // Use Angular's interval Observable to watch for patient changes
+    // Use Angular's interval Observable to watch for patient changes (as fallback)
     interval(500)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {

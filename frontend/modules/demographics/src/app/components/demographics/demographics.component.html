@@ -14,42 +14,320 @@
   </div>
 
   <!-- Content State -->
-  <div *ngIf="!loading && currentPatient && !error" class="content-container">
+  <div *ngIf="!loading && currentPatient && currentDemographics && !error" class="content-container">
+    
     <!-- Contact Information Section -->
-    <section class="demographics-section">
-      <h2 class="section-title">📞 Contact Information</h2>
-      <div class="demographics-grid">
-        <div class="info-card">
-          <label>Email Address</label>
-          <p class="info-value" *ngIf="currentPatient['email']">
-            <a href="mailto:{{ currentPatient['email'] }}" class="contact-link">{{ currentPatient['email'] }}</a>
-          </p>
-          <p class="info-value" *ngIf="!currentPatient['email']">Not provided</p>
-        </div>
-        
-        <div class="info-card">
-          <label>Phone Number</label>
-          <p class="info-value" *ngIf="currentPatient['phone']">
-            <a href="tel:{{ currentPatient['phone'] }}" class="contact-link">{{ currentPatient['phone'] }}</a>
-          </p>
-          <p class="info-value" *ngIf="!currentPatient['phone']">Not provided</p>
-        </div>
-        
-        <div class="info-card">
-          <label>Home Address</label>
-          <p class="info-value" *ngIf="currentPatient['address']">
-            {{ currentPatient['address'] }}
-          </p>
-          <p class="info-value" *ngIf="!currentPatient['address']">Not provided</p>
+    <app-collapsible-section 
+      title="📞 Contact Information" 
+      [isExpanded]="contactInfoExpanded"
+      sectionId="contact-info">
+      <div class="section-content-inner">
+        <div class="info-grid">
+          <!-- Primary Phone -->
+          <div class="info-field">
+            <label>Primary Phone</label>
+            <p class="info-value">
+              <a *ngIf="currentDemographics.primaryPhone" [href]="'tel:' + currentDemographics.primaryPhone" class="contact-link">
+                {{ currentDemographics.primaryPhone }}
+              </a>
+              <span *ngIf="!currentDemographics.primaryPhone">Not provided</span>
+            </p>
+          </div>
+
+          <!-- Secondary Phone -->
+          <div class="info-field">
+            <label>Secondary Phone</label>
+            <p class="info-value">
+              <a *ngIf="currentDemographics.secondaryPhone" [href]="'tel:' + currentDemographics.secondaryPhone" class="contact-link">
+                {{ currentDemographics.secondaryPhone }}
+              </a>
+              <span *ngIf="!currentDemographics.secondaryPhone">Not provided</span>
+            </p>
+          </div>
+
+          <!-- Email -->
+          <div class="info-field">
+            <label>Email Address</label>
+            <p class="info-value">
+              <a *ngIf="currentDemographics.email" [href]="'mailto:' + currentDemographics.email" class="contact-link">
+                {{ currentDemographics.email }}
+              </a>
+              <span *ngIf="!currentDemographics.email">Not provided</span>
+            </p>
+          </div>
+
+          <!-- Preferred Language -->
+          <div class="info-field">
+            <label>Preferred Language</label>
+            <p class="info-value">{{ currentDemographics.preferredLanguage || 'Not specified' }}</p>
+          </div>
+
+          <!-- Full Address -->
+          <div class="info-field full-width">
+            <label>Mailing Address</label>
+            <p class="info-value" *ngIf="currentDemographics.address">
+              <span *ngIf="currentDemographics.address.street">{{ currentDemographics.address.street }}<br></span>
+              <span *ngIf="currentDemographics.address.city || currentDemographics.address.state || currentDemographics.address.zip">
+                {{ currentDemographics.address.city }}, {{ currentDemographics.address.state }} {{ currentDemographics.address.zip }}
+              </span>
+            </p>
+            <p class="info-value" *ngIf="!currentDemographics.address">Not provided</p>
+          </div>
         </div>
       </div>
-    </section>
+    </app-collapsible-section>
+
+    <!-- Emergency Contacts Section -->
+    <app-collapsible-section 
+      title="🚨 Emergency Contacts" 
+      [isExpanded]="emergencyContactsExpanded"
+      [badgeCount]="currentDemographics.emergencyContacts?.length || 0"
+      badgeColor="danger"
+      sectionId="emergency-contacts">
+      <div class="section-content-inner">
+        <div *ngIf="!currentDemographics.emergencyContacts || currentDemographics.emergencyContacts.length === 0" class="empty-message">
+          <p>No emergency contacts on file</p>
+        </div>
+
+        <!-- Primary Emergency Contact -->
+        <div *ngIf="getPrimaryEmergencyContact()" class="contact-card primary">
+          <div class="contact-header">
+            <h3>🔴 Primary Emergency Contact</h3>
+          </div>
+          <div class="contact-details">
+            <div class="detail-row">
+              <span class="label">Name</span>
+              <span class="value">{{ getPrimaryEmergencyContact()?.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Relationship</span>
+              <span class="value">{{ getPrimaryEmergencyContact()?.relationship }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Phone</span>
+              <span class="value">
+                <a [href]="'tel:' + getPrimaryEmergencyContact()?.phone" class="contact-link">
+                  {{ getPrimaryEmergencyContact()?.phone }}
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Emergency Contacts -->
+        <div *ngFor="let contact of getOtherEmergencyContacts(); let i = index" class="contact-card">
+          <div class="contact-header">
+            <h3>Secondary Emergency Contact {{ i + 1 }}</h3>
+          </div>
+          <div class="contact-details">
+            <div class="detail-row">
+              <span class="label">Name</span>
+              <span class="value">{{ contact.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Relationship</span>
+              <span class="value">{{ contact.relationship }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Phone</span>
+              <span class="value">
+                <a [href]="'tel:' + contact.phone" class="contact-link">{{ contact.phone }}</a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-collapsible-section>
+
+    <!-- Cultural & Social Information Section -->
+    <app-collapsible-section 
+      title="🌍 Cultural & Social Information" 
+      [isExpanded]="culturalInfoExpanded"
+      sectionId="cultural-info">
+      <div class="section-content-inner">
+        <div class="info-grid">
+          <div class="info-field">
+            <label>Race</label>
+            <p class="info-value">{{ currentDemographics.race || 'Not specified' }}</p>
+          </div>
+
+          <div class="info-field">
+            <label>Ethnicity</label>
+            <p class="info-value">{{ currentDemographics.ethnicity || 'Not specified' }}</p>
+          </div>
+
+          <div class="info-field">
+            <label>Marital Status</label>
+            <p class="info-value">{{ currentDemographics.maritalStatus || 'Not specified' }}</p>
+          </div>
+        </div>
+      </div>
+    </app-collapsible-section>
+
+    <!-- Insurance Information Section -->
+    <app-collapsible-section 
+      title="💳 Insurance Information" 
+      [isExpanded]="insuranceExpanded"
+      [badgeCount]="currentDemographics.insurance?.length || 0"
+      badgeColor="info"
+      sectionId="insurance-info">
+      <div class="section-content-inner">
+        <div *ngIf="!currentDemographics.insurance || currentDemographics.insurance.length === 0" class="empty-message">
+          <p>No insurance information on file</p>
+        </div>
+
+        <!-- Primary Insurance -->
+        <div *ngIf="getPrimaryInsurance()" class="insurance-card primary">
+          <div class="insurance-header">
+            <h3>💳 PRIMARY INSURANCE</h3>
+            <span class="status-badge">Active</span>
+          </div>
+          <div class="insurance-details">
+            <div class="detail-row">
+              <span class="label">Provider</span>
+              <span class="value">{{ getPrimaryInsurance()?.provider }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Policy Number</span>
+              <span class="value">{{ getPrimaryInsurance()?.policyNumber || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Group Number</span>
+              <span class="value">{{ getPrimaryInsurance()?.groupNumber || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Subscriber Name</span>
+              <span class="value">{{ getPrimaryInsurance()?.subscriberName || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Subscriber Relationship</span>
+              <span class="value">{{ getPrimaryInsurance()?.subscriberRelationship || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Effective Date</span>
+              <span class="value">{{ formatDate(getPrimaryInsurance()?.effectiveDate) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Expiration Date</span>
+              <span class="value">{{ formatDate(getPrimaryInsurance()?.expirationDate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Insurance -->
+        <div *ngIf="getSecondaryInsurance()" class="insurance-card secondary">
+          <div class="insurance-header">
+            <h3>💳 SECONDARY INSURANCE</h3>
+          </div>
+          <div class="insurance-details">
+            <div class="detail-row">
+              <span class="label">Provider</span>
+              <span class="value">{{ getSecondaryInsurance()?.provider }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Policy Number</span>
+              <span class="value">{{ getSecondaryInsurance()?.policyNumber || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Group Number</span>
+              <span class="value">{{ getSecondaryInsurance()?.groupNumber || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Subscriber Name</span>
+              <span class="value">{{ getSecondaryInsurance()?.subscriberName || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Subscriber Relationship</span>
+              <span class="value">{{ getSecondaryInsurance()?.subscriberRelationship || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Effective Date</span>
+              <span class="value">{{ formatDate(getSecondaryInsurance()?.effectiveDate) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Expiration Date</span>
+              <span class="value">{{ formatDate(getSecondaryInsurance()?.expirationDate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tertiary Insurance -->
+        <div *ngIf="getTertiaryInsurance()" class="insurance-card tertiary">
+          <div class="insurance-header">
+            <h3>💳 TERTIARY INSURANCE</h3>
+          </div>
+          <div class="insurance-details">
+            <div class="detail-row">
+              <span class="label">Provider</span>
+              <span class="value">{{ getTertiaryInsurance()?.provider }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Policy Number</span>
+              <span class="value">{{ getTertiaryInsurance()?.policyNumber || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Group Number</span>
+              <span class="value">{{ getTertiaryInsurance()?.groupNumber || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Subscriber Name</span>
+              <span class="value">{{ getTertiaryInsurance()?.subscriberName || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Subscriber Relationship</span>
+              <span class="value">{{ getTertiaryInsurance()?.subscriberRelationship || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Effective Date</span>
+              <span class="value">{{ formatDate(getTertiaryInsurance()?.effectiveDate) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Expiration Date</span>
+              <span class="value">{{ formatDate(getTertiaryInsurance()?.expirationDate) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-collapsible-section>
+
+    <!-- Secure Information Section -->
+    <app-collapsible-section 
+      title="🔒 Secure Information" 
+      [isExpanded]="secureInfoExpanded"
+      sectionId="secure-info">
+      <div class="section-content-inner">
+        <div class="secure-warning">
+          ⚠️ This information is sensitive and should be handled with care.
+        </div>
+        
+        <div class="info-grid">
+          <!-- SSN -->
+          <div class="info-field">
+            <label>Social Security Number</label>
+            <div class="secure-field">
+              <span *ngIf="!showSSN" class="masked-value">{{ maskSSN(currentDemographics.ssn) }}</span>
+              <span *ngIf="showSSN" class="visible-value">{{ currentDemographics.ssn }}</span>
+              <button class="toggle-btn" (click)="toggleSSNVisibility()">
+                {{ showSSN ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Sex Assigned at Birth -->
+          <div class="info-field">
+            <label>Sex Assigned at Birth</label>
+            <p class="info-value">{{ currentDemographics.sexAssignedAtBirth || 'Not specified' }}</p>
+          </div>
+
+          <!-- Date of Birth -->
+          <div class="info-field">
+            <label>Date of Birth</label>
+            <p class="info-value">{{ formatDate(currentDemographics.dateOfBirth) }}</p>
+          </div>
+        </div>
+      </div>
+    </app-collapsible-section>
+
   </div>
 
-  <!-- Empty State (shouldn't normally show) -->
-  <div *ngIf="!loading && !currentPatient && !error" class="empty-state-container">
-    <div class="empty-state-icon">👤</div>
-    <h2>No Patient Selected</h2>
-    <p>Please select a patient from the dashboard to view demographics information.</p>
-  </div>
-</div>
+  <!-- Empty State -->

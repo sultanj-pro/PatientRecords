@@ -1,0 +1,66 @@
+# PatientRecords Seeding Service
+# Run with: docker-compose -f docker-compose.seed.yml up seed-data
+# This will populate the database with sample patient data
+
+version: '3.9'
+
+services:
+  # One-time seeding service
+  # Populates MongoDB with sample patient, lab, vitals, and visit data
+  seed-data:
+    image: localhost:5000/patientrecords/backend:v1.0.0
+    container_name: patientrecord-seed
+    
+    # Run the seeding script instead of starting the server
+    entrypoint: /bin/sh -c "npm install && node /app/scripts/seed-labs-visits.js"
+    
+    environment:
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - NODE_ENV=production
+    
+    # Wait for MongoDB to be healthy before seeding
+    depends_on:
+      patientrecord-mongodb:
+        condition: service_healthy
+    
+    networks:
+      - app-net
+    
+    # Don't restart - it's a one-time job
+    restart: "no"
+    
+    # Copy scripts into container for seeding
+    volumes:
+      - ./scripts:/app/scripts:ro
+
+  # MongoDB must be running (reference to main deployment)
+  patientrecord-mongodb:
+    image: localhost:5000/patientrecords/mongodb:v1.0.0
+    container_name: patientrecord-mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      - app-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "-u", "admin", "-p", "admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongo_data:
+    driver: local
+  mongo_config:
+    driver: local
+
+networks:
+  app-net:
+    driver: bridge

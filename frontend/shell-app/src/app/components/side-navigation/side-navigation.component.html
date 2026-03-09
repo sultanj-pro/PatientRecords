@@ -1,0 +1,34 @@
+<div class="side-nav-container" [class.collapsed]="isCollapsed">
+  <!-- Sidebar Header -->
+  <div class="side-nav-header">
+    <button class="toggle-btn" (click)="toggleSidebar()" title="Toggle sidebar">
+      <span class="hamburger">☰</span>
+    </button>
+    <span class="sidebar-title" *ngIf="!isCollapsed">Modules</span>
+  </div>
+
+  <!-- Modules List -->
+  <nav class="side-nav-modules">
+    <a 
+      *ngFor="let module of modules" 
+      class="nav-item"
+      [class.active]="selectedModule === module.id"
+      (click)="selectModule(module)"
+      [title]="module.name">
+      
+      <span class="nav-icon">{{ getModuleIcon(module) }}</span>
+      <span class="nav-label" *ngIf="!isCollapsed">{{ module.name }}</span>
+    </a>
+  </nav>
+
+  <!-- Sidebar Footer -->
+  <div class="side-nav-footer">
+    <button 
+      class="logout-btn"
+      (click)="onLogout()"
+      [title]="isCollapsed ? 'Logout' : ''">
+      <span class="logout-icon">🚪</span>
+      <span class="logout-label" *ngIf="!isCollapsed">Logout</span>
+    </button>
+  </div>
+</div>

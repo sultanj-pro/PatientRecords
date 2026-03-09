@@ -235,14 +235,6 @@
         "responses": { "200": { "description": "Array of medications" } },
         "security": [ { "bearerAuth": [] } ]
       }
-    },
-    "/api/provider-options": {
-      "get": {
-        "tags": ["Provider Options"],
-        "summary": "Proxy to spark-service provider options",
-        "responses": { "200": { "description": "Provider options" }, "502": { "description": "Bad gateway" } },
-        "security": [ { "bearerAuth": [] } ]
-      }
     }
   },
   "components": {

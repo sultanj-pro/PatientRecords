@@ -10,9 +10,5 @@
  * - Set patient: patientContext.setSelectedPatient(patient)
  */
 
-export interface PatientContextService {
-  setSelectedPatient(patient: any): void;
-  getSelectedPatient(): any;
-  getCurrentPatient(): any;
-  clearPatient(): void;
-}
+// This file is currently empty as PatientContextService is defined in services/
+// keeping this file for backwards compatibility with imports

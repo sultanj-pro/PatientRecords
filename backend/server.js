@@ -18,19 +18,73 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
-const SPARK_SERVICE_URL = process.env.SPARK_SERVICE_URL || process.env.SPARK_URL || 'http://spark-service:8998';
+const TOKEN_EXPIRATION_MINUTES = parseInt(process.env.TOKEN_EXPIRATION_MINUTES || '60', 10);
+const TOKEN_EXPIRATION_SECONDS = TOKEN_EXPIRATION_MINUTES * 60;
 
 // Define Patient schema
 const patientSchema = new mongoose.Schema({
   patientid: { type: Number, unique: true, required: true },
   firstname: { type: String },
   lastname: { type: String },
-  demographics: [
-    {
-      description: String,
-      value: String
-    }
-  ],
+  demographics: {
+    // Basic Information
+    legalName: {
+      first: String,
+      middle: String,
+      last: String
+    },
+    preferredName: String,
+    dateOfBirth: Date,
+    gender: { type: String, enum: ['Male', 'Female'] },
+    sexAssignedAtBirth: { type: String, enum: ['Male', 'Female'] },
+    
+    // Identification
+    ssn: String, // Will be masked in responses
+    mrn: String,
+    bloodType: String,
+    
+    // Contact Information
+    primaryPhone: String,
+    secondaryPhone: String,
+    email: String,
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      zip: String,
+      country: String
+    },
+    
+    // Emergency Contacts
+    emergencyContacts: [
+      {
+        name: String,
+        relationship: String,
+        phone: String,
+        isPrimary: { type: Boolean, default: false }
+      }
+    ],
+    
+    // Cultural & Social
+    preferredLanguage: String,
+    race: String,
+    ethnicity: String,
+    maritalStatus: String,
+    
+    // Insurance
+    insurance: [
+      {
+        type: { type: String, enum: ['primary', 'secondary', 'tertiary'] },
+        provider: String,
+        policyNumber: String,
+        groupNumber: String,
+        subscriberName: String,
+        subscriberRelationship: String,
+        effectiveDate: Date,
+        expirationDate: Date
+      }
+    ]
+  },
   vitals: [
     {
       dateofobservation: String,
@@ -75,6 +129,29 @@ const patientSchema = new mongoose.Schema({
       provider_name: String,
       facility_name: String,
       discharge_status: String,
+      deletedAt: { type: Date, default: null }
+    }
+  ],
+  allergies: [
+    {
+      type: { type: String, enum: ['drug', 'food', 'environmental'], required: true },
+      substance: { type: String, required: true },
+      severity: { type: String, enum: ['mild', 'moderate', 'severe', 'life-threatening'] },
+      reaction: String,
+      dateReported: Date
+    }
+  ],
+  careTeam: [
+    {
+      name: { type: String, required: true },
+      role: { type: String, required: true }, // e.g., "Primary Care Physician", "Cardiologist", etc.
+      specialty: String,
+      phone: String,
+      email: String,
+      organization: String,
+      startDate: Date,
+      endDate: { type: Date, default: null },
+      isPrimary: { type: Boolean, default: false },
       deletedAt: { type: Date, default: null }
     }
   ]
@@ -125,7 +202,7 @@ mongoose.connect(MONGODB_URI)
   });
 
 function signToken(username, role) {
-  return jwt.sign({ sub: username, role }, JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ sub: username, role }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_SECONDS });
 }
 
 app.get('/health', (req, res) => {
@@ -140,19 +217,33 @@ app.post('/auth/login', (req, res) => {
   // Assign role based on username pattern
   const role = username === 'admin' ? 'admin' : username.startsWith('doc') ? 'physician' : 'nurse';
   const token = signToken(username, role);
-  res.json({ accessToken: token, tokenType: 'Bearer', expiresIn: 3600, role });
+  res.json({ accessToken: token, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS, role });
 });
 
 // Refresh token: accepts { token }
+// IMPORTANT: Does NOT accept expired tokens - enforces hard session timeout
 app.post('/auth/refresh', (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: 'token required' });
   try {
-    const payload = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+    // Verify token is STILL VALID (not expired) - do NOT use ignoreExpiration
+    const payload = jwt.verify(token, JWT_SECRET);
     const newToken = signToken(payload.sub, payload.role || 'nurse');
-    return res.json({ accessToken: newToken, tokenType: 'Bearer', expiresIn: 3600 });
+    return res.json({ accessToken: newToken, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS });
   } catch (err) {
     return res.status(401).json({ error: 'invalid token' });
+  }
+});
+
+// Validate token: check if a token is still valid
+app.post('/auth/validate', (req, res) => {
+  const { token } = req.body || {};
+  if (!token) return res.status(400).json({ error: 'token required' });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    res.json({ valid: true, username: payload.sub, role: payload.role });
+  } catch (err) {
+    return res.status(401).json({ valid: false, error: 'token invalid or expired' });
   }
 });
 
@@ -194,19 +285,21 @@ app.get('/api/patients', authMiddleware, async (req, res) => {
     
     // Transform to include MRN and DOB extracted from demographics
     const transformed = patients.map(patient => {
-      const dob = patient.demographics?.find(d => d.description === 'Date of Birth')?.value || null;
+      const dob = patient.demographics?.dateOfBirth || null;
+      const mrn = patient.demographics?.mrn || patient.patientid;
       return {
         id: patient._id,
         patientid: patient.patientid,
         firstname: patient.firstname,
         lastname: patient.lastname,
-        mrn: patient.patientid, // MRN is the patient ID
+        mrn: mrn,
         dateOfBirth: dob
       };
     });
     
     res.json(transformed);
   } catch (err) {
+    console.error('Search patients error:', err);
     res.status(500).json({ error: 'failed to fetch patients', detail: err.message });
   }
 });
@@ -218,17 +311,13 @@ app.get('/api/patients/:id', authMiddleware, async (req, res) => {
     if (!patient) return res.status(404).json({ error: 'not found' });
     
     // Ensure MRN is in demographics
-    const hasMRN = patient.demographics && patient.demographics.some(d => d.description === 'MRN');
-    if (!hasMRN) {
-      if (!patient.demographics) patient.demographics = [];
-      patient.demographics.push({
-        description: 'MRN',
-        value: patient.patientid.toString()
-      });
+    if (patient.demographics && !patient.demographics.mrn) {
+      patient.demographics.mrn = `MRN-${patient.patientid}`;
     }
     
     res.json(patient);
   } catch (err) {
+    console.error('Get patient by id error:', err);
     res.status(500).json({ error: 'failed to fetch patient', detail: err.message });
   }
 });
@@ -343,6 +432,29 @@ app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/patients/:id/care-team - get patient care team members
+app.get('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'not found' });
+    const careTeam = (patient.careTeam || []).filter(m => !m.deletedAt).map(member => ({
+      id: member._id?.toString(),
+      name: member.name,
+      role: member.role,
+      specialty: member.specialty,
+      phone: member.phone,
+      email: member.email,
+      organization: member.organization,
+      startDate: member.startDate,
+      endDate: member.endDate,
+      isPrimary: member.isPrimary
+    }));
+    res.json(careTeam);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch care team', detail: err.message });
+  }
+});
+
 // POST /api/patients/:id/vitals - create new vital record (retires old reading with same vital_description)
 app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   try {
@@ -432,14 +544,115 @@ app.post('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   }
 });
 
-// Proxy endpoint to spark-service
-app.get('/api/provider-options', authMiddleware, async (req, res) => {
+// POST /api/patients/:id/care-team - add new care team member
+app.post('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
   try {
-    const resp = await fetch(`${SPARK_SERVICE_URL}/provider-options`);
-    const json = await resp.json();
-    res.json(json);
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const newMember = req.body;
+    if (!newMember.name || !newMember.role) {
+      return res.status(400).json({ error: 'name and role are required' });
+    }
+    
+    // If marking as primary, unmark other primaries
+    if (newMember.isPrimary) {
+      patient.careTeam.forEach(member => {
+        if (!member.deletedAt) {
+          member.isPrimary = false;
+        }
+      });
+    }
+    
+    patient.careTeam.push(newMember);
+    patient.markModified('careTeam');
+    await patient.save();
+    
+    const savedMember = patient.careTeam[patient.careTeam.length - 1];
+    res.status(201).json({
+      id: savedMember._id?.toString(),
+      name: savedMember.name,
+      role: savedMember.role,
+      specialty: savedMember.specialty,
+      phone: savedMember.phone,
+      email: savedMember.email,
+      organization: savedMember.organization,
+      startDate: savedMember.startDate,
+      endDate: savedMember.endDate,
+      isPrimary: savedMember.isPrimary
+    });
   } catch (err) {
-    res.status(502).json({ error: 'failed to reach spark-service', detail: err.message });
+    res.status(500).json({ error: 'failed to create care team member', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/care-team/:memberId - update care team member
+app.put('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const member = patient.careTeam.find(m => m._id?.toString() === req.params.memberId && !m.deletedAt);
+    if (!member) return res.status(404).json({ error: 'care team member not found' });
+    
+    // Update fields
+    if (req.body.name) member.name = req.body.name;
+    if (req.body.role) member.role = req.body.role;
+    if (req.body.specialty !== undefined) member.specialty = req.body.specialty;
+    if (req.body.phone !== undefined) member.phone = req.body.phone;
+    if (req.body.email !== undefined) member.email = req.body.email;
+    if (req.body.organization !== undefined) member.organization = req.body.organization;
+    if (req.body.startDate !== undefined) member.startDate = req.body.startDate;
+    if (req.body.endDate !== undefined) member.endDate = req.body.endDate;
+    
+    // If marking as primary, unmark other primaries
+    if (req.body.isPrimary === true) {
+      patient.careTeam.forEach(m => {
+        if (m._id?.toString() !== req.params.memberId && !m.deletedAt) {
+          m.isPrimary = false;
+        }
+      });
+      member.isPrimary = true;
+    } else if (req.body.isPrimary === false) {
+      member.isPrimary = false;
+    }
+    
+    patient.markModified('careTeam');
+    await patient.save();
+    
+    res.json({
+      id: member._id?.toString(),
+      name: member.name,
+      role: member.role,
+      specialty: member.specialty,
+      phone: member.phone,
+      email: member.email,
+      organization: member.organization,
+      startDate: member.startDate,
+      endDate: member.endDate,
+      isPrimary: member.isPrimary
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update care team member', detail: err.message });
+  }
+});
+
+// DELETE /api/patients/:id/care-team/:memberId - soft delete care team member
+app.delete('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    
+    const member = patient.careTeam.find(m => m._id?.toString() === req.params.memberId && !m.deletedAt);
+    if (!member) return res.status(404).json({ error: 'care team member not found' });
+    
+    member.deletedAt = new Date();
+    patient.markModified('careTeam');
+    await patient.save();
+    
+    res.json({ success: true, message: 'care team member removed' });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to delete care team member', detail: err.message });
   }
 });
 

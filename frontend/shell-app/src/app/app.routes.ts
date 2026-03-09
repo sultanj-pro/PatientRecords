@@ -1,67 +1,16 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './components/login/login.component';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { authGuard } from './core/guards/auth.guard';
 
+/**
+ * App Routes - Base routes
+ * 
+ * NOTE: Dashboard child routes are now dynamically built from the registry
+ * See: DynamicRouteBuilder service and bootstrap.ts APP_INITIALIZER
+ * 
+ * This file is kept for reference and will be used during build compilation,
+ * but the actual routes at runtime will be the ones built dynamically from
+ * the module registry.
+ */
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  {
-    path: 'dashboard',
-    component: DashboardComponent,
-    canActivate: [authGuard],
-    children: [
-      {
-        path: 'demographics',
-        canActivate: [authGuard],
-        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
-      },
-      {
-        path: 'demographics/:patientId',
-        canActivate: [authGuard],
-        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
-      },
-      {
-        path: 'vitals',
-        canActivate: [authGuard],
-        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
-      },
-      {
-        path: 'vitals/:patientId',
-        canActivate: [authGuard],
-        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
-      },
-      {
-        path: 'labs',
-        canActivate: [authGuard],
-        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
-      },
-      {
-        path: 'labs/:patientId',
-        canActivate: [authGuard],
-        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
-      },
-      {
-        path: 'visits',
-        canActivate: [authGuard],
-        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
-      },
-      {
-        path: 'visits/:patientId',
-        canActivate: [authGuard],
-        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
-      },
-      {
-        path: 'medications',
-        canActivate: [authGuard],
-        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
-      },
-      {
-        path: 'medications/:patientId',
-        canActivate: [authGuard],
-        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
-      }
-    ]
-  },
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: '**', redirectTo: '/login' }
+  // Routes are dynamically registered during app initialization
+  // See bootstrap.ts for APP_INITIALIZER configuration
 ];

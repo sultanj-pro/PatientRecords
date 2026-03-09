@@ -5,35 +5,60 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PatientContextService } from '../../core/services/patient-context.service';
 import { AuthService } from '../../core/services/auth.service';
-import { getModulesForRole } from '../../core/config/role-module-config';
+import { PluginRegistryService, ModuleMetadata } from '../../core/services/plugin-registry.service';
+import { SideNavigationComponent } from '../side-navigation/side-navigation.component';
 import { PatientService } from '../../core/services/patient.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SideNavigationComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   patient: any = null;
   userRole: string = 'nurse';
-  availableModules: any[] = [];
+  availableModules: ModuleMetadata[] = [];
   selectedModule: string | null = null;
+  selectedModuleMetadata: ModuleMetadata | null = null;
+  currentPatientId: string | null = null; // Track patient ID from URL
+  registryLoaded = false;
   private destroy$ = new Subject<void>();
 
   constructor(
     private patientContextService: PatientContextService,
     private authService: AuthService,
     private router: Router,
-    private patientService: PatientService
+    private patientService: PatientService,
+    private pluginRegistry: PluginRegistryService
   ) {}
 
-  ngOnInit(): void {
-    // Get user role and load available modules
+  async ngOnInit(): Promise<void> {
+    // IMPORTANT: Validate token with backend on dashboard load
+    // This ensures stale tokens (from service restarts) are caught immediately
+    const isTokenValid = await this.authService.validateTokenWithBackend().toPromise();
+    if (!isTokenValid) {
+      console.warn('[Dashboard] Token validation failed, redirecting to login');
+      this.router.navigate(['/login']);
+      return; // Stop initialization if token is invalid
+    }
+
+    // Set default user role immediately
     const role = this.authService.getRole();
     this.userRole = role || 'nurse';
-    this.availableModules = getModulesForRole(this.userRole);
+    this.registryLoaded = true;
+
+    // Load registry in background (don't block initialization)
+    this.pluginRegistry.loadRegistry()
+      .then(() => {
+        this.availableModules = this.pluginRegistry.getAvailableModulesForRole(this.userRole);
+        console.log('[Dashboard] Available modules loaded:', this.availableModules);
+      })
+      .catch((error) => {
+        console.error('[Dashboard] Failed to load module registry:', error);
+        this.availableModules = [];
+      });
 
     // Subscribe to patient changes and share with micro-frontends
     this.patientContextService
@@ -59,17 +84,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     console.log('[Dashboard] syncFromCurrentRoute called. URL:', this.router.url, 'Segments:', urlSegments);
     
     // Get the module name (after /dashboard/)
-    // URL format: /dashboard/demographics/20003 -> module is 'demographics'
+    // URL format: /dashboard/demographics/20003 -> module is 'demographics', patient is '20003'
     if (urlSegments.length >= 2 && urlSegments[0] === 'dashboard') {
       this.selectedModule = urlSegments[1];
+      this.updateSelectedModuleMetadata();
       console.log('[Dashboard] Selected module set to:', this.selectedModule);
     }
 
-    const patientId = urlSegments.length >= 3 ? urlSegments[2] : null;
-    console.log('[Dashboard] PatientId extracted from URL:', patientId);
+    // Extract patient ID from URL and preserve it
+    const patientIdFromUrl = urlSegments.length >= 3 ? urlSegments[2] : null;
+    if (patientIdFromUrl && patientIdFromUrl !== 'patient') {
+      this.currentPatientId = patientIdFromUrl;
+      console.log('[Dashboard] Patient ID extracted from URL:', this.currentPatientId);
+    }
+    console.log('[Dashboard] Current patient ID:', this.currentPatientId);
     
-    if (patientId) {
-      this.syncPatientFromUrl(patientId);
+    if (patientIdFromUrl) {
+      this.syncPatientFromUrl(patientIdFromUrl);
     } else {
       console.log('[Dashboard] No patientId in URL');
     }
@@ -113,23 +144,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${this.patient.firstname || ''} ${this.patient.lastname || ''}`;
   }
 
-  private getDemographicValue(description: string): string | undefined {
-    if (!this.patient?.demographics) return undefined;
-    const item = this.patient.demographics.find((d: any) => d.description === description);
-    return item?.value;
-  }
-
   getMRN(): string {
-    return this.getDemographicValue('Medical Record Number') || 
-           this.getDemographicValue('MRN') || 
+    const demographics = this.patient?.demographics;
+    return demographics?.mrn || 
            this.patient?.mrn || 
-           this.patient?.patientid?.toString() || 
            this.patient?.patientid?.toString() || 'N/A';
   }
 
   getDOB(): string {
     if (!this.patient) return 'N/A';
-    const dobValue = this.getDemographicValue('Date of Birth') || this.patient.dateOfBirth;
+    const demographics = this.patient?.demographics;
+    const dobValue = demographics?.dateOfBirth || this.patient.dateOfBirth;
     if (!dobValue) return 'N/A';
     
     const dob = new Date(dobValue);
@@ -144,7 +169,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getPatientAge(): string {
     if (!this.patient) return 'N/A';
-    const dobValue = this.getDemographicValue('Date of Birth') || this.patient.dateOfBirth;
+    const demographics = this.patient?.demographics;
+    const dobValue = demographics?.dateOfBirth || this.patient.dateOfBirth;
     if (!dobValue) return 'N/A';
     
     const dob = new Date(dobValue);
@@ -162,7 +188,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getPatientGender(): string {
-    return this.getDemographicValue('Gender') || this.patient?.gender || 'N/A';
+    const demographics = this.patient?.demographics;
+    return demographics?.gender || this.patient?.gender || 'N/A';
+  }
+
+  getPatientAllergies(): string {
+    const allergies = this.patient?.allergies || [];
+    if (allergies.length === 0) {
+      return 'No known allergies';
+    }
+    return allergies.map((a: any) => a.substance).join(', ');
+  }
+
+  getHighestAllergySeverity(): string {
+    const allergies = this.patient?.allergies || [];
+    if (allergies.length === 0) return 'none';
+    
+    const severityOrder = { 'life-threatening': 4, 'severe': 3, 'moderate': 2, 'mild': 1 };
+    let highest = 'none';
+    let highestScore = 0;
+    
+    allergies.forEach((a: any) => {
+      const score = severityOrder[a.severity as keyof typeof severityOrder] || 0;
+      if (score > highestScore) {
+        highestScore = score;
+        highest = a.severity;
+      }
+    });
+    
+    return highest;
   }
 
   navigateToModule(moduleName: string): void {
@@ -209,4 +263,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!currentPatient) return null;
     return (currentPatient.patientid || (currentPatient as any).id || '').toString();
   }
+
+  /**
+   * Handle module selection from side navigation
+   * Navigate to the module while preserving the current patient ID
+   */
+  onModuleSelected(module: ModuleMetadata): void {
+    this.selectedModule = module.id;
+    this.selectedModuleMetadata = module;
+    console.log('[Dashboard] Module selected:', module.id, 'Current patient ID:', this.currentPatientId);
+    
+    // If we have a patient ID, navigate to the module with that patient ID
+    if (this.currentPatientId) {
+      const navigationUrl = `/dashboard/${module.path}/${this.currentPatientId}`;
+      console.log('[Dashboard] Navigating to:', navigationUrl);
+      this.router.navigateByUrl(navigationUrl);
+    } else {
+      console.warn('[Dashboard] No patient ID available for navigation');
+    }
+  }
+
+  /**
+   * Handle logout from side navigation
+   */
+  onLogout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  /**
+   * Update the selected module's metadata based on current selectedModule
+   */
+  private updateSelectedModuleMetadata(): void {
+    if (!this.selectedModule) {
+      this.selectedModuleMetadata = null;
+      return;
+    }
+    
+    const module = this.availableModules.find(m => m.id === this.selectedModule);
+    this.selectedModuleMetadata = module || null;
+    console.log('[Dashboard] Module metadata updated:', this.selectedModuleMetadata);
+  }
 }
+

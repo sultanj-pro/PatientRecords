@@ -24,7 +24,7 @@
     ],
     "paths": {
       "@patient-records/shared": [
-        "shared/src/public-api.ts"
+        "../shared/lib/index.ts"
       ]
     }
   },

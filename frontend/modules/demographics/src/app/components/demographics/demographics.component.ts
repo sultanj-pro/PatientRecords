@@ -4,28 +4,75 @@ import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
+import { CollapsibleSectionComponent } from '../collapsible-section/collapsible-section.component';
 
-// Patient interface (defined locally to avoid module resolution issues)
+// Type definitions for structured demographics
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+}
+
+interface LegalName {
+  first?: string;
+  middle?: string;
+  last?: string;
+}
+
+interface EmergencyContact {
+  name?: string;
+  relationship?: string;
+  phone?: string;
+  isPrimary?: boolean;
+}
+
+interface Insurance {
+  type?: 'primary' | 'secondary' | 'tertiary';
+  provider?: string;
+  policyNumber?: string;
+  groupNumber?: string;
+  subscriberName?: string;
+  subscriberRelationship?: string;
+  effectiveDate?: Date | string;
+  expirationDate?: Date | string;
+}
+
+interface Demographics {
+  legalName?: LegalName;
+  preferredName?: string;
+  dateOfBirth?: Date | string;
+  gender?: string;
+  sexAssignedAtBirth?: string;
+  ssn?: string;
+  mrn?: string;
+  bloodType?: string;
+  primaryPhone?: string;
+  secondaryPhone?: string;
+  email?: string;
+  address?: Address;
+  emergencyContacts?: EmergencyContact[];
+  preferredLanguage?: string;
+  race?: string;
+  ethnicity?: string;
+  maritalStatus?: string;
+  insurance?: Insurance[];
+}
+
 interface Patient {
   patientid?: number;
   id?: number;
   firstname?: string;
-  lastName?: string;
-  firstname_upper?: string;
-  lastname_upper?: string;
-  dateOfBirth?: Date | string;
-  dob?: Date | string;
-  gender?: string;
-  mrn?: string;
-  email?: string;
-  phone?: string;
+  lastname?: string;
+  demographics?: Demographics;
   [key: string]: any;
 }
 
 @Component({
   selector: 'app-demographics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CollapsibleSectionComponent],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
@@ -38,9 +85,21 @@ interface Patient {
 })
 export class DemographicsComponent implements OnInit, OnDestroy {
   currentPatient: Patient | null = null;
+  currentDemographics: Demographics | null = null;
   loading = true;
   error: string | null = null;
   displayAge = 0;
+  
+  // Section expansion states
+  basicInfoExpanded = true;
+  contactInfoExpanded = true;
+  emergencyContactsExpanded = true;
+  culturalInfoExpanded = false;
+  insuranceExpanded = false;
+  secureInfoExpanded = false;
+  
+  // For showing/hiding SSN
+  showSSN = false;
   
   private destroy$ = new Subject<void>();
   private lastPatientId: string | null = null;
@@ -48,12 +107,20 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    // Listen for patient context changes from the dashboard
+    window.addEventListener('patient-context-changed', (event: any) => {
+      console.log('Demographics: Received patient-context-changed event', event.detail);
+      const newPatientId = event.detail?.patientId?.toString();
+      if (newPatientId && newPatientId !== this.lastPatientId) {
+        this.lastPatientId = newPatientId;
+        this.loadPatientData();
+      }
+    });
+
     // Initial load
     this.loadPatientData();
     
-    // Use Angular's interval Observable to watch for patient changes
-    // When patient context changes in localStorage, reload the data
-    // This is necessary because demographics persists when switching tabs
+    // Watch for patient changes (as fallback)
     interval(500)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -73,7 +140,6 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    // Get patient ID from various sources
     const patientId = this.getPatientIdFromStorage();
     
     if (!patientId) {
@@ -82,7 +148,6 @@ export class DemographicsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Call backend API to get patient data
     const apiUrl = `http://localhost:5001/api/patients/${patientId}`;
     
     this.http.get<any>(apiUrl)
@@ -90,37 +155,15 @@ export class DemographicsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (patient) => {
           if (patient) {
-            // Extract values from demographics array
-            const demographics = patient.demographics || [];
-            const getDemographicValue = (description: string): string | undefined => {
-              const item = demographics.find((d: any) => d.description === description);
-              return item?.value;
-            };
+            this.currentPatient = patient;
+            this.currentDemographics = patient.demographics || {};
             
-            // Map backend fields to local Patient interface
-            this.currentPatient = {
-              patientid: patient.patientid || patient.id,
-              firstname: patient.firstname,
-              lastname: patient.lastname,
-              dateOfBirth: getDemographicValue('Date of Birth'),
-              gender: getDemographicValue('Gender'),
-              email: getDemographicValue('Email'),
-              phone: getDemographicValue('Phone'),
-              address: getDemographicValue('Address')
-            };
-            
-            console.log('Date of Birth string:', this.currentPatient.dateOfBirth);
-            
-            // Ensure dateOfBirth is a Date object if present
-            if (this.currentPatient.dateOfBirth) {
-              if (typeof this.currentPatient.dateOfBirth === 'string') {
-                this.currentPatient.dateOfBirth = new Date(this.currentPatient.dateOfBirth);
-                console.log('Converted to Date object:', this.currentPatient.dateOfBirth);
-              }
-              this.displayAge = this.calculateAge(this.currentPatient.dateOfBirth);
-              console.log('Calculated age:', this.displayAge);
+            // Calculate age if DOB exists
+            if (this.currentDemographics?.dateOfBirth) {
+              this.displayAge = this.calculateAge(this.currentDemographics.dateOfBirth);
             }
-            this.lastPatientId = patientId; // Track loaded patient
+            
+            this.lastPatientId = patientId;
             this.loading = false;
           } else {
             this.error = 'No patient data found';
@@ -136,37 +179,28 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   }
 
   private getPatientIdFromStorage(): string | null {
-    // 1. First, try to get from shell app's shared patient context (__PATIENT_CONTEXT__)
     const contextStr = localStorage.getItem('__PATIENT_CONTEXT__');
     if (contextStr) {
       try {
         const context = JSON.parse(contextStr);
-        if (context.patientId) {
-          return context.patientId;
-        }
+        if (context.patientId) return context.patientId;
       } catch (e) {
         console.warn('Failed to parse patient context:', e);
       }
     }
 
-    // 2. Try sessionStorage (set by shell app during navigation)
     let patientId = sessionStorage.getItem('selectedPatientId');
     if (patientId) return patientId;
     
-    // 3. Check localStorage (fallback)
     patientId = localStorage.getItem('selectedPatientId');
     if (patientId) return patientId;
     
-    // 4. Check URL (if accessed directly)
     const urlParams = new URLSearchParams(window.location.search);
     patientId = urlParams.get('patientId');
     if (patientId) return patientId;
     
-    // 5. Extract patientId from URL pattern: /dashboard/:module/:patientId
     const pathMatch = window.location.pathname.match(/\/dashboard\/[^\/]+\/([^\/]+)/);
-    if (pathMatch && pathMatch[1]) {
-      return pathMatch[1];
-    }
+    if (pathMatch && pathMatch[1]) return pathMatch[1];
     
     return null;
   }
@@ -176,7 +210,6 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     const today = new Date();
     const dob = new Date(dateOfBirth);
     
-    // Check if date is valid
     if (isNaN(dob.getTime())) return 0;
     
     let age = today.getFullYear() - dob.getFullYear();
@@ -187,17 +220,6 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     }
     
     return age;
-  }
-
-  getPatientFullName(): string {
-    if (!this.currentPatient) return 'N/A';
-    const firstname = this.currentPatient['firstname'] || '';
-    const lastname = this.currentPatient['lastname'] || '';
-    return `${firstname} ${lastname}`.trim();
-  }
-
-  retryLoad(): void {
-    this.loadPatientData();
   }
 
   formatDate(date: Date | string | undefined | null): string {
@@ -212,10 +234,61 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     return d.toLocaleDateString('en-US', options);
   }
 
+  maskSSN(ssn: string | undefined): string {
+    if (!ssn) return 'N/A';
+    return ssn.substring(0, 5) + '-' + ssn.substring(5);
+  }
+
+  getFullName(): string {
+    if (!this.currentDemographics?.legalName) return 'N/A';
+    const name = this.currentDemographics.legalName;
+    const parts = [name.first, name.middle, name.last].filter(p => p);
+    return parts.length > 0 ? parts.join(' ') : 'N/A';
+  }
+
+  getPreferredName(): string {
+    return this.currentDemographics?.preferredName || 'N/A';
+  }
+
+  getFullAddress(): string {
+    if (!this.currentDemographics?.address) return 'N/A';
+    const addr = this.currentDemographics.address;
+    const parts = [addr.street, addr.city, addr.state, addr.zip].filter(p => p);
+    return parts.length > 0 ? parts.join(', ') : 'N/A';
+  }
+
+  getPrimaryInsurance(): Insurance | undefined {
+    return this.currentDemographics?.insurance?.find(i => i.type === 'primary');
+  }
+
+  getSecondaryInsurance(): Insurance | undefined {
+    return this.currentDemographics?.insurance?.find(i => i.type === 'secondary');
+  }
+
+  getTertiaryInsurance(): Insurance | undefined {
+    return this.currentDemographics?.insurance?.find(i => i.type === 'tertiary');
+  }
+
+  getPrimaryEmergencyContact(): EmergencyContact | undefined {
+    return this.currentDemographics?.emergencyContacts?.find(c => c.isPrimary);
+  }
+
+  getOtherEmergencyContacts(): EmergencyContact[] {
+    return this.currentDemographics?.emergencyContacts?.filter(c => !c.isPrimary) || [];
+  }
+
+  toggleSSNVisibility(): void {
+    this.showSSN = !this.showSSN;
+  }
+
+  retryLoad(): void {
+    this.loadPatientData();
+  }
+
   ngOnDestroy(): void {
-    // RxJS subscription is automatically cleaned up via takeUntil
     this.destroy$.next();
     this.destroy$.complete();
   }
 }
+
 

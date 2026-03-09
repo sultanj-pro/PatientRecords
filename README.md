@@ -1,10 +1,13 @@
 # PatientRecords - Micro-Frontend Medical Records System
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sultanj-pro/PatientRecords/blob/main/LICENSE)
+
 A modern, scalable healthcare information system built with Angular 17, Module Federation, and microservices architecture.
 
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Technology Stack](#-technology-stack)
 - [System Architecture](#system-architecture)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
@@ -20,12 +23,44 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
 
 ### Key Capabilities
-- **Multi-module clinical system** with demographics, vitals, medications, visits, and labs
+- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, and care team
+- **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
+- **Real-time patient context sync** across all modules using Observable pattern
 - **Real-time session management** with automatic token refresh
 - **Role-based access control** (RBAC) for clinical workflows
 - **Responsive web design** for desktop and tablet use
 - **Containerized deployment** using Docker and Docker Compose
 - **Comprehensive API** with OpenAPI/Swagger documentation
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **Angular 17** — Modern web framework with component-based architecture
+- **Module Federation** — Micro-frontend orchestration via @angular-architects/module-federation
+- **TypeScript 5** — Type-safe JavaScript development
+- **RxJS 7** — Reactive programming with Observables
+- **Karma & Jasmine** — Unit testing framework
+- **Nginx** — Reverse proxy and HTTP server for production deployments
+
+### Backend
+- **Node.js 18+** — JavaScript runtime environment
+- **Express.js** — Lightweight web application framework
+- **MongoDB with Mongoose** — NoSQL database and ODM
+- **JWT (jsonwebtoken)** — Token-based authentication and authorization
+- **Swagger/OpenAPI** — API documentation and validation
+- **Jest** — Testing framework with coverage reporting
+
+### Infrastructure & DevOps
+- **Docker** — Containerization for consistent deployments
+- **Docker Compose** — Multi-container orchestration
+- **Docker Registry** — Private container image registry
+- **PostgreSQL** — Relational database support for migrations
+- **Alpine Linux** — Lightweight base images
+
+### Build & Development Tools
+- **Angular CLI 17** — Angular development and build tooling
+- **Nx** — Monorepo management with task orchestration
+- **npm Workspaces** — Monorepo organization
 
 ## 🏗️ System Architecture
 
@@ -33,34 +68,42 @@ PatientRecords is a next-generation electronic health record (EHR) system design
 
 The system uses Angular Module Federation to isolate clinical modules within a shell application:
 
-```
-┌─────────────────────────────────────┐
-│     Shell App (Port 4200)            │
-│  - Authentication & Authorization    │
-│  - Navigation Shell                  │
-│  - Session Management                │
-│  - Shared Services                   │
-└──────────────┬──────────────────────┘
-     │         │         │       │        │
-     ↓         ↓         ↓       ↓        ↓
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│Demographics│ │Vitals  │ │Medications│ │Lab Results│ │Visits │
-│(4201)   │ │(4202)  │ │(4204)    │ │(4203)  │ │(4205)│
-└────────┘ └────────┘ └────────┘ └────────┘ └────────┘
-     │         │         │       │        │
-     └─────────┴─────────┴───────┴────────┘
-                    │
-           ┌────────▼────────┐
-           │  Backend API    │
-           │  (Express.js)   │
-           │  (Port 5001)    │
-           └────────┬────────┘
-                    │
-           ┌────────▼────────┐
-           │   MongoDB       │
-           │  (Port 27017)   │
-           └─────────────────┘
-```
+<div align="center">
+
+![PatientRecords System Architecture](docs/diagrams/system-architecture.svg)
+
+</div>
+
+### Patient Context Sharing & URL-Based Routing
+
+#### Shareable Patient URLs (Phase 6a)
+
+Direct patient-module access with shareable URLs:
+
+**URL Pattern**: `/dashboard/:module/:patientId`
+
+Examples:
+- `/dashboard/vitals/20001` - Vitals view for patient 20001
+- `/dashboard/medications/20002` - Medications for patient 20002
+- `/dashboard/labs/20003` - Lab results for patient 20003
+
+**Key Features**:
+- Copy/paste URLs to share specific patient views with colleagues
+- Browser refresh preserves patient and module context
+- Login flow preserves intended destination via `returnUrl`
+- Patient selection updates URL while staying on current tab
+
+**Cross-Module State Synchronization**:
+- All modules watch `localStorage.__PATIENT_CONTEXT__` via RxJS Observable (500ms interval)
+- Patient selection in one module instantly refreshes all other loaded modules
+- No page refresh required when switching patients
+- Type-safe patientId handling with explicit String conversion
+
+**Implementation Details**:
+- Dashboard component syncs from URL on both initial load and route changes
+- Patient context stored in localStorage as single source of truth
+- All modules implement identical Observable pattern for consistency
+- URL navigation uses `navigateByUrl()` for full path preservation
 
 ### Authentication & Session Management
 
@@ -133,6 +176,7 @@ Two-tier approach for uninterrupted user experience:
 4. **Access the application**
 
    - **Web UI**: http://localhost:4200
+   - **Direct Patient View**: http://localhost:4200/dashboard/vitals/20001
    - **API Documentation**: http://localhost:5001/api-docs
    - **Backend Health**: http://localhost:5001/health
 
@@ -141,6 +185,13 @@ Two-tier approach for uninterrupted user experience:
    Email: test@example.com
    Password: password123
    ```
+
+6. **Test patients** (with varied clinical data)
+   - Patient 20001 (Sarah Mitchell): Healthy, minimal medications
+   - Patient 20002 (John Anderson): Hypertension/diabetes, 3 medications
+   - Patient 20003 (Emily Rodriguez): Prenatal care, optimal vitals
+   - Patient 20004 (Michael Thompson): Complex cardiac, 4 medications
+   - Patient 20005 (Jennifer Kumar): Thyroid/psychiatric, 2 medications
 
 ### Local Development
 
@@ -280,9 +331,12 @@ patricents
 - Graceful session expiration handling
 
 **User Experience**
+- Shareable patient URLs for collaboration
+- Real-time patient context sync across all modules
+- Patient selection stays on current tab while updating URL
 - Responsive design for multiple devices
 - Persistent login across module reloads
-- Return URL navigation after login
+- Return URL navigation after login (preserves deep-linked patient URLs)
 - Session expiration notifications
 - Comprehensive error handling
 
@@ -622,7 +676,11 @@ docker compose build --no-cache patientrecord-shell
 
 ## 🗺️ Roadmap
 
-### Phase 6 (Planning)
+### Phase 6 (Current - Completed)
+- [x] Shareable patient URLs with deep-linkable module views
+- [x] Observable pattern for real-time cross-module patient sync
+- [x] URL preservation through login flow
+- [x] Varied test data for realistic clinical scenarios
 - [ ] Advanced search and filtering
 - [ ] Patient data export (PDF, Excel)
 - [ ] Audit logging for HIPAA compliance
@@ -669,6 +727,7 @@ For issues, questions, or suggestions:
 
 ---
 
-**Last Updated**: Phase 5d (Session Timeout & Token Refresh - Complete)
+**Last Updated**: Phase 6a (Shareable Patient URLs & Observable Pattern - Complete)
 **System Status**: ✅ All services operational
-**Latest Commit**: 25131e9
+**Latest Commit**: cdcb4d1
+**Latest Feature**: URL-based patient routing with real-time cross-module synchronization

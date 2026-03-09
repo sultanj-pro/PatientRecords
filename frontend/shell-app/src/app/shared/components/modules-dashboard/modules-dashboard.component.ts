@@ -15,13 +15,12 @@ import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { PatientContextService } from '../../../core/services/patient-context.service';
 import { ModuleLoaderService } from '../../../core/services/module-loader.service';
-import { getModulesForRole, ModuleConfig } from '../../../core/config/role-module-config';
+import { PluginRegistryService, ModuleMetadata } from '../../../core/services/plugin-registry.service';
 
-interface ModuleDisplay extends ModuleConfig {
+interface ModuleDisplay extends ModuleMetadata {
   loaded: boolean;
   loading: boolean;
   error: string | null;
-  order: number;
 }
 
 @Component({
@@ -47,15 +46,19 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private patientContextService: PatientContextService,
     private moduleLoaderService: ModuleLoaderService,
+    private pluginRegistry: PluginRegistryService,
     private injector: Injector
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    // Load registry - ensures all modules are available
+    await this.pluginRegistry.loadRegistry();
+
     // Get user role
     const role = this.authService.getRole();
     this.userRole = role || 'nurse';
 
-    // Load modules for user's role
+    // Load modules for user's role from registry
     this.loadModulesForRole(this.userRole);
 
     // Subscribe to patient context changes
@@ -86,16 +89,18 @@ export class ModulesDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load modules based on user role
+   * Load modules based on user role - from registry
    */
   private loadModulesForRole(role: string): void {
-    const availableModules = getModulesForRole(role);
-    this.modules = availableModules.map((module, index) => ({
+    // Get modules from registry for this role
+    const availableModules = this.pluginRegistry.getAvailableModulesForRole(role);
+    
+    // Map registry modules to ModuleDisplay format with loading state
+    this.modules = availableModules.map((module) => ({
       ...module,
       loaded: false,
       loading: false,
-      error: null,
-      order: index
+      error: null
     }));
   }
 

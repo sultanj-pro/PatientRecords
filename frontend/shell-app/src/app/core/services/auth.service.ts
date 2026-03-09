@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
-import { TokenService } from '../../../../../shared/lib/services/token.service';
+import { TokenService } from '@patient-records/shared';
+import { PatientContextService } from './patient-context.service';
 
 export interface AuthResponse {
   accessToken: string;
@@ -26,7 +27,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private patientContextService: PatientContextService
   ) {}
 
   login(username: string): Observable<AuthResponse> {
@@ -101,6 +103,42 @@ export class AuthService {
   }
 
   /**
+   * Validate token with backend on app startup
+   * Ensures token is still valid after service restarts or session expiration
+   * This prevents stale tokens from causing frozen UI
+   */
+  validateTokenWithBackend(): Observable<boolean> {
+    const token = this.getToken();
+    
+    // If no token, user is not authenticated
+    if (!token) {
+      console.log('No token found - not authenticated');
+      return of(false);
+    }
+
+    console.log('Validating token with backend...');
+    return this.http
+      .post<{ valid: boolean; username?: string; role?: string }>(
+        `${this.apiUrl}/auth/validate`,
+        { token }
+      )
+      .pipe(
+        tap((response) => {
+          console.log('Token validation successful:', response);
+          // Token is valid, update observables
+          this.isAuthenticated$.next(true);
+        }),
+        map(() => true),
+        catchError((error: HttpErrorResponse) => {
+          console.warn('Token validation failed:', error.status, error.error);
+          // Token is invalid, clear it
+          this.logout();
+          return of(false);
+        })
+      );
+  }
+
+  /**
    * Check if user has a valid (non-expired) token
    * Synchronous check using TokenService
    */
@@ -113,15 +151,30 @@ export class AuthService {
   }
 
   logout(): void {
-    console.log('AuthService.logout() - clearing authentication');
+    console.log('AuthService.logout() - clearing authentication and patient context');
+    
+    // Clear authentication tokens and data
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.roleKey);
     localStorage.removeItem(this.usernameKey);
-    // Also clear window object token
     delete (window as any).__JWT_TOKEN__;
+    
+    // Clear patient context from localStorage
+    localStorage.removeItem('__PATIENT_CONTEXT__');
+    delete (window as any).__PATIENT_CONTEXT__;
+    
+    // Clear patient context from service
+    this.patientContextService.clearPatient();
+    
+    // Update auth state
     this.isAuthenticated$.next(false);
     this.currentRole$.next(null);
     this.currentUsername$.next(null);
+    
+    // Broadcast patient context cleared event
+    window.dispatchEvent(new CustomEvent('patient-context-changed', {
+      detail: null
+    }));
   }
 
   /**
