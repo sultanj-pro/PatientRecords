@@ -27,13 +27,34 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 
 ## Overview 
 
-PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
+PatientRecords is a production-grade reference architecture demonstrating **how to scale engineering teams and systems together**. Built on Module Federation, it solves the central challenge faced by growing organizations: maintaining velocity and autonomy as team count increases.
+
+### The Core Problem This Solves
+
+After leading organizations from 3 to 300+ engineers, I've witnessed the same pattern repeatedly:
+- **Architectural coupling** becomes the bottleneck, not development capacity
+- **Technology monoculture** forces all teams to work in the same framework, regardless of problem fit
+- **Deployment coordination** turns minor changes into coordinated releases
+- **Team autonomy** gets sacrificed for consistency
+
+**PatientRecords demonstrates the inverse:** Independent teams shipping independent code.
+
+### Module Federation as Organizational Scaling Pattern
+
+This isn't just a technical pattern—it's a **team organization pattern**. Each module can have:
+- Its own team (1-5 engineers)
+- Independent deploy cadence (ship on team's schedule)
+- Technology choice (Angular, React, Vue—whatever fits)
+- Own testing & QA process
+- Separate code review gates
+
+**The mathematics:** N independent teams with monolithic architecture requires ~N² coordination overhead. Module Federation reduces this to ~N.
 
 ### Module Federation Case Study
 
-**PatientRecords serves as a production-grade case study in Module Federation architecture**, demonstrating:
+**PatientRecords demonstrates production-grade Module Federation architecture:**
 
-✅ **Positive Results:**
+✅ **Proven Results:**
 - Successfully running **6 Angular modules + 1 React module** in a single unified shell application
 - Independent modules built with different frameworks coexist seamlessly via Module Federation
 - Real-time cross-framework state synchronization (patient context, authentication)
@@ -41,7 +62,17 @@ PatientRecords is a next-generation electronic health record (EHR) system design
 - Shared dependencies managed efficiently—no duplication of React, Angular, or RxJS
 - Deep-linking and navigation work across all framework types
 
-**Key Finding:** Module Federation successfully enables true technology flexibility. Teams can adopt different frameworks based on module requirements, not organizational standards. This demonstrates the architectural maturity needed for enterprise-scale polyglot micro-frontend systems.
+**Key Insight:** Module Federation successfully enables true technology flexibility. Teams adopt the right tool for their problem, not the organizational standard. This is how you scale engineering from startup to enterprise without architectural ossification.
+
+### Why This Matters for Leadership
+
+See **[ARCHITECTURE_LEADERSHIP.md](./ARCHITECTURE_LEADERSHIP.md)** for strategic insights on:
+- When to choose Module Federation vs. alternatives
+- Team structure implications
+- Deployment autonomy patterns
+- Risk management at scale
+
+See **[LESSONS_LEARNED.md](./LESSONS_LEARNED.md)** for 20+ years of patterns and anti-patterns from building systems at scale.
 
 ### Future Vision
 
@@ -852,6 +883,11 @@ A suite of AI-driven autonomous agents that provide intelligent recommendations 
 
 ## Additional Resources
 
+**Strategic & Leadership**
+- [Architecture Leadership: Organizational Scaling Patterns](./ARCHITECTURE_LEADERSHIP.md) — Why Module Federation, team structure implications, decision framework
+- [Lessons Learned: 20+ Years Building Software at Scale](./LESSONS_LEARNED.md) — Patterns, anti-patterns, and principles from two decades of engineering leadership
+
+**Technical**
 - [Architecture Decision Records](./docs/PROVIDERS.md)
 - [Session Timeout Implementation](./SESSION_TIMEOUT_IMPLEMENTATION.md)
 - [Micro-Frontend Architecture](./MICRO_FRONTEND_ARCHITECTURE.md)
