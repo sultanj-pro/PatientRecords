@@ -5,6 +5,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { importProvidersFrom } from '@angular/core';
 import { AppComponent } from './app/app.component';
 import { JwtInterceptor } from './app/core/interceptors/jwt.interceptor';
+import { authGuard } from './app/core/guards/auth.guard';
 
 /**
  * Bootstrap configuration
@@ -14,6 +15,7 @@ const baseRoutes: Routes = [
   {
     path: 'dashboard',
     loadComponent: () => import('./app/components/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard],
     children: [
       {
         path: 'demographics',

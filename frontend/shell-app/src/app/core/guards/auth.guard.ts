@@ -36,12 +36,18 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  console.log('[AuthGuard] Checking access to:', state.url);
+  console.log('[AuthGuard] Has valid token:', authService.hasValidToken());
+
   if (authService.hasValidToken()) {
+    console.log('[AuthGuard] Token valid, allowing access');
     return true;
   }
 
+  console.log('[AuthGuard] No valid token, redirecting to login');
   // Save current URL for returning after login
   authService.saveReturnUrl(state.url);
+  console.log('[AuthGuard] Saved returnUrl:', state.url);
   
   // Redirect to login with returnUrl query param
   router.navigate(['/login'], {
