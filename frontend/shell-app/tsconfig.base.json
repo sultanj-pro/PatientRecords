@@ -25,7 +25,14 @@
     "paths": {
       "@patient-records/shared": [
         "../shared/lib/index.ts"
-      ]
+      ],
+      "demographicsApp/*": ["../modules/demographics/src/*"],
+      "vitalsApp/*": ["../modules/vitals/src/*"],
+      "labsApp/*": ["../modules/labs/src/*"],
+      "medicationsApp/*": ["../modules/medications/src/*"],
+      "visitsApp/*": ["../modules/visits/src/*"],
+      "careTeamApp/*": ["../modules/care-team/src/*"],
+      "proceduresApp/*": ["../modules/procedures-react/src/*"]
     }
   },
   "angularCompilerOptions": {

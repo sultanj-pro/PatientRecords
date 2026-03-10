@@ -15,6 +15,7 @@ export interface ModuleMetadata {
   roles: string[];
   order: number;
   version: string;
+  framework: 'angular' | 'react';           // Framework type
   remoteEntry: string;              // Complete URL to remoteEntry.js (e.g., 'http://localhost:4201/remoteEntry.js')
   remoteName: string;               // Container name in Module Federation (e.g., 'demographicsApp')
   exposedModule: string;            // Module path exposed (e.g., './DemographicsModule')

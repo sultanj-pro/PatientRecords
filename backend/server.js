@@ -157,6 +157,11 @@ const patientSchema = new mongoose.Schema({
   ]
 }, { timestamps: true });
 
+// Create indexes for faster searches
+patientSchema.index({ firstname: 1 });
+patientSchema.index({ lastname: 1 });
+patientSchema.index({ patientid: 1 });
+
 const Patient = mongoose.model('Patient', patientSchema);
 
 // Seed database function
@@ -281,7 +286,7 @@ app.get('/api/patients', authMiddleware, async (req, res) => {
       query.$or = query.$or.filter(cond => Object.values(cond)[0] !== undefined);
     }
     
-    const patients = await Patient.find(query).select('patientid firstname lastname demographics');
+    const patients = await Patient.find(query).select('patientid firstname lastname demographics').limit(50);
     
     // Transform to include MRN and DOB extracted from demographics
     const transformed = patients.map(patient => {

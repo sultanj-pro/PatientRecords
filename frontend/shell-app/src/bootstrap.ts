@@ -17,53 +17,61 @@ const baseRoutes: Routes = [
     children: [
       {
         path: 'demographics',
-        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
+        loadChildren: () => (import('demographicsApp/DemographicsModule') as any).then((m: any) => m.DEMOGRAPHICS_ROUTES)
       },
       {
         path: 'demographics/:patientId',
-        loadChildren: () => import('demographicsApp/DemographicsModule').then(m => m.DEMOGRAPHICS_ROUTES)
+        loadChildren: () => (import('demographicsApp/DemographicsModule') as any).then((m: any) => m.DEMOGRAPHICS_ROUTES)
       },
       {
         path: 'vitals',
-        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
+        loadChildren: () => (import('vitalsApp/VitalsModule') as any).then((m: any) => m.VITALS_ROUTES)
       },
       {
         path: 'vitals/:patientId',
-        loadChildren: () => import('vitalsApp/VitalsModule').then(m => m.VITALS_ROUTES)
+        loadChildren: () => (import('vitalsApp/VitalsModule') as any).then((m: any) => m.VITALS_ROUTES)
       },
       {
         path: 'labs',
-        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
+        loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
       },
       {
         path: 'labs/:patientId',
-        loadChildren: () => import('labsApp/LabsModule').then(m => m.LABS_ROUTES)
+        loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
       },
       {
         path: 'visits',
-        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
+        loadChildren: () => (import('visitsApp/VisitsModule') as any).then((m: any) => m.VISITS_ROUTES)
       },
       {
         path: 'visits/:patientId',
-        loadChildren: () => import('visitsApp/VisitsModule').then(m => m.VISITS_ROUTES)
+        loadChildren: () => (import('visitsApp/VisitsModule') as any).then((m: any) => m.VISITS_ROUTES)
       },
       {
         path: 'medications',
-        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+        loadChildren: () => (import('medicationsApp/MedicationsModule') as any).then((m: any) => m.MEDICATIONS_ROUTES)
       },
       {
         path: 'medications/:patientId',
-        loadChildren: () => import('medicationsApp/MedicationsModule').then(m => m.MEDICATIONS_ROUTES)
+        loadChildren: () => (import('medicationsApp/MedicationsModule') as any).then((m: any) => m.MEDICATIONS_ROUTES)
       },
       {
         path: 'care-team',
-        // @ts-ignore - Module Federation dynamic import
-        loadChildren: () => import('careTeamApp/CareTeamRoutes').then(m => m.CARE_TEAM_ROUTES)
+        loadChildren: () => (import('careTeamApp/CareTeamRoutes') as any).then((m: any) => m.CARE_TEAM_ROUTES)
       },
       {
         path: 'care-team/:patientId',
-        // @ts-ignore - Module Federation dynamic import
-        loadChildren: () => import('careTeamApp/CareTeamRoutes').then(m => m.CARE_TEAM_ROUTES)
+        loadChildren: () => (import('careTeamApp/CareTeamRoutes') as any).then((m: any) => m.CARE_TEAM_ROUTES)
+      },
+      {
+        path: 'procedures',
+        loadComponent: () => import('./app/shared/components/dynamic-module-host/dynamic-module-host.component').then(m => m.DynamicModuleHostComponent),
+        data: { remoteName: 'proceduresApp', exposedModule: './ProceduresModule', framework: 'react' }
+      },
+      {
+        path: 'procedures/:patientId',
+        loadComponent: () => import('./app/shared/components/dynamic-module-host/dynamic-module-host.component').then(m => m.DynamicModuleHostComponent),
+        data: { remoteName: 'proceduresApp', exposedModule: './ProceduresModule', framework: 'react' }
       }
     ]
   },
