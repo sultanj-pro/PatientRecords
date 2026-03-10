@@ -7,6 +7,9 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+  - [Module Federation Case Study](#-module-federation-case-study)
+  - [Future Vision](#-future-vision)
+- [Key Capabilities](#key-capabilities)
 - [Technology Stack](#-technology-stack)
 - [System Architecture](#system-architecture)
 - [Quick Start](#quick-start)
@@ -21,6 +24,28 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 ## 🎯 Overview
 
 PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
+
+### 🔬 Module Federation Case Study
+
+**PatientRecords serves as a production-grade case study in Module Federation architecture**, demonstrating:
+
+✅ **Positive Results:**
+- Successfully running **6 Angular modules + 1 React module** in a single unified shell application
+- Independent modules built with different frameworks coexist seamlessly via Module Federation
+- Real-time cross-framework state synchronization (patient context, authentication)
+- Modules maintain complete independence: deploy, update, and scale separately
+- Shared dependencies managed efficiently—no duplication of React, Angular, or RxJS
+- Deep-linking and navigation work across all framework types
+
+**Key Finding:** Module Federation successfully enables true technology flexibility. Teams can adopt different frameworks based on module requirements, not organizational standards. This demonstrates the architectural maturity needed for enterprise-scale polyglot micro-frontend systems.
+
+### 🚀 Future Vision
+
+This foundation will evolve into:
+- **Distributed Microservices Backend** — Multiple specialized services (Patient Service, Procedures Service, Analytics Service, etc.) replacing monolithic architecture
+- **Agentic AI Integration** — Autonomous agents for clinical decision support, schedule optimization, and real-time alerts
+- **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
+- **Advanced Module Orchestration** — Dynamic module loading based on user roles, device capabilities, and network conditions
 
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
