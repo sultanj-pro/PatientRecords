@@ -4,28 +4,32 @@
 
 A modern, scalable healthcare information system built with Angular 17, Module Federation, and microservices architecture.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Overview](#overview)
-  - [Module Federation Case Study](#-module-federation-case-study)
-  - [Future Vision](#-future-vision)
-- [Key Capabilities](#key-capabilities)
-- [Technology Stack](#-technology-stack)
-- [System Architecture](#system-architecture)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Features](#features)
-- [Development](#development)
-- [Deployment](#deployment)
-- [API Documentation](#api-documentation)
-- [Troubleshooting](#troubleshooting)
-- [Roadmap](#roadmap)
+- 📋 [Overview](#overview)
+  - 🔬 [Module Federation Case Study](#module-federation-case-study)
+  - 🚀 [Future Vision](#future-vision)
+  - ✨ [Key Capabilities](#key-capabilities)
+- 🛠️ [Technology Stack](#technology-stack)
+- 🏗️ [System Architecture](#system-architecture)
+- 🚀 [Quick Start](#quick-start)
+- 📁 [Project Structure](#project-structure)
+- ✨ [Features](#features)
+- 💻 [Development](#development)
+- 🐳 [Deployment](#deployment)
+- 📡 [API Documentation](#api-documentation)
+- ⚠️ [Troubleshooting](#troubleshooting)
+- 🗺️ [Roadmap](#roadmap)
+- 📚 [Additional Resources](#additional-resources)
+- 👥 [Contributing](#contributing)
+- 📝 [License](#license)
+- 📞 [Support](#support)
 
-## 🎯 Overview
+## Overview 
 
 PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
 
-### 🔬 Module Federation Case Study
+### Module Federation Case Study
 
 **PatientRecords serves as a production-grade case study in Module Federation architecture**, demonstrating:
 
@@ -39,7 +43,7 @@ PatientRecords is a next-generation electronic health record (EHR) system design
 
 **Key Finding:** Module Federation successfully enables true technology flexibility. Teams can adopt different frameworks based on module requirements, not organizational standards. This demonstrates the architectural maturity needed for enterprise-scale polyglot micro-frontend systems.
 
-### 🚀 Future Vision
+### Future Vision
 
 This foundation will evolve into:
 - **Distributed Microservices Backend** — Multiple specialized services (Patient Service, Procedures Service, Analytics Service, etc.) replacing monolithic architecture
@@ -59,7 +63,9 @@ This foundation will evolve into:
 - **Containerized deployment** using Docker and Docker Compose
 - **Comprehensive API** with OpenAPI/Swagger documentation
 
-## 🛠️ Technology Stack
+[⬆️ Back to Top](#table-of-contents)
+
+## Technology Stack
 
 ### Frontend
 - **Angular 17** — Shell application and 6 micro-frontend modules
@@ -90,7 +96,9 @@ This foundation will evolve into:
 - **Nx** — Monorepo management with task orchestration
 - **npm Workspaces** — Monorepo organization
 
-## 🏗️ System Architecture
+[⬆️ Back to Top](#table-of-contents)
+
+## System Architecture
 
 ### Micro-Frontend Design
 
@@ -163,7 +171,9 @@ Two-tier approach for uninterrupted user experience:
 **Expiration**: 1 hour (3600 seconds)
 **Refresh Endpoint**: `POST /auth/refresh` with current token
 
-## 🚀 Quick Start
+[⬆️ Back to Top](#table-of-contents)
+
+## Quick Start
 
 ### Prerequisites
 - Docker Engine 20.10+
@@ -265,7 +275,9 @@ Two-tier approach for uninterrupted user experience:
    - Demographics: http://localhost:4201
    - Backend: http://localhost:5001
 
-## 📁 Project Structure
+[⬆️ Back to Top](#table-of-contents)
+
+## Project Structure
 
 ```
 patricents
@@ -320,7 +332,9 @@ patricents
 └── README.md                  # This file
 ```
 
-## ✨ Features
+[⬆️ Back to Top](#table-of-contents)
+
+## Features
 
 ### Clinical Modules
 
@@ -408,7 +422,9 @@ patricents
 - Environment configuration via .env
 - Comprehensive logging
 
-## 💻 Development
+[⬆️ Back to Top](#table-of-contents)
+
+## Development
 
 ### Adding a New Clinical Module
 
@@ -478,7 +494,9 @@ npm run test:cov
 - **Linter**: ESLint
 - **Angular Version**: 17 (standalone components)
 
-## 🐳 Deployment
+[⬆️ Back to Top](#table-of-contents)
+
+## Deployment
 
 ### Docker Build Process
 
@@ -546,7 +564,9 @@ curl -f http://localhost:5001/health || exit 1
 nc -z localhost 27017 || exit 1
 ```
 
-## 📡 API Documentation
+[⬆️ Back to Top](#table-of-contents)
+
+## API Documentation
 
 ### Base URL
 ```
@@ -632,7 +652,9 @@ Full API documentation available at:
 http://localhost:5001/api-docs
 ```
 
-## 🛠️ Troubleshooting
+[⬆️ Back to Top](#table-of-contents)
+
+## Troubleshooting
 
 ### Container Issues
 
@@ -728,7 +750,9 @@ npm install
 docker compose build --no-cache patientrecord-shell
 ```
 
-## 🗺️ Roadmap
+[⬆️ Back to Top](#table-of-contents)
+
+## Roadmap
 
 ### Phase 6 (Current - Completed)
 - [x] Shareable patient URLs with deep-linkable module views
@@ -824,7 +848,9 @@ A suite of AI-driven autonomous agents that provide intelligent recommendations 
 - Multi-specialty collaboration recommendations
 - Real-time alerts for critical clinical conditions
 
-## 📚 Additional Resources
+[⬆️ Back to Top](#table-of-contents)
+
+## Additional Resources
 
 - [Architecture Decision Records](./docs/PROVIDERS.md)
 - [Session Timeout Implementation](./SESSION_TIMEOUT_IMPLEMENTATION.md)
@@ -832,7 +858,9 @@ A suite of AI-driven autonomous agents that provide intelligent recommendations 
 - [Backend README](./backend/README.md)
 - [Frontend README](./frontend/README.md)
 
-## 👥 Contributing
+[⬆️ Back to Top](#table-of-contents)
+
+## Contributing
 
 1. Create feature branch: `git checkout -b feature/your-feature`
 2. Make changes and test locally
@@ -840,11 +868,22 @@ A suite of AI-driven autonomous agents that provide intelligent recommendations 
 4. Commit with descriptive message
 5. Push to remote and create pull request
 
-## 📝 License
+[⬆️ Back to Top](#table-of-contents)
 
-This project is proprietary healthcare software. All rights reserved.
+## License
 
-## 📞 Support
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+**MIT License Summary:**
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ⚠️ Liability: provided as-is, use at your own risk
+
+[⬆️ Back to Top](#table-of-contents)
+
+## Support
 
 For issues, questions, or suggestions:
 - Create an issue on GitHub
