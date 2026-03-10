@@ -23,11 +23,13 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
 
 ### Key Capabilities
-- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, and care team
+- **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
+- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, and procedures
 - **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
 - **Real-time patient context sync** across all modules using Observable pattern
 - **Real-time session management** with automatic token refresh
 - **Role-based access control** (RBAC) for clinical workflows
+- **Framework-agnostic module loading** — load Angular or React modules dynamically
 - **Responsive web design** for desktop and tablet use
 - **Containerized deployment** using Docker and Docker Compose
 - **Comprehensive API** with OpenAPI/Swagger documentation
@@ -35,8 +37,9 @@ PatientRecords is a next-generation electronic health record (EHR) system design
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **Angular 17** — Modern web framework with component-based architecture
-- **Module Federation** — Micro-frontend orchestration via @angular-architects/module-federation
+- **Angular 17** — Shell application and 6 micro-frontend modules
+- **React 18** — Procedures micro-frontend module demonstrating multi-framework support
+- **Module Federation** — Multi-framework orchestration via @angular-architects/module-federation and Webpack Module Federation
 - **TypeScript 5** — Type-safe JavaScript development
 - **RxJS 7** — Reactive programming with Observables
 - **Karma & Jasmine** — Unit testing framework
@@ -162,21 +165,24 @@ Two-tier approach for uninterrupted user experience:
 
    Expected output:
    ```
-   NAME                STATUS          PORTS
-   patientrecord-shell      Up      0.0.0.0:4200->4200/tcp
-   patientrecord-demographics Up    0.0.0.0:4201->4201/tcp
-   patientrecord-vitals     Up      0.0.0.0:4202->4202/tcp
-   patientrecord-labs       Up      0.0.0.0:4203->4203/tcp
-   patientrecord-medications Up     0.0.0.0:4204->4204/tcp
-   patientrecord-visits     Up      0.0.0.0:4205->4205/tcp
-   patientrecord-backend    Up      0.0.0.0:5001->5001/tcp
-   patientrecord-mongo      Up      0.0.0.0:27017->27017/tcp
+   NAME                      STATUS          PORTS
+   patientrecord-shell           Up      0.0.0.0:4200->4200/tcp
+   patientrecord-demographics    Up      0.0.0.0:4201->4201/tcp
+   patientrecord-vitals          Up      0.0.0.0:4202->4202/tcp
+   patientrecord-labs            Up      0.0.0.0:4203->4203/tcp
+   patientrecord-medications     Up      0.0.0.0:4204->4204/tcp
+   patientrecord-visits          Up      0.0.0.0:4205->4205/tcp
+   patientrecord-care-team       Up      0.0.0.0:4206->4206/tcp
+   patientrecord-procedures      Up      0.0.0.0:4207->4207/tcp (React Module)
+   patientrecord-backend         Up      0.0.0.0:5001->5001/tcp
+   patientrecord-mongo           Up      0.0.0.0:27017->27017/tcp
    ```
 
 4. **Access the application**
 
    - **Web UI**: http://localhost:4200
    - **Direct Patient View**: http://localhost:4200/dashboard/vitals/20001
+   - **Procedures Module** (React): http://localhost:4200/dashboard/procedures/20001
    - **API Documentation**: http://localhost:5001/api-docs
    - **Backend Health**: http://localhost:5001/health
 
@@ -250,11 +256,13 @@ patricents
 │   │   └── Dockerfile
 │   │
 │   ├── modules/                # Micro-frontend modules
-│   │   ├── demographics/       # Patient demographics module
-│   │   ├── vitals/            # Vital signs module
-│   │   ├── medications/       # Medications module
-│   │   ├── labs/              # Laboratory results module
-│   │   └── visits/            # Clinical visits module
+   │   ├── demographics/       # Patient demographics module (Angular)
+   │   ├── vitals/            # Vital signs module (Angular)
+   │   ├── medications/       # Medications module (Angular)
+   │   ├── labs/              # Laboratory results module (Angular)
+   │   ├── visits/            # Clinical visits module (Angular)
+   │   ├── care-team/         # Care team module (Angular)
+   │   └── procedures-react/  # Procedures module (React) ⭐ Multi-Framework showcase
 │   │
 │   └── shared/                 # Shared library
 │       └── lib/
@@ -291,37 +299,57 @@ patricents
 
 ### Clinical Modules
 
-**Demographics Module**
+**Demographics Module** (Angular)
 - Patient personal information management
 - Contact details and emergency contacts
 - Insurance and billing information
 - Medical history
 
-**Vitals Module**
+**Vitals Module** (Angular)
 - Blood pressure, temperature, heart rate monitoring
 - Respiratory rate tracking
 - Real-time trend visualization
 - Historical audit trail
 
-**Medications Module**
+**Medications Module** (Angular)
 - Active medication inventory
 - Prescription history
 - Drug interaction checking
 - Dosage management
 
-**Labs Module**
+**Labs Module** (Angular)
 - Laboratory test results
 - Report generation
 - Result trending
 - Integration with lab systems
 
-**Visits Module**
+**Visits Module** (Angular)
 - Clinical encounter documentation
 - Chief complaint and assessment
 - Treatment plan tracking
 - Follow-up scheduling
 
+**Care Team Module** (Angular)
+- Clinical team member management
+- Role and specialty tracking
+- Medical license verification
+- Team communication
+
+**Procedures Module** (React) ⭐
+- Surgical and clinical procedures tracking
+- Procedure scheduling and history
+- Procedure status and outcomes
+- **Demonstrates multi-framework support** — React module loaded alongside Angular modules via Module Federation
+
 ### Platform Features
+
+**Multi-Framework Architecture** ⭐
+- **6 Angular micro-frontends** — Demographics, Vitals, Medications, Labs, Visits, Care Team
+- **1 React micro-frontend** — Procedures module
+- **Framework-agnostic loading** — Dynamic module discovery via registry
+- **Shared dependencies** — React, React-DOM shared between shell and React module
+- **Cross-framework state** — Patient context synchronized across all modules regardless of framework
+- Production-ready pattern for adopting different frameworks in different modules
 
 **Authentication & Authorization**
 - JWT-based secure authentication
@@ -329,6 +357,7 @@ patricents
 - Session timeout protection
 - Role-based access control (RBAC)
 - Graceful session expiration handling
+- **Deep-link preservation** — Direct URLs preserved after login redirect
 
 **User Experience**
 - Shareable patient URLs for collaboration
