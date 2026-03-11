@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const swaggerUi = require('swagger-ui-express');
 const mongoose = require('mongoose');
 const openapiSpec = require('./openapi.json');
+const fs = require('fs');
+const path = require('path');
 
 // Initialize Express app
 const app = express();
@@ -16,7 +18,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 // Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 const TOKEN_EXPIRATION_MINUTES = parseInt(process.env.TOKEN_EXPIRATION_MINUTES || '60', 10);
 const TOKEN_EXPIRATION_SECONDS = TOKEN_EXPIRATION_MINUTES * 60;
@@ -164,26 +166,83 @@ patientSchema.index({ patientid: 1 });
 
 const Patient = mongoose.model('Patient', patientSchema);
 
-// Seed database function
-const fs = require('fs');
-const path = require('path');
+// Define Registry schema for storing available modules
+const registrySchema = new mongoose.Schema({
+  modules: [{
+    id: String,
+    name: String,
+    description: String,
+    icon: String,
+    path: String,
+    enabled: Boolean,
+    framework: { type: String, enum: ['angular', 'react'] },
+    roles: [String],
+    order: Number,
+    version: String,
+    remoteEntry: String,
+    remoteName: String,
+    exposedModule: String
+  }],
+  version: { type: String, default: '1.0.0' },
+  description: { type: String, default: 'PatientRecords Module Registry' }
+}, { timestamps: true });
 
+const Registry = mongoose.model('Registry', registrySchema);
+
+// Seed database function
 async function seedDatabase() {
   try {
-    const count = await Patient.countDocuments();
-    if (count === 0) {
+    // Seed patient data
+    const patientCount = await Patient.countDocuments();
+    if (patientCount === 0) {
       console.log('Database empty, seeding with patient data...');
       const dataPath = '/data/patient-vitals-hierarchical.json';
       if (!fs.existsSync(dataPath)) {
         console.log('No data file found at', dataPath);
-        return;
+      } else {
+        const raw = fs.readFileSync(dataPath, 'utf8');
+        const patients = JSON.parse(raw);
+        const result = await Patient.insertMany(patients);
+        console.log(`Seeded ${result.length} patients successfully`);
       }
-      const raw = fs.readFileSync(dataPath, 'utf8');
-      const patients = JSON.parse(raw);
-      const result = await Patient.insertMany(patients);
-      console.log(`Seeded ${result.length} patients successfully`);
     } else {
-      console.log(`Database already contains ${count} patients`);
+      console.log(`Database already contains ${patientCount} patients`);
+    }
+
+    // Seed registry
+    const registryCount = await Registry.countDocuments();
+    if (registryCount === 0) {
+      console.log('Registry empty, loading from registry.json...');
+      try {
+        // Try to load registry.json from the current directory first (for local development)
+        let registryData;
+        const localPath = path.join(__dirname, 'registry.json');
+        const devPath = path.join(__dirname, '..', 'registry', 'registry.json');
+        
+        if (fs.existsSync(localPath)) {
+          registryData = fs.readFileSync(localPath, 'utf8');
+          console.log('Loaded registry from local registry.json');
+        } else if (fs.existsSync(devPath)) {
+          registryData = fs.readFileSync(devPath, 'utf8');
+          console.log('Loaded registry from registry/registry.json');
+        } else {
+          console.log('No registry.json file found, registry table will remain empty');
+          return;
+        }
+        
+        const registry = JSON.parse(registryData);
+        await Registry.deleteMany({}); // Clear any existing bad data
+        const registryDoc = await Registry.create({
+          modules: registry.modules,
+          version: registry.version,
+          description: registry.description
+        });
+        console.log('Registry seeded successfully with', registry.modules.length, 'modules');
+      } catch (registryErr) {
+        console.error('Error seeding registry:', registryErr.message);
+      }
+    } else {
+      console.log(`Registry already contains ${registryCount} entries`);
     }
   } catch (err) {
     console.error('Seeding error:', err.message);
@@ -214,8 +273,138 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', mongodb: dbConnected });
 });
 
+// Registry endpoint - serves module registry from MongoDB without authentication
+app.get('/api/registry', async (req, res) => {
+  try {
+    const registry = await Registry.findOne({}).lean();
+    
+    if (!registry) {
+      return res.status(500).json({ error: 'Registry not initialized' });
+    }
+    
+    // Return in the expected format (version, description, modules)
+    res.json({
+      version: registry.version,
+      description: registry.description,
+      modules: registry.modules
+    });
+  } catch (err) {
+    console.error('Error reading registry:', err);
+    res.status(500).json({ error: 'Failed to load registry' });
+  }
+});
+
+// Admin middleware - only admins can manage registry
+function adminMiddleware(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'no token' });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (payload.role !== 'admin') {
+      return res.status(403).json({ error: 'admin access required' });
+    }
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'invalid token' });
+  }
+}
+
+// Admin: Get full registry with all details
+app.get('/api/admin/registry', adminMiddleware, async (req, res) => {
+  try {
+    const registry = await Registry.findOne({});
+    if (!registry) {
+      return res.status(404).json({ error: 'Registry not found' });
+    }
+    res.json(registry);
+  } catch (err) {
+    console.error('Error fetching registry:', err);
+    res.status(500).json({ error: 'Failed to fetch registry' });
+  }
+});
+
+// Admin: Add a module to the registry
+app.post('/api/admin/registry/modules', adminMiddleware, async (req, res) => {
+  try {
+    const module = req.body;
+    if (!module.id || !module.name) {
+      return res.status(400).json({ error: 'id and name are required' });
+    }
+    
+    const registry = await Registry.findOne({});
+    if (!registry) {
+      return res.status(404).json({ error: 'Registry not found' });
+    }
+    
+    // Check if module already exists
+    if (registry.modules.find(m => m.id === module.id)) {
+      return res.status(409).json({ error: 'Module with this id already exists' });
+    }
+    
+    registry.modules.push(module);
+    await registry.save();
+    
+    res.json({ success: true, module });
+  } catch (err) {
+    console.error('Error adding module:', err);
+    res.status(500).json({ error: 'Failed to add module' });
+  }
+});
+
+// Admin: Update a module in the registry
+app.put('/api/admin/registry/modules/:id', adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const registry = await Registry.findOne({});
+    if (!registry) {
+      return res.status(404).json({ error: 'Registry not found' });
+    }
+    
+    const module = registry.modules.find(m => m.id === id);
+    if (!module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+    
+    Object.assign(module, updates);
+    await registry.save();
+    
+    res.json({ success: true, module });
+  } catch (err) {
+    console.error('Error updating module:', err);
+    res.status(500).json({ error: 'Failed to update module' });
+  }
+});
+
+// Admin: Delete a module from the registry
+app.delete('/api/admin/registry/modules/:id', adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const registry = await Registry.findOne({});
+    if (!registry) {
+      return res.status(404).json({ error: 'Registry not found' });
+    }
+    
+    const index = registry.modules.findIndex(m => m.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+    
+    registry.modules.splice(index, 1);
+    await registry.save();
+    
+    res.json({ success: true, message: `Module ${id} deleted` });
+  } catch (err) {
+    console.error('Error deleting module:', err);
+    res.status(500).json({ error: 'Failed to delete module' });
+  }
+});
+
 // Simple login: accepts { username, password }
-app.post('/auth/login', (req, res) => {
+app.post('/api/auth/login', (req, res) => {
   const { username } = req.body || {};
   if (!username) return res.status(400).json({ error: 'username required' });
 
@@ -227,7 +416,7 @@ app.post('/auth/login', (req, res) => {
 
 // Refresh token: accepts { token }
 // IMPORTANT: Does NOT accept expired tokens - enforces hard session timeout
-app.post('/auth/refresh', (req, res) => {
+app.post('/api/auth/refresh', (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: 'token required' });
   try {
@@ -241,7 +430,7 @@ app.post('/auth/refresh', (req, res) => {
 });
 
 // Validate token: check if a token is still valid
-app.post('/auth/validate', (req, res) => {
+app.post('/api/auth/validate', (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: 'token required' });
   try {

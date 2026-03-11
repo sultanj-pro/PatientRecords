@@ -61,6 +61,9 @@ export class NavigationComponent implements OnInit {
 
   onLogout(): void {
     this.authService.logout();
-    this.router.navigate(['/login']);
+    // Use setTimeout to ensure Angular has time to clean up the component
+    setTimeout(() => {
+      this.router.navigate(['/login']);
+    }, 0);
   }
 }

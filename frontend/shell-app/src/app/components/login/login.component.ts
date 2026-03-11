@@ -25,26 +25,15 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Check for returnUrl in multiple places (in priority order)
-    // 1. From query params (explicit deep link)
-    // 2. From sessionStorage (saved by auth guard)
-    // 3. Default to /dashboard
+    // Get returnUrl from sessionStorage (saved by auth guard)
+    // Never use query params to avoid recursive nesting
     
     this.route.queryParams.subscribe(params => {
-      const paramReturnUrl = params['returnUrl'];
-      console.log('[Login] returnUrl from query params:', paramReturnUrl);
+      const storedReturnUrl = sessionStorage.getItem('returnUrl');
+      console.log('[Login] returnUrl from sessionStorage:', storedReturnUrl);
       
-      if (paramReturnUrl) {
-        this.returnUrl = paramReturnUrl;
-        this.sessionExpired = true;
-      } else {
-        // Try to get from sessionStorage (saved by guardian auth guard)
-        const storedReturnUrl = sessionStorage.getItem('returnUrl');
-        console.log('[Login] returnUrl from sessionStorage:', storedReturnUrl);
-        
-        if (storedReturnUrl && storedReturnUrl !== '/login') {
-          this.returnUrl = storedReturnUrl;
-        }
+      if (storedReturnUrl && storedReturnUrl !== '/login') {
+        this.returnUrl = storedReturnUrl;
       }
       
       console.log('[Login] Final returnUrl set to:', this.returnUrl);

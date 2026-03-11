@@ -10,6 +10,7 @@
   ],
   "tags": [
     { "name": "System", "description": "System health and status endpoints" },
+    { "name": "Registry", "description": "Module registry and plugin management" },
     { "name": "Authentication", "description": "User authentication and token management" },
     { "name": "Patient Demographics", "description": "Patient demographics and general information" },
     { "name": "Vitals", "description": "Patient vital signs management" },
@@ -24,6 +25,55 @@
         "tags": ["System"],
         "summary": "Liveness check",
         "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/registry": {
+      "get": {
+        "tags": ["Registry"],
+        "summary": "Get Module Registry",
+        "description": "Retrieves the registry of available micro-frontend modules. No authentication required. Used by the shell app to discover and load dynamic modules.",
+        "responses": {
+          "200": {
+            "description": "Module registry retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string", "example": "1.0.0" },
+                    "description": { "type": "string" },
+                    "modules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "example": "demographics" },
+                          "name": { "type": "string", "example": "Demographics" },
+                          "description": { "type": "string" },
+                          "icon": { "type": "string" },
+                          "path": { "type": "string", "example": "demographics" },
+                          "enabled": { "type": "boolean" },
+                          "framework": { "type": "string", "enum": ["angular", "react"] },
+                          "roles": { "type": "array", "items": { "type": "string" } },
+                          "order": { "type": "number" },
+                          "version": { "type": "string" },
+                          "remoteEntry": { "type": "string", "example": "http://localhost:4201/remoteEntry.js" },
+                          "remoteName": { "type": "string", "example": "demographicsApp" },
+                          "exposedModule": { "type": "string", "example": "./DemographicsModule" }
+                        },
+                        "required": ["id", "name", "path", "enabled", "framework", "roles", "remoteEntry", "remoteName", "exposedModule"]
+                      }
+                    }
+                  },
+                  "required": ["version", "modules"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load registry"
+          }
+        }
       }
     },
     "/auth/login": {

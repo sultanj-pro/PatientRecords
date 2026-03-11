@@ -15,7 +15,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5001';
+  private apiUrl = '/api';
   private tokenKey = 'jwt_token';
   private roleKey = 'user_role';
   private usernameKey = 'username';
@@ -162,6 +162,9 @@ export class AuthService {
     // Clear patient context from localStorage
     localStorage.removeItem('__PATIENT_CONTEXT__');
     delete (window as any).__PATIENT_CONTEXT__;
+    
+    // Clear return URL from sessionStorage to prevent auto-redirect on login
+    sessionStorage.removeItem(this.returnUrlKey);
     
     // Clear patient context from service
     this.patientContextService.clearPatient();

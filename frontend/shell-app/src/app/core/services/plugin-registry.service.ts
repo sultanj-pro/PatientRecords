@@ -38,7 +38,7 @@ export interface ModuleRegistry {
   providedIn: 'root'
 })
 export class PluginRegistryService {
-  private registryUrl = '/registry/registry.json';
+  private registryUrl = '/api/registry';
   private registry: ModuleRegistry | null = null;
   private loadedModules = new Map<string, any>();
   private registrySubject = new BehaviorSubject<ModuleRegistry | null>(null);

@@ -80,6 +80,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private syncFromCurrentRoute(): void {
+    // Guard: if user is not authenticated, don't try to load patient data
+    // This prevents API calls during logout when token has been cleared
+    if (!this.authService.isAuthenticated()) {
+      console.log('[Dashboard] User not authenticated, skipping syncFromCurrentRoute');
+      return;
+    }
+
     const urlSegments = this.router.url.split('/').filter(s => s);
     console.log('[Dashboard] syncFromCurrentRoute called. URL:', this.router.url, 'Segments:', urlSegments);
     
@@ -287,8 +294,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * Handle logout from side navigation
    */
   onLogout(): void {
+    // Trigger component destruction first (which cleans up subscriptions)
+    this.destroy$.next();
+    this.destroy$.complete();
+    
+    // Then clear auth
     this.authService.logout();
-    this.router.navigate(['/login']);
+    
+    // Finally navigate to login
+    // Use setTimeout to ensure Angular has time to clean up the component
+    setTimeout(() => {
+      this.router.navigate(['/login']);
+    }, 0);
   }
 
   /**
