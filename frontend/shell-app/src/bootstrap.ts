@@ -40,6 +40,14 @@ const baseRoutes: Routes = [
       {
         path: 'medications',
         loadChildren: () => (import('medicationsApp/MedicationsModule') as any).then((m: any) => m.MEDICATIONS_ROUTES)
+      },
+      {
+        path: 'labs/:patientId',
+        loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
+      },
+      {
+        path: 'labs',
+        loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
       }
     ]
   },
