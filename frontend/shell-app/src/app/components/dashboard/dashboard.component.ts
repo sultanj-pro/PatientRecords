@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, filter, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { PatientContextService } from '../../core/services/patient-context.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PluginRegistryService, ModuleMetadata } from '../../core/services/plugin-registry.service';
@@ -25,6 +25,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   currentPatientId: string | null = null; // Track patient ID from URL
   registryLoaded = false;
   private destroy$ = new Subject<void>();
+  private lastLoadedPatientId: string | null = null; // Cache to avoid redundant API calls
+  private lastSyncedUrl: string | null = null; // Track last synced URL to prevent duplicate processing
+  private patientApiInProgress: string | null = null; // Track which patient API call is in progress
+  private apiCallCount = 0; // Track total API calls for diagnostics
+  private cacheHitCount = 0; // Track cache hits
 
   constructor(
     private patientContextService: PatientContextService,
@@ -76,24 +81,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
     // Watch for route changes to update selected module
-    this.router.events.pipe(takeUntil(this.destroy$)).subscribe(() => {
-      this.syncFromCurrentRoute();
-    });
+    console.log('[Dashboard] [INIT] Setting up router events subscription');
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        debounceTime(50),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((event: any) => {
+        console.log('[Dashboard] [ROUTER-EVENT] NavigationEnd fired:', event.urlAfterRedirects);
+        this.syncFromCurrentRoute();
+      });
 
     // Also sync on initial load
+    console.log('[Dashboard] [INIT] Calling initial syncFromCurrentRoute');
     this.syncFromCurrentRoute();
   }
 
   private syncFromCurrentRoute(): void {
     // Guard: if user is not authenticated, don't try to load patient data
-    // This prevents API calls during logout when token has been cleared
     if (!this.authService.isAuthenticated()) {
       console.log('[Dashboard] User not authenticated, skipping syncFromCurrentRoute');
       return;
     }
 
     const urlSegments = this.router.url.split('/').filter(s => s);
-    console.log('[Dashboard] syncFromCurrentRoute called. URL:', this.router.url, 'Segments:', urlSegments);
+    const currentUrl = this.router.url;
+    
+    // DEDUPLICATION: Skip if we've already processed this exact URL
+    if (this.lastSyncedUrl === currentUrl) {
+      console.log('[Dashboard] [DEDUPE-URL] Already processed URL:', currentUrl, '- skipping');
+      return;
+    }
+    
+    console.log(`[Dashboard] [SYNC-START] Processing NEW URL: ${currentUrl}`);
+    this.lastSyncedUrl = currentUrl;
     
     // Get the module name (after /dashboard/)
     // URL format: /dashboard/demographics/20003 -> module is 'demographics', patient is '20003'
@@ -108,10 +130,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (patientIdFromUrl && patientIdFromUrl !== 'patient') {
       this.currentPatientId = patientIdFromUrl;
       console.log('[Dashboard] Patient ID extracted from URL:', this.currentPatientId);
-    }
-    console.log('[Dashboard] Current patient ID:', this.currentPatientId);
-    
-    if (patientIdFromUrl) {
       this.syncPatientFromUrl(patientIdFromUrl);
     } else {
       console.log('[Dashboard] No patientId in URL');
@@ -242,30 +260,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private syncPatientFromUrl(patientId: string): void {
-    console.log('[Dashboard] syncPatientFromUrl called with patientId:', patientId);
+    console.log('[Dashboard] [SYNC-API] syncPatientFromUrl called with patientId:', patientId, {
+      lastLoadedPatientId: this.lastLoadedPatientId,
+      patientApiInProgress: this.patientApiInProgress
+    });
     
-    const currentPatient = this.patientContextService.getCurrentPatient();
-    const currentId = currentPatient?.patientid?.toString();
-    console.log('[Dashboard] Current patient ID:', currentId, 'URL patient ID:', patientId);
-    
-    // Always fetch if different patient, to ensure fresh data from backend
-    if (currentId === patientId) {
-      console.log('[Dashboard] PatientId matches current, skipping load');
+    // Check cache: have we already successfully loaded this patient?
+    if (this.lastLoadedPatientId === patientId) {
+      this.cacheHitCount++;
+      console.log(`[Dashboard] [CACHE-HIT-#${this.cacheHitCount}] Patient ${patientId} already loaded`);
       return;
     }
 
-    console.log('[Dashboard] Calling patientService.getPatientById for patient:', patientId);
+    // Check if API call is already in progress for this patient
+    // This prevents multiple simultaneous requests for the same patient
+    if (this.patientApiInProgress === patientId) {
+      console.log(`[Dashboard] [API-IN-PROGRESS] Patient ${patientId} API call already in progress, skipping duplicate`);
+      return;
+    }
+
+    const currentPatient = this.patientContextService.getCurrentPatient();
+    const currentId = currentPatient?.patientid?.toString();
+    
+    // If current patient already matches, just update cache
+    if (currentId === patientId) {
+      console.log('[Dashboard] Patient already loaded (from service), updating cache only');
+      this.lastLoadedPatientId = patientId;
+      return;
+    }
+
+    // Make API call - mark as in-progress
+    this.patientApiInProgress = patientId;
+    this.apiCallCount++;
+    console.log(`[Dashboard] [API-CALL-#${this.apiCallCount}] Starting API call for patient: ${patientId}`);
+    
     this.patientService.getPatientById(Number(patientId)).subscribe({
       next: (patient) => {
-        console.log('[Dashboard] Patient loaded successfully:', patient);
+        console.log('[Dashboard] Patient API response received:', patient.patientid);
+        this.lastLoadedPatientId = patientId;
+        this.patientApiInProgress = null;
         this.patientContextService.setSelectedPatient(patient);
-        // Ensure localStorage is updated for modules listening to patient changes
         this.sharePatientContext(patient);
       },
       error: (err) => {
         console.error('[Dashboard] Failed to load patient from URL:', err);
-        console.error('[Dashboard] Error status:', err?.status);
-        console.error('[Dashboard] Error message:', err?.message);
+        this.patientApiInProgress = null;
       }
     });
   }

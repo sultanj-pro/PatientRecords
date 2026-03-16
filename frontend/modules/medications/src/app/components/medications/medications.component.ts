@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Subject, interval } from 'rxjs';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -42,7 +42,8 @@ export class MedicationsComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    // PRIORITY 1: Extract patientId from URL params (for deep linking and direct routes)
+    // Extract patientId from URL params (for deep linking and direct routes)
+    // Route params only fire when this module's route is active
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const urlPatientId = params['patientId'];
       if (urlPatientId) {
@@ -54,32 +55,12 @@ export class MedicationsComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
 
-    // PRIORITY 2: Listen for patient context changes from the dashboard
-    window.addEventListener('patient-context-changed', (event: any) => {
-      console.log('Medications: Received patient-context-changed event', event.detail);
-      const newPatientId = event.detail?.patientId?.toString();
-      if (newPatientId && newPatientId !== this.lastPatientId) {
-        this.lastPatientId = newPatientId;
-        this.storePatientContextInLocalStorage(newPatientId);
-        this.loadMedications();
-      }
-    });
-
-    // PRIORITY 3: Use Angular's interval Observable to watch for patient changes (as fallback)
-    interval(500)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        const currentPatientId = this.getPatientIdFromStorage();
-        if (currentPatientId && currentPatientId !== this.lastPatientId) {
-          console.log('Medications: Patient changed, reloading data', {
-            old: this.lastPatientId,
-            new: currentPatientId
-          });
-          this.lastPatientId = currentPatientId;
-          this.loadMedications();
-        }
-      });
+  ngOnDestroy(): void {
+    // Complete the destroy subject
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadMedications(): void {
@@ -183,10 +164,5 @@ export class MedicationsComponent implements OnInit, OnDestroy {
 
   retryLoad(): void {
     this.loadMedications();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }
