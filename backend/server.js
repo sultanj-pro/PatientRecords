@@ -276,6 +276,11 @@ app.get('/health', (req, res) => {
 // Registry endpoint - serves module registry from MongoDB without authentication
 app.get('/api/registry', async (req, res) => {
   try {
+    // Disable caching for registry - it can change at any time
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const registry = await Registry.findOne({}).lean();
     
     if (!registry) {
@@ -313,6 +318,11 @@ function adminMiddleware(req, res, next) {
 // Admin: Get full registry with all details
 app.get('/api/admin/registry', adminMiddleware, async (req, res) => {
   try {
+    // Disable caching
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const registry = await Registry.findOne({});
     if (!registry) {
       return res.status(404).json({ error: 'Registry not found' });
@@ -400,6 +410,46 @@ app.delete('/api/admin/registry/modules/:id', adminMiddleware, async (req, res) 
   } catch (err) {
     console.error('Error deleting module:', err);
     res.status(500).json({ error: 'Failed to delete module' });
+  }
+});
+
+// Admin: Toggle or set enabled/disabled status for a module
+app.patch('/api/admin/registry/modules/:id/toggle', adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { enabled } = req.body;
+    
+    const registry = await Registry.findOne({});
+    if (!registry) {
+      return res.status(404).json({ error: 'Registry not found' });
+    }
+    
+    const module = registry.modules.find(m => m.id === id);
+    if (!module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+    
+    // If enabled is not specified, toggle the current state
+    // If enabled is specified, set to that value
+    if (enabled !== undefined) {
+      module.enabled = enabled;
+    } else {
+      module.enabled = !module.enabled;
+    }
+    
+    await registry.save();
+    
+    res.json({ 
+      success: true, 
+      module: {
+        id: module.id,
+        name: module.name,
+        enabled: module.enabled
+      }
+    });
+  } catch (err) {
+    console.error('Error toggling module status:', err);
+    res.status(500).json({ error: 'Failed to toggle module status' });
   }
 });
 

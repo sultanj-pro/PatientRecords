@@ -385,6 +385,241 @@ const patientBaseData = [
       { type: 'drug', substance: 'Aspirin', severity: 'mild', reaction: 'Stomach upset' },
       { type: 'food', substance: 'Peanuts', severity: 'severe', reaction: 'Anaphylaxis', dateReported: new Date('2018-03-22') }
     ]
+  },
+  {
+    patientid: 20006,
+    firstname: 'David',
+    lastname: 'Wilson',
+    demographics: {
+      legalName: { first: 'David', middle: 'Christopher', last: 'Wilson' },
+      preferredName: 'Dave',
+      dateOfBirth: new Date('1975-12-25'),
+      gender: 'Male',
+      sexAssignedAtBirth: 'Male',
+      ssn: '678-90-1234',
+      mrn: 'MRN-20006',
+      bloodType: 'O-',
+      primaryPhone: '(555) 123-0006',
+      secondaryPhone: '(555) 234-0006',
+      email: 'david.wilson@email.com',
+      address: {
+        street: '6 Main Street',
+        city: 'Springfield',
+        state: 'IL',
+        zip: '62701',
+        country: 'USA'
+      },
+      emergencyContacts: [
+        { name: 'Patricia Wilson', relationship: 'Spouse', phone: '(555) 345-0006', isPrimary: true }
+      ],
+      preferredLanguage: 'English',
+      race: 'White',
+      ethnicity: 'Non-Hispanic',
+      maritalStatus: 'Married',
+      insurance: [
+        {
+          type: 'primary',
+          provider: 'Kaiser Permanente',
+          policyNumber: 'KP789012345',
+          groupNumber: 'GRP-5006',
+          subscriberName: 'David Wilson',
+          subscriberRelationship: 'Self',
+          effectiveDate: new Date('2024-04-15'),
+          expirationDate: new Date('2027-04-14')
+        }
+      ]
+    },
+    allergies: [
+      { type: 'environmental', substance: 'Pollen', severity: 'mild', reaction: 'Allergic rhinitis' }
+    ]
+  },
+  {
+    patientid: 20007,
+    firstname: 'Lisa',
+    lastname: 'Chen',
+    demographics: {
+      legalName: { first: 'Lisa', middle: 'Marie', last: 'Chen' },
+      preferredName: 'Lisa',
+      dateOfBirth: new Date('1995-08-17'),
+      gender: 'Female',
+      sexAssignedAtBirth: 'Female',
+      ssn: '789-01-2345',
+      mrn: 'MRN-20007',
+      bloodType: 'B+',
+      primaryPhone: '(555) 123-0007',
+      secondaryPhone: '',
+      email: 'lisa.chen@email.com',
+      address: {
+        street: '7 Main Street',
+        city: 'Springfield',
+        state: 'IL',
+        zip: '62701',
+        country: 'USA'
+      },
+      emergencyContacts: [
+        { name: 'Wei Chen', relationship: 'Father', phone: '(555) 345-0007', isPrimary: true },
+        { name: 'Susan Chen', relationship: 'Mother', phone: '(555) 456-0007', isPrimary: false }
+      ],
+      preferredLanguage: 'English',
+      race: 'Asian',
+      ethnicity: 'Chinese',
+      maritalStatus: 'Single',
+      insurance: [
+        {
+          type: 'primary',
+          provider: 'Blue Cross Blue Shield',
+          policyNumber: 'BC234567890',
+          groupNumber: 'GRP-5007',
+          subscriberName: 'Lisa Chen',
+          subscriberRelationship: 'Self',
+          effectiveDate: new Date('2024-09-01'),
+          expirationDate: new Date('2025-08-31')
+        }
+      ]
+    },
+    allergies: []
+  },
+  {
+    patientid: 20008,
+    firstname: 'Robert',
+    lastname: 'Martinez',
+    demographics: {
+      legalName: { first: 'Robert', middle: 'Luis', last: 'Martinez' },
+      preferredName: 'Roberto',
+      dateOfBirth: new Date('1954-02-03'),
+      gender: 'Male',
+      sexAssignedAtBirth: 'Male',
+      ssn: '890-12-3456',
+      mrn: 'MRN-20008',
+      bloodType: 'A+',
+      primaryPhone: '(555) 123-0008',
+      secondaryPhone: '(555) 234-0008',
+      email: 'robert.martinez@email.com',
+      address: {
+        street: '8 Main Street',
+        city: 'Springfield',
+        state: 'IL',
+        zip: '62701',
+        country: 'USA'
+      },
+      emergencyContacts: [
+        { name: 'Angela Martinez', relationship: 'Daughter', phone: '(555) 345-0008', isPrimary: true }
+      ],
+      preferredLanguage: 'Spanish',
+      race: 'Hispanic',
+      ethnicity: 'Puerto Rican',
+      maritalStatus: 'Widowed',
+      insurance: [
+        {
+          type: 'primary',
+          provider: 'Medicare',
+          policyNumber: 'MED123456789',
+          groupNumber: 'MEDICARE',
+          subscriberName: 'Robert Martinez',
+          subscriberRelationship: 'Self',
+          effectiveDate: new Date('2020-02-03'),
+          expirationDate: new Date('2030-02-03')
+        }
+      ]
+    },
+    allergies: [
+      { type: 'drug', substance: 'Codeine', severity: 'severe', reaction: 'Severe itching and hives' }
+    ]
+  },
+  {
+    patientid: 20009,
+    firstname: 'Rebecca',
+    lastname: 'Patterson',
+    demographics: {
+      legalName: { first: 'Rebecca', middle: 'Anne', last: 'Patterson' },
+      preferredName: 'Becky',
+      dateOfBirth: new Date('1982-06-19'),
+      gender: 'Female',
+      sexAssignedAtBirth: 'Female',
+      ssn: '901-23-4567',
+      mrn: 'MRN-20009',
+      bloodType: 'AB-',
+      primaryPhone: '(555) 123-0009',
+      secondaryPhone: '(555) 234-0009',
+      email: 'rebecca.p@email.com',
+      address: {
+        street: '9 Main Street',
+        city: 'Springfield',
+        state: 'IL',
+        zip: '62701',
+        country: 'USA'
+      },
+      emergencyContacts: [
+        { name: 'Thomas Patterson', relationship: 'Spouse', phone: '(555) 345-0009', isPrimary: true },
+        { name: 'Katherine Patterson', relationship: 'Daughter', phone: '(555) 456-0009', isPrimary: false }
+      ],
+      preferredLanguage: 'English',
+      race: 'White',
+      ethnicity: 'Non-Hispanic',
+      maritalStatus: 'Married',
+      insurance: [
+        {
+          type: 'primary',
+          provider: 'Aetna',
+          policyNumber: 'AET345678901',
+          groupNumber: 'GRP-5009',
+          subscriberName: 'Rebecca Patterson',
+          subscriberRelationship: 'Self',
+          effectiveDate: new Date('2025-01-01'),
+          expirationDate: new Date('2026-12-31')
+        }
+      ]
+    },
+    allergies: [
+      { type: 'environmental', substance: 'Dust mites', severity: 'moderate', reaction: 'Asthma attacks' }
+    ]
+  },
+  {
+    patientid: 20010,
+    firstname: 'James',
+    lastname: 'O\'Brien',
+    demographics: {
+      legalName: { first: 'James', middle: 'Patrick', last: 'O\'Brien' },
+      preferredName: 'Jim',
+      dateOfBirth: new Date('1970-11-11'),
+      gender: 'Male',
+      sexAssignedAtBirth: 'Male',
+      ssn: '012-34-5678',
+      mrn: 'MRN-20010',
+      bloodType: 'B-',
+      primaryPhone: '(555) 123-0010',
+      secondaryPhone: '',
+      email: 'james.obrien@email.com',
+      address: {
+        street: '10 Main Street',
+        city: 'Springfield',
+        state: 'IL',
+        zip: '62701',
+        country: 'USA'
+      },
+      emergencyContacts: [
+        { name: 'Margaret O\'Brien', relationship: 'Sister', phone: '(555) 345-0010', isPrimary: true }
+      ],
+      preferredLanguage: 'English',
+      race: 'White',
+      ethnicity: 'Irish',
+      maritalStatus: 'Divorced',
+      insurance: [
+        {
+          type: 'primary',
+          provider: 'CIGNA',
+          policyNumber: 'CIG567890123',
+          groupNumber: 'GRP-5010',
+          subscriberName: 'James O\'Brien',
+          subscriberRelationship: 'Self',
+          effectiveDate: new Date('2024-07-01'),
+          expirationDate: new Date('2027-06-30')
+        }
+      ]
+    },
+    allergies: [
+      { type: 'food', substance: 'Dairy', severity: 'mild', reaction: 'Lactose intolerance' }
+    ]
   }
 ];
 
@@ -424,6 +659,41 @@ function generateVitals(patientId) {
       { vital_description: 'Blood Pressure (Diastolic)', value: '80', unit: 'mmHg' },
       { vital_description: 'Heart Rate', value: '70', unit: 'bpm' },
       { vital_description: 'Respiratory Rate', value: '16', unit: 'breaths/min' }
+    ],
+    20006: [
+      { vital_description: 'Temperature', value: '98.5', unit: '°F' },
+      { vital_description: 'Blood Pressure (Systolic)', value: '128', unit: 'mmHg' },
+      { vital_description: 'Blood Pressure (Diastolic)', value: '82', unit: 'mmHg' },
+      { vital_description: 'Heart Rate', value: '68', unit: 'bpm' },
+      { vital_description: 'Respiratory Rate', value: '16', unit: 'breaths/min' }
+    ],
+    20007: [
+      { vital_description: 'Temperature', value: '98.0', unit: '°F' },
+      { vital_description: 'Blood Pressure (Systolic)', value: '112', unit: 'mmHg' },
+      { vital_description: 'Blood Pressure (Diastolic)', value: '72', unit: 'mmHg' },
+      { vital_description: 'Heart Rate', value: '62', unit: 'bpm' },
+      { vital_description: 'Respiratory Rate', value: '15', unit: 'breaths/min' }
+    ],
+    20008: [
+      { vital_description: 'Temperature', value: '98.7', unit: '°F' },
+      { vital_description: 'Blood Pressure (Systolic)', value: '138', unit: 'mmHg' },
+      { vital_description: 'Blood Pressure (Diastolic)', value: '84', unit: 'mmHg' },
+      { vital_description: 'Heart Rate', value: '76', unit: 'bpm' },
+      { vital_description: 'Respiratory Rate', value: '17', unit: 'breaths/min' }
+    ],
+    20009: [
+      { vital_description: 'Temperature', value: '98.3', unit: '°F' },
+      { vital_description: 'Blood Pressure (Systolic)', value: '120', unit: 'mmHg' },
+      { vital_description: 'Blood Pressure (Diastolic)', value: '78', unit: 'mmHg' },
+      { vital_description: 'Heart Rate', value: '74', unit: 'bpm' },
+      { vital_description: 'Respiratory Rate', value: '16', unit: 'breaths/min' }
+    ],
+    20010: [
+      { vital_description: 'Temperature', value: '99.0', unit: '°F' },
+      { vital_description: 'Blood Pressure (Systolic)', value: '132', unit: 'mmHg' },
+      { vital_description: 'Blood Pressure (Diastolic)', value: '86', unit: 'mmHg' },
+      { vital_description: 'Heart Rate', value: '80', unit: 'bpm' },
+      { vital_description: 'Respiratory Rate', value: '18', unit: 'breaths/min' }
     ]
   };
 
@@ -465,6 +735,31 @@ function generateLabs(patientId) {
       { test_name: 'Complete Blood Count', value: '5.1', unit: 'M/uL', reference: '4.5-11.0' },
       { test_name: 'Glucose', value: '102', unit: 'mg/dL', reference: '70-100' },
       { test_name: 'Hemoglobin A1C', value: '5.8', unit: '%', reference: '<5.7' }
+    ],
+    20006: [
+      { test_name: 'Complete Blood Count', value: '5.5', unit: 'M/uL', reference: '4.5-11.0' },
+      { test_name: 'Glucose', value: '98', unit: 'mg/dL', reference: '70-100' },
+      { test_name: 'Cholesterol Total', value: '200', unit: 'mg/dL', reference: '<200' }
+    ],
+    20007: [
+      { test_name: 'Complete Blood Count', value: '4.2', unit: 'M/uL', reference: '4.5-11.0' },
+      { test_name: 'Glucose', value: '85', unit: 'mg/dL', reference: '70-100' },
+      { test_name: 'Thyroid (TSH)', value: '2.1', unit: 'mIU/L', reference: '0.4-4.0' }
+    ],
+    20008: [
+      { test_name: 'Complete Blood Count', value: '6.2', unit: 'M/uL', reference: '4.5-11.0' },
+      { test_name: 'Glucose', value: '118', unit: 'mg/dL', reference: '70-100' },
+      { test_name: 'Creatinine', value: '1.1', unit: 'mg/dL', reference: '0.6-1.2' }
+    ],
+    20009: [
+      { test_name: 'Complete Blood Count', value: '4.9', unit: 'M/uL', reference: '4.5-11.0' },
+      { test_name: 'Glucose', value: '93', unit: 'mg/dL', reference: '70-100' },
+      { test_name: 'Hemoglobin A1C', value: '5.5', unit: '%', reference: '<5.7' }
+    ],
+    20010: [
+      { test_name: 'Complete Blood Count', value: '5.8', unit: 'M/uL', reference: '4.5-11.0' },
+      { test_name: 'Glucose', value: '110', unit: 'mg/dL', reference: '70-100' },
+      { test_name: 'Prostate (PSA)', value: '1.2', unit: 'ng/mL', reference: '<4.0' }
     ]
   };
 
@@ -500,6 +795,26 @@ function generateMedications(patientId) {
     20005: [
       { name: 'Levothyroxine', dose: '50 mcg', frequency: 'Once Daily', indication: 'Hypothyroidism' },
       { name: 'Sertraline', dose: '50 mg', frequency: 'Once Daily', indication: 'Depression' }
+    ],
+    20006: [
+      { name: 'Simvastatin', dose: '20 mg', frequency: 'Once Daily', indication: 'High Cholesterol' },
+      { name: 'Aspirin', dose: '81 mg', frequency: 'Once Daily', indication: 'Cardiovascular Protection' }
+    ],
+    20007: [
+      { name: 'Loratadine', dose: '10 mg', frequency: 'Once Daily', indication: 'Allergies' }
+    ],
+    20008: [
+      { name: 'Enalapril', dose: '10 mg', frequency: 'Once Daily', indication: 'Hypertension' },
+      { name: 'Hydrochlorothiazide', dose: '12.5 mg', frequency: 'Once Daily', indication: 'Hypertension' },
+      { name: 'Pravastatin', dose: '40 mg', frequency: 'Once Daily', indication: 'High Cholesterol' }
+    ],
+    20009: [
+      { name: 'Albuterol', dose: '90 mcg', frequency: 'As needed', indication: 'Asthma' },
+      { name: 'Fluticasone', dose: '44 mcg', frequency: 'Twice Daily', indication: 'Asthma Prevention' }
+    ],
+    20010: [
+      { name: 'Omeprazole', dose: '20 mg', frequency: 'Once Daily', indication: 'GERD' },
+      { name: 'Metoprolol', dose: '50 mg', frequency: 'Twice Daily', indication: 'Hypertension' }
     ]
   };
 
@@ -531,6 +846,23 @@ function generateVisits(patientId) {
     ],
     20005: [
       { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Thyroid function check', provider: 'Dr. Miller' }
+    ],
+    20006: [
+      { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Annual physical', provider: 'Dr. Taylor' }
+    ],
+    20007: [
+      { date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Allergy management', provider: 'Dr. Anderson' }
+    ],
+    20008: [
+      { date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Blood pressure check', provider: 'Dr. Garcia' },
+      { date: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Kidney function monitoring', provider: 'Dr. Martinez' }
+    ],
+    20009: [
+      { date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Asthma control assessment', provider: 'Dr. Robinson' }
+    ],
+    20010: [
+      { date: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'GERD management review', provider: 'Dr. Clark' },
+      { date: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], reason: 'Cardiac risk assessment', provider: 'Dr. White' }
     ]
   };
 

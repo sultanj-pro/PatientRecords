@@ -111,7 +111,7 @@ services:
     image: patientrecord-procedures
     container_name: patientrecord-procedures
     ports:
-      - "4207:4207"
+      - "4207:4200"
     depends_on:
       patientrecord-backend:
         condition: service_started

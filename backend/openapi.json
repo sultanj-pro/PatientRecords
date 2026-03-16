@@ -76,37 +76,264 @@
         }
       }
     },
-    "/auth/login": {
+    "/api/admin/registry": {
+      "get": {
+        "tags": ["Registry"],
+        "summary": "Get Full Registry (Admin)",
+        "description": "Retrieves the complete registry with all details. Admin access required.",
+        "responses": {
+          "200": { "description": "Full registry retrieved successfully" },
+          "401": { "description": "Unauthorized - no token provided" },
+          "403": { "description": "Forbidden - admin access required" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/admin/registry/modules": {
       "post": {
-        "tags": ["Authentication"],
-        "summary": "Login (returns JWT)",
+        "tags": ["Registry"],
+        "summary": "Add Module to Registry (Admin)",
+        "description": "Add a new module to the registry. Admin access required.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": { "username": { "type": "string" } },
+                "properties": {
+                  "id": { "type": "string", "example": "demographics" },
+                  "name": { "type": "string", "example": "Demographics" },
+                  "description": { "type": "string" },
+                  "icon": { "type": "string" },
+                  "path": { "type": "string" },
+                  "enabled": { "type": "boolean" },
+                  "roles": { "type": "array", "items": { "type": "string" } },
+                  "order": { "type": "number" }
+                },
+                "required": ["id", "name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Module added successfully" },
+          "400": { "description": "Bad request - missing required fields" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "409": { "description": "Conflict - module already exists" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/admin/registry/modules/{id}": {
+      "put": {
+        "tags": ["Registry"],
+        "summary": "Update Module (Admin)",
+        "description": "Update a module's properties. Admin access required.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Module ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "enabled": { "type": "boolean" },
+                  "order": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Module updated successfully" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "404": { "description": "Module not found" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "delete": {
+        "tags": ["Registry"],
+        "summary": "Delete Module (Admin)",
+        "description": "Remove a module from the registry. Admin access required.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Module ID" }
+        ],
+        "responses": {
+          "200": { "description": "Module deleted successfully" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "404": { "description": "Module not found" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/admin/registry/modules/{id}/toggle": {
+      "patch": {
+        "tags": ["Registry"],
+        "summary": "Toggle Module Enable/Disable (Admin)",
+        "description": "Enable or disable a module. Admin access required. If 'enabled' not specified, toggles current state.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Module ID" }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Module status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "module": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "enabled": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "404": { "description": "Module not found" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login (returns JWT)",
+        "description": "Authenticate with username and get JWT token. Username 'admin' gets admin role, usernames starting with 'doc' get physician role, others get nurse role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "username": { "type": "string", "example": "admin" } },
                 "required": ["username"]
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Login successful" },
-          "400": { "description": "Bad request" }
+          "200": { 
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "tokenType": { "type": "string", "example": "Bearer" },
+                    "expiresIn": { "type": "number" },
+                    "role": { "type": "string", "enum": ["admin", "physician", "nurse"] }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request - username required" }
         }
       }
     },
-    "/auth/refresh": {
+    "/api/auth/refresh": {
       "post": {
         "tags": ["Authentication"],
         "summary": "Refresh token",
+        "description": "Refresh an existing JWT token. Note: does NOT accept expired tokens - enforces hard session timeout.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" } } } } }
+          "content": { 
+            "application/json": { 
+              "schema": { 
+                "type": "object", 
+                "properties": { "token": { "type": "string" } },
+                "required": ["token"]
+              } 
+            } 
+          }
         },
-        "responses": { "200": { "description": "Token refreshed" }, "400": { "description": "Bad request" } }
+        "responses": { 
+          "200": { 
+            "description": "Token refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "expiresIn": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }, 
+          "400": { "description": "Bad request - token required" },
+          "401": { "description": "Token expired or invalid" }
+        }
+      }
+    },
+    "/api/auth/validate": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Validate token",
+        "description": "Check if a token is valid and get user information.",
+        "requestBody": {
+          "required": true,
+          "content": { 
+            "application/json": { 
+              "schema": { 
+                "type": "object", 
+                "properties": { "token": { "type": "string" } },
+                "required": ["token"]
+              } 
+            } 
+          }
+        },
+        "responses": { 
+          "200": { 
+            "description": "Token is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": { "type": "boolean", "example": true },
+                    "user": { "type": "object" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }, 
+          "400": { "description": "Bad request" },
+          "401": { "description": "Token invalid or expired" }
+        }
       }
     },
     "/api/patients": {

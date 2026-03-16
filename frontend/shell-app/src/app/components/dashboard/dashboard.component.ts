@@ -66,6 +66,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((patient) => {
         this.patient = patient;
+        // Update currentPatientId when patient is selected
+        if (patient) {
+          this.currentPatientId = (patient.patientid || '').toString();
+          console.log('[Dashboard] Patient selected, updated currentPatientId:', this.currentPatientId);
+        }
         // Share patient context with micro-frontends
         this.sharePatientContext(patient);
       });
