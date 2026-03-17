@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject, interval } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -38,36 +39,28 @@ export class MedicationsComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    // Listen for patient context changes from the dashboard
-    window.addEventListener('patient-context-changed', (event: any) => {
-      console.log('Medications: Received patient-context-changed event', event.detail);
-      const newPatientId = event.detail?.patientId?.toString();
-      if (newPatientId && newPatientId !== this.lastPatientId) {
-        this.lastPatientId = newPatientId;
-        this.loadMedications();
-      }
-    });
-
-    // Initial load
-    this.loadMedications();
-
-    // Use Angular's interval Observable to watch for patient changes (as fallback)
-    interval(500)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        const currentPatientId = this.getPatientIdFromStorage();
-        if (currentPatientId && currentPatientId !== this.lastPatientId) {
-          console.log('Medications: Patient changed, reloading data', {
-            old: this.lastPatientId,
-            new: currentPatientId
-          });
-          this.lastPatientId = currentPatientId;
+    // Extract patientId from URL params (for deep linking and direct routes)
+    // Route params only fire when this module's route is active
+    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const urlPatientId = params['patientId'];
+      if (urlPatientId) {
+        console.log('[Medications] Patient ID from route params:', urlPatientId);
+        this.storePatientContextInLocalStorage(urlPatientId);
+        if (urlPatientId !== this.lastPatientId) {
+          this.lastPatientId = urlPatientId;
           this.loadMedications();
         }
-      });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Complete the destroy subject
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadMedications(): void {
@@ -138,6 +131,12 @@ export class MedicationsComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private storePatientContextInLocalStorage(patientId: string): void {
+    const context = { patientId, timestamp: Date.now() };
+    localStorage.setItem('__PATIENT_CONTEXT__', JSON.stringify(context));
+    localStorage.setItem('selectedPatientId', patientId);
+  }
+
   getFrequencyLabel(frequency: string | undefined): string {
     if (!frequency) return 'As needed';
     const freq = frequency.toLowerCase();
@@ -165,10 +164,5 @@ export class MedicationsComponent implements OnInit, OnDestroy {
 
   retryLoad(): void {
     this.loadMedications();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

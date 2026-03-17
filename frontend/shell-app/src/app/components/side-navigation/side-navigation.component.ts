@@ -43,8 +43,4 @@ export class SideNavigationComponent implements OnInit {
   onLogout(): void {
     this.logout.emit();
   }
-
-  getModuleIcon(module: ModuleMetadata): string {
-    return module.icon;
-  }
 }

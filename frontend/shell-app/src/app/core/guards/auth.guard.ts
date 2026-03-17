@@ -17,13 +17,11 @@ export class AuthGuard {
       return true;
     }
 
-    // Save current URL for returning after login
+    // Save current URL for returning after login (to sessionStorage)
     this.authService.saveReturnUrl(state.url);
     
-    // Redirect to login with returnUrl query param
-    this.router.navigate(['/login'], {
-      queryParams: { returnUrl: state.url }
-    });
+    // Redirect to login (returnUrl is already saved to sessionStorage)
+    this.router.navigate(['/login']);
     return false;
   }
 }
@@ -36,16 +34,20 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  console.log('[AuthGuard] Checking access to:', state.url);
+  console.log('[AuthGuard] Has valid token:', authService.hasValidToken());
+
   if (authService.hasValidToken()) {
+    console.log('[AuthGuard] Token valid, allowing access');
     return true;
   }
 
-  // Save current URL for returning after login
+  console.log('[AuthGuard] No valid token, redirecting to login');
+  // Save current URL for returning after login (to sessionStorage)
   authService.saveReturnUrl(state.url);
+  console.log('[AuthGuard] Saved returnUrl:', state.url);
   
-  // Redirect to login with returnUrl query param
-  router.navigate(['/login'], {
-    queryParams: { returnUrl: state.url }
-  });
+  // Redirect to login (returnUrl is already saved to sessionStorage)
+  router.navigate(['/login']);
   return false;
 };

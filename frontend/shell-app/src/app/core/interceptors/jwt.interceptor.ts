@@ -66,9 +66,7 @@ export class JwtInterceptor implements HttpInterceptor {
               // Refresh failed, redirect to login
               this.authService.saveReturnUrl(this.router.url);
               this.authService.logout();
-              this.router.navigate(['/login'], {
-                queryParams: { returnUrl: this.router.url }
-              });
+              this.router.navigate(['/login']);
               this.hasRetried = false; // Reset retry flag
               return throwError(() => refreshError);
             })

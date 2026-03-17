@@ -16,7 +16,7 @@
       (click)="selectModule(module)"
       [title]="module.name">
       
-      <span class="nav-icon">{{ getModuleIcon(module) }}</span>
+      <span class="nav-icon">{{ module.icon }}</span>
       <span class="nav-label" *ngIf="!isCollapsed">{{ module.name }}</span>
     </a>
   </nav>

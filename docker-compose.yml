@@ -1,16 +1,4 @@
 services:
-  # Module Registry Service
-  patientrecord-registry:
-    build:
-      context: ./registry
-      dockerfile: Dockerfile
-    image: patientrecord-registry
-    container_name: patientrecord-registry
-    ports:
-      - "5000:5000"
-    networks:
-      - app-net
-
   # Shell App (Host) - Orchestrator
   patientrecord-shell:
     build:
@@ -24,7 +12,7 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
 
   # Demographics Micro-Frontend (Independent Container)
   patientrecord-demographics:
@@ -39,7 +27,7 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
 
   # Vitals Micro-Frontend (Independent Container)
   patientrecord-vitals:
@@ -54,7 +42,7 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
 
   # Labs Micro-Frontend (Independent Container)
   patientrecord-labs:
@@ -69,7 +57,7 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
 
   # Medications Micro-Frontend (Independent Container)
   patientrecord-medications:
@@ -84,7 +72,7 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
 
   # Visits Micro-Frontend (Independent Container)
   patientrecord-visits:
@@ -99,7 +87,7 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
 
   # Care Team Micro-Frontend (Independent Container)
   patientrecord-care-team:
@@ -114,19 +102,33 @@ services:
       patientrecord-backend:
         condition: service_started
     networks:
-      - app-net
+      - patientrecords
+
+  patientrecord-procedures:
+    build:
+      context: ./frontend/modules/procedures-react
+      dockerfile: Dockerfile
+    image: patientrecord-procedures
+    container_name: patientrecord-procedures
+    ports:
+      - "4207:4200"
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+    networks:
+      - patientrecords
 
   patientrecord-backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     image: patientrecord-backend
     container_name: patientrecord-backend
     environment:
       - NODE_ENV=development
       - PORT=5001
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
-      - TOKEN_EXPIRATION_MINUTES=3
+      - TOKEN_EXPIRATION_MINUTES=60
     ports:
       - "5001:5001"
     volumes:
@@ -135,7 +137,7 @@ services:
       patientrecord-mongodb:
         condition: service_healthy
     networks:
-      - app-net
+      - patientrecords
 
   patientrecord-mongodb:
     build:
@@ -156,12 +158,12 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - app-net
+      - patientrecords
 
 volumes:
   mongo_data:
     driver: local
 
 networks:
-  app-net:
+  patientrecords:
     driver: bridge

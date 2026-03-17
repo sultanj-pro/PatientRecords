@@ -1,10 +1,11 @@
 FROM node:18-alpine
 WORKDIR /app
-COPY package.json .
+COPY backend/package.json .
 RUN npm install --production
-COPY init-db.js .
-COPY server.js .
-COPY openapi.json .
+COPY backend/init-db.js .
+COPY backend/server.js .
+COPY backend/openapi.json .
+COPY frontend/modules/registry.json .
 ENV NODE_ENV=production
 ENV PORT=5001
 EXPOSE 5001

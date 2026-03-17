@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject, interval } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -40,36 +41,28 @@ export class VitalsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private lastPatientId: string | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    // Listen for patient context changes from the dashboard
-    window.addEventListener('patient-context-changed', (event: any) => {
-      console.log('Vitals: Received patient-context-changed event', event.detail);
-      const newPatientId = event.detail?.patientId?.toString();
-      if (newPatientId && newPatientId !== this.lastPatientId) {
-        this.lastPatientId = newPatientId;
-        this.loadVitals();
-      }
-    });
-
-    // Initial load
-    this.loadVitals();
-    
-    // Use Angular's interval Observable to watch for patient changes (as fallback)
-    interval(500)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        const currentPatientId = this.getPatientIdFromStorage();
-        if (currentPatientId && currentPatientId !== this.lastPatientId) {
-          console.log('Vitals: Patient changed, reloading data', {
-            old: this.lastPatientId,
-            new: currentPatientId
-          });
-          this.lastPatientId = currentPatientId;
+    // Extract patientId from URL params (for deep linking and direct routes)
+    // Route params only fire when this module's route is active
+    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const urlPatientId = params['patientId'];
+      if (urlPatientId) {
+        console.log('[Vitals] Patient ID from route params:', urlPatientId);
+        this.storePatientContextInLocalStorage(urlPatientId);
+        if (urlPatientId !== this.lastPatientId) {
+          this.lastPatientId = urlPatientId;
           this.loadVitals();
         }
-      });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Complete the destroy subject
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadVitals(): void {
@@ -201,6 +194,12 @@ export class VitalsComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private storePatientContextInLocalStorage(patientId: string): void {
+    const context = { patientId, timestamp: Date.now() };
+    localStorage.setItem('__PATIENT_CONTEXT__', JSON.stringify(context));
+    localStorage.setItem('selectedPatientId', patientId);
+  }
+
   formatDate(date: string | Date | undefined | null): string {
     if (!date) return 'N/A';
     const d = new Date(date);
@@ -264,10 +263,5 @@ export class VitalsComponent implements OnInit, OnDestroy {
 
   retryLoad(): void {
     this.loadVitals();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

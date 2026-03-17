@@ -4,39 +4,104 @@
 
 A modern, scalable healthcare information system built with Angular 17, Module Federation, and microservices architecture.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Overview](#overview)
-- [Technology Stack](#-technology-stack)
-- [System Architecture](#system-architecture)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Features](#features)
-- [Development](#development)
-- [Deployment](#deployment)
-- [API Documentation](#api-documentation)
-- [Troubleshooting](#troubleshooting)
-- [Roadmap](#roadmap)
+- 📋 [Overview](#overview)
+  - 🔬 [Module Federation Case Study](#module-federation-case-study)
+  - 🚀 [Future Vision](#future-vision)
+  - ✨ [Key Capabilities](#key-capabilities)
+- 🛠️ [Technology Stack](#technology-stack)
+- 🏗️ [System Architecture](#system-architecture)
+- 🚀 [Quick Start](#quick-start)
+- 📁 [Project Structure](#project-structure)
+- ✨ [Features](#features)
+- 💻 [Development](#development)
+- 🐳 [Deployment](#deployment)
+- 📡 [API Documentation](#api-documentation)
+- ⚠️ [Troubleshooting](#troubleshooting)
+- 🗺️ [Roadmap](#roadmap)
+- 📚 [Additional Resources](#additional-resources)
+- 👥 [Contributing](#contributing)
+- 📝 [License](#license)
+- 📞 [Support](#support)
 
-## 🎯 Overview
+## Overview 
 
-PatientRecords is a next-generation electronic health record (EHR) system designed for modern healthcare delivery. Built on a micro-frontend architecture, it allows independent development, deployment, and scaling of clinical modules while maintaining a unified user experience.
+PatientRecords is a production-grade reference architecture demonstrating **how to scale engineering teams and systems together**. Built on Module Federation, it solves the central challenge faced by growing organizations: maintaining velocity and autonomy as team count increases.
+
+### The Core Problem This Solves
+
+After leading organizations from 3 to 300+ engineers, I've witnessed the same pattern repeatedly:
+- **Architectural coupling** becomes the bottleneck, not development capacity
+- **Technology monoculture** forces all teams to work in the same framework, regardless of problem fit
+- **Deployment coordination** turns minor changes into coordinated releases
+- **Team autonomy** gets sacrificed for consistency
+
+**PatientRecords demonstrates the inverse:** Independent teams shipping independent code.
+
+### Module Federation as Organizational Scaling Pattern
+
+This isn't just a technical pattern—it's a **team organization pattern**. Each module can have:
+- Its own team (1-5 engineers)
+- Independent deploy cadence (ship on team's schedule)
+- Technology choice (Angular, React, Vue—whatever fits)
+- Own testing & QA process
+- Separate code review gates
+
+**The mathematics:** N independent teams with monolithic architecture requires ~N² coordination overhead. Module Federation reduces this to ~N.
+
+### Module Federation Case Study
+
+**PatientRecords demonstrates production-grade Module Federation architecture:**
+
+✅ **Proven Results:**
+- Successfully running **6 Angular modules + 1 React module** in a single unified shell application
+- Independent modules built with different frameworks coexist seamlessly via Module Federation
+- Real-time cross-framework state synchronization (patient context, authentication)
+- Modules maintain complete independence: deploy, update, and scale separately
+- Shared dependencies managed efficiently—no duplication of React, Angular, or RxJS
+- Deep-linking and navigation work across all framework types
+
+**Key Insight:** Module Federation successfully enables true technology flexibility. Teams adopt the right tool for their problem, not the organizational standard. This is how you scale engineering from startup to enterprise without architectural ossification.
+
+### Why This Matters for Leadership
+
+See **[ARCHITECTURE_LEADERSHIP.md](./ARCHITECTURE_LEADERSHIP.md)** for strategic insights on:
+- When to choose Module Federation vs. alternatives
+- Team structure implications
+- Deployment autonomy patterns
+- Risk management at scale
+
+See **[LESSONS_LEARNED.md](./LESSONS_LEARNED.md)** for 20+ years of patterns and anti-patterns from building systems at scale.
+
+### Future Vision
+
+This foundation will evolve into:
+- **Distributed Microservices Backend** — Multiple specialized services (Patient Service, Procedures Service, Analytics Service, etc.) replacing monolithic architecture
+- **Agentic AI Integration** — Autonomous agents for clinical decision support, schedule optimization, and real-time alerts
+- **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
+- **Advanced Module Orchestration** — Dynamic module loading based on user roles, device capabilities, and network conditions
 
 ### Key Capabilities
-- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, and care team
+- **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
+- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, and procedures
 - **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
 - **Real-time patient context sync** across all modules using Observable pattern
 - **Real-time session management** with automatic token refresh
 - **Role-based access control** (RBAC) for clinical workflows
+- **Framework-agnostic module loading** — load Angular or React modules dynamically
 - **Responsive web design** for desktop and tablet use
 - **Containerized deployment** using Docker and Docker Compose
 - **Comprehensive API** with OpenAPI/Swagger documentation
 
-## 🛠️ Technology Stack
+[⬆️ Back to Top](#table-of-contents)
+
+## Technology Stack
 
 ### Frontend
-- **Angular 17** — Modern web framework with component-based architecture
-- **Module Federation** — Micro-frontend orchestration via @angular-architects/module-federation
+- **Angular 17** — Shell application and 6 micro-frontend modules
+- **React 18** — Procedures micro-frontend module demonstrating multi-framework support
+- **Module Federation** — Multi-framework orchestration via @angular-architects/module-federation and Webpack Module Federation
 - **TypeScript 5** — Type-safe JavaScript development
 - **RxJS 7** — Reactive programming with Observables
 - **Karma & Jasmine** — Unit testing framework
@@ -62,7 +127,9 @@ PatientRecords is a next-generation electronic health record (EHR) system design
 - **Nx** — Monorepo management with task orchestration
 - **npm Workspaces** — Monorepo organization
 
-## 🏗️ System Architecture
+[⬆️ Back to Top](#table-of-contents)
+
+## System Architecture
 
 ### Micro-Frontend Design
 
@@ -135,7 +202,9 @@ Two-tier approach for uninterrupted user experience:
 **Expiration**: 1 hour (3600 seconds)
 **Refresh Endpoint**: `POST /auth/refresh` with current token
 
-## 🚀 Quick Start
+[⬆️ Back to Top](#table-of-contents)
+
+## Quick Start
 
 ### Prerequisites
 - Docker Engine 20.10+
@@ -162,21 +231,24 @@ Two-tier approach for uninterrupted user experience:
 
    Expected output:
    ```
-   NAME                STATUS          PORTS
-   patientrecord-shell      Up      0.0.0.0:4200->4200/tcp
-   patientrecord-demographics Up    0.0.0.0:4201->4201/tcp
-   patientrecord-vitals     Up      0.0.0.0:4202->4202/tcp
-   patientrecord-labs       Up      0.0.0.0:4203->4203/tcp
-   patientrecord-medications Up     0.0.0.0:4204->4204/tcp
-   patientrecord-visits     Up      0.0.0.0:4205->4205/tcp
-   patientrecord-backend    Up      0.0.0.0:5001->5001/tcp
-   patientrecord-mongo      Up      0.0.0.0:27017->27017/tcp
+   NAME                      STATUS          PORTS
+   patientrecord-shell           Up      0.0.0.0:4200->4200/tcp
+   patientrecord-demographics    Up      0.0.0.0:4201->4201/tcp
+   patientrecord-vitals          Up      0.0.0.0:4202->4202/tcp
+   patientrecord-labs            Up      0.0.0.0:4203->4203/tcp
+   patientrecord-medications     Up      0.0.0.0:4204->4204/tcp
+   patientrecord-visits          Up      0.0.0.0:4205->4205/tcp
+   patientrecord-care-team       Up      0.0.0.0:4206->4206/tcp
+   patientrecord-procedures      Up      0.0.0.0:4207->4207/tcp (React Module)
+   patientrecord-backend         Up      0.0.0.0:5001->5001/tcp
+   patientrecord-mongo           Up      0.0.0.0:27017->27017/tcp
    ```
 
 4. **Access the application**
 
    - **Web UI**: http://localhost:4200
    - **Direct Patient View**: http://localhost:4200/dashboard/vitals/20001
+   - **Procedures Module** (React): http://localhost:4200/dashboard/procedures/20001
    - **API Documentation**: http://localhost:5001/api-docs
    - **Backend Health**: http://localhost:5001/health
 
@@ -234,7 +306,9 @@ Two-tier approach for uninterrupted user experience:
    - Demographics: http://localhost:4201
    - Backend: http://localhost:5001
 
-## 📁 Project Structure
+[⬆️ Back to Top](#table-of-contents)
+
+## Project Structure
 
 ```
 patricents
@@ -250,11 +324,13 @@ patricents
 │   │   └── Dockerfile
 │   │
 │   ├── modules/                # Micro-frontend modules
-│   │   ├── demographics/       # Patient demographics module
-│   │   ├── vitals/            # Vital signs module
-│   │   ├── medications/       # Medications module
-│   │   ├── labs/              # Laboratory results module
-│   │   └── visits/            # Clinical visits module
+   │   ├── demographics/       # Patient demographics module (Angular)
+   │   ├── vitals/            # Vital signs module (Angular)
+   │   ├── medications/       # Medications module (Angular)
+   │   ├── labs/              # Laboratory results module (Angular)
+   │   ├── visits/            # Clinical visits module (Angular)
+   │   ├── care-team/         # Care team module (Angular)
+   │   └── procedures-react/  # Procedures module (React) ⭐ Multi-Framework showcase
 │   │
 │   └── shared/                 # Shared library
 │       └── lib/
@@ -287,41 +363,63 @@ patricents
 └── README.md                  # This file
 ```
 
-## ✨ Features
+[⬆️ Back to Top](#table-of-contents)
+
+## Features
 
 ### Clinical Modules
 
-**Demographics Module**
+**Demographics Module** (Angular)
 - Patient personal information management
 - Contact details and emergency contacts
 - Insurance and billing information
 - Medical history
 
-**Vitals Module**
+**Vitals Module** (Angular)
 - Blood pressure, temperature, heart rate monitoring
 - Respiratory rate tracking
 - Real-time trend visualization
 - Historical audit trail
 
-**Medications Module**
+**Medications Module** (Angular)
 - Active medication inventory
 - Prescription history
 - Drug interaction checking
 - Dosage management
 
-**Labs Module**
+**Labs Module** (Angular)
 - Laboratory test results
 - Report generation
 - Result trending
 - Integration with lab systems
 
-**Visits Module**
+**Visits Module** (Angular)
 - Clinical encounter documentation
 - Chief complaint and assessment
 - Treatment plan tracking
 - Follow-up scheduling
 
+**Care Team Module** (Angular)
+- Clinical team member management
+- Role and specialty tracking
+- Medical license verification
+- Team communication
+
+**Procedures Module** (React) ⭐
+- Surgical and clinical procedures tracking
+- Procedure scheduling and history
+- Procedure status and outcomes
+- **Demonstrates multi-framework support** — React module loaded alongside Angular modules via Module Federation
+
 ### Platform Features
+
+**Multi-Framework Architecture** ⭐
+- **6 Angular micro-frontends** — Demographics, Vitals, Medications, Labs, Visits, Care Team
+- **1 React micro-frontend** — Procedures module
+- **Framework-agnostic loading** — Dynamic module discovery via registry
+- **Shared dependencies** — React, React-DOM shared between shell and React module
+- **Cross-framework state** — Patient context synchronized across all modules regardless of framework
+- Production-ready pattern for adopting different frameworks in different modules
 
 **Authentication & Authorization**
 - JWT-based secure authentication
@@ -329,6 +427,7 @@ patricents
 - Session timeout protection
 - Role-based access control (RBAC)
 - Graceful session expiration handling
+- **Deep-link preservation** — Direct URLs preserved after login redirect
 
 **User Experience**
 - Shareable patient URLs for collaboration
@@ -354,7 +453,9 @@ patricents
 - Environment configuration via .env
 - Comprehensive logging
 
-## 💻 Development
+[⬆️ Back to Top](#table-of-contents)
+
+## Development
 
 ### Adding a New Clinical Module
 
@@ -424,7 +525,9 @@ npm run test:cov
 - **Linter**: ESLint
 - **Angular Version**: 17 (standalone components)
 
-## 🐳 Deployment
+[⬆️ Back to Top](#table-of-contents)
+
+## Deployment
 
 ### Docker Build Process
 
@@ -492,7 +595,9 @@ curl -f http://localhost:5001/health || exit 1
 nc -z localhost 27017 || exit 1
 ```
 
-## 📡 API Documentation
+[⬆️ Back to Top](#table-of-contents)
+
+## API Documentation
 
 ### Base URL
 ```
@@ -578,7 +683,9 @@ Full API documentation available at:
 http://localhost:5001/api-docs
 ```
 
-## 🛠️ Troubleshooting
+[⬆️ Back to Top](#table-of-contents)
+
+## Troubleshooting
 
 ### Container Issues
 
@@ -674,7 +781,9 @@ npm install
 docker compose build --no-cache patientrecord-shell
 ```
 
-## 🗺️ Roadmap
+[⬆️ Back to Top](#table-of-contents)
+
+## Roadmap
 
 ### Phase 6 (Current - Completed)
 - [x] Shareable patient URLs with deep-linkable module views
@@ -686,27 +795,108 @@ docker compose build --no-cache patientrecord-shell
 - [ ] Audit logging for HIPAA compliance
 - [ ] Multi-language support
 
-### Phase 7 (Planned)
-- [ ] Real-time notifications
-- [ ] Appointment scheduling module
-- [ ] Telemedicine integration
-- [ ] Mobile app (React Native)
+### Phase 7 (Priority - Next)
 
-### Phase 8 (Future)
-- [ ] AI-powered clinical decision support
-- [ ] Interoperability with external EHR systems (HL7/FHIR)
-- [ ] Advanced analytics and reporting
-- [ ] Blockchain for record verification
+**Clinical Notes Module**
 
-## 📚 Additional Resources
+Essential foundational capability enabling physicians to document clinical observations, assessments, and clinical decision-making during patient encounters. Clinical notes serve as the authoritative record of care and provide critical context for all downstream AI agents and analytics.
 
+#### Core Capabilities
+- **Rich Text Clinical Notes** — WYSIWYG editor for detailed clinical documentation with formatting, templates, and structured data
+- **Note Templates** — Pre-built templates for common encounter types (Physical Exam, Follow-up Visit, Procedure Note, etc.)
+- **Vital Signs & Measurement Integration** — Auto-populate vital signs, lab results, and medications from patient record into notes
+- **Historical Note Access** — View all previous clinical notes with timestamps and author attribution
+- **Full-Text Search** — Search across all patient notes for clinical keywords, diagnoses, medications mentioned
+- **Note Versioning & Audit Trail** — Track all note modifications with before/after versions for compliance
+
+#### Clinical Context Integration
+- Notes linked to specific visits and encounters
+- Automatic timestamps and clinician attribution
+- Cross-reference to labs, medications, and vital signs
+- Patient-accessible summary view (patient portal integration future phase)
+
+#### Compliance & Documentation
+- HIPAA-compliant storage with encryption
+- Complete audit trail of all note access and modifications
+- Standardized formatting for regulatory requirements
+- Meaningful Use and documentation standards support
+
+#### System Architecture
+- New "Clinical Notes" module on port 4207
+- Backend storage with full-text indexing for search performance
+- Integration with Visits module for encounter context
+- Real-time sync with PatientContextService
+
+---
+
+### Phase 8 (Planned)
+
+**Autonomous Clinical Decision Support Agents**
+
+A suite of AI-driven autonomous agents that provide intelligent recommendations to healthcare professionals for enhanced diagnostic accuracy, prognosis, and treatment planning. All agent recommendations require explicit healthcare professional approval before implementation.
+
+**Enabled by Phase 7**: Agents analyze clinical notes alongside structured patient data for comprehensive, context-aware recommendations.
+
+#### Core Agent Capabilities
+- **Medication Recommendation Agent** — Analyzes patient history, current medications, vitals, clinical notes, and lab results to recommend medication adjustments or changes
+- **Diagnostic Data Agent** — Recommends specific labs, imaging, or other health data collection needed for better diagnosis based on clinical presentation
+- **Treatment Planning Agent** — Suggests evidence-based treatment protocols based on patient conditions, comorbidities, clinical notes, and clinical guidelines
+- **Care Coordination Agent** — Recommends specialist referrals or additional clinical team members based on patient needs documented in notes
+- **Orchestration Agent** — Coordinates recommendations across all agents, prioritizes actions, manages dependencies, and ensures coherent multi-agent workflows
+
+#### Approval Workflow
+- All agent recommendations display in a review queue within the dashboard
+- Healthcare professionals review recommendations with evidence-based reasoning displayed
+- Clinician explicitly approves, modifies, or rejects recommendations before any action
+- Approved recommendations generate orders (medication, lab requests, referrals)
+- All agent interactions and approvals logged for compliance and audit trails
+
+#### Data Sources & Intelligence
+- **Clinical Notes** — Full clinical documentation from Phase 7 module
+- **Patient Data** — Current medications, vitals, lab results, visit history, diagnoses, allergies
+- **Clinical Guidelines** — Evidence-based treatment protocols and best practices
+- **Drug Interaction Database** — Real-time interaction checking and contraindication warnings
+- **Patient Outcomes** — Historical treatment outcomes for similar patient profiles
+
+#### System Architecture
+- Agents implemented as independent microservices or serverless functions
+- Real-time patient data synchronization via PatientContextService
+- Integration with Phase 7 clinical notes for context
+- Integration with backend clinical database for rule evaluation
+- Secure API communication with approval workflow engine
+
+#### Safety & Compliance
+- All recommendations include confidence scores and evidence citations
+- Recommendations never auto-execute; human approval always required
+- Complete audit trail of all AI decisions and clinician actions
+- Explainability features show reasoning behind each recommendation
+- HIPAA-compliant logging and data handling
+
+#### Future Enhancements
+- Machine learning models trained on historical patient outcomes
+- Natural language processing for advanced clinical notes analysis
+- Advanced predictive analytics for early intervention
+- Multi-specialty collaboration recommendations
+- Real-time alerts for critical clinical conditions
+
+[⬆️ Back to Top](#table-of-contents)
+
+## Additional Resources
+
+**Strategic & Leadership**
+- [Architecture Leadership: Organizational Scaling Patterns](./ARCHITECTURE_LEADERSHIP.md) — Why Module Federation, team structure implications, decision framework
+- [Lessons Learned: 20+ Years Building Software at Scale](./LESSONS_LEARNED.md) — Patterns, anti-patterns, and principles from two decades of engineering leadership
+
+**Technical**
 - [Architecture Decision Records](./docs/PROVIDERS.md)
 - [Session Timeout Implementation](./SESSION_TIMEOUT_IMPLEMENTATION.md)
 - [Micro-Frontend Architecture](./MICRO_FRONTEND_ARCHITECTURE.md)
 - [Backend README](./backend/README.md)
 - [Frontend README](./frontend/README.md)
 
-## 👥 Contributing
+[⬆️ Back to Top](#table-of-contents)
+
+## Contributing
 
 1. Create feature branch: `git checkout -b feature/your-feature`
 2. Make changes and test locally
@@ -714,11 +904,22 @@ docker compose build --no-cache patientrecord-shell
 4. Commit with descriptive message
 5. Push to remote and create pull request
 
-## 📝 License
+[⬆️ Back to Top](#table-of-contents)
 
-This project is proprietary healthcare software. All rights reserved.
+## License
 
-## 📞 Support
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+**MIT License Summary:**
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ⚠️ Liability: provided as-is, use at your own risk
+
+[⬆️ Back to Top](#table-of-contents)
+
+## Support
 
 For issues, questions, or suggestions:
 - Create an issue on GitHub
