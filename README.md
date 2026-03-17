@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sultanj-pro/PatientRecords/blob/main/LICENSE)
 
-A modern, scalable healthcare information system built with Angular 17, Module Federation, and microservices architecture.
+A modern, scalable healthcare information system built with Angular 17 and Module Federation micro-frontend architecture.
 
 ## Table of Contents
 
@@ -28,6 +28,31 @@ A modern, scalable healthcare information system built with Angular 17, Module F
 ## Overview 
 
 PatientRecords is a production-grade reference architecture demonstrating **how to scale engineering teams and systems together**. Built on Module Federation, it solves the central challenge faced by growing organizations: maintaining velocity and autonomy as team count increases.
+
+### Case Study Purpose
+
+**PatientRecords is a case study project** designed to provide a framework and reference implementation for building large-scale systems incrementally. It demonstrates:
+
+- **Incremental Architecture** — Building systems piece by piece without architectural rewrites
+- **Module Federation Frontends** — Managing multiple teams and technology choices in a unified UI
+- **Future Microservices Backend** — Roadmap for evolving from monolithic backend to specialized microservices as complexity and team count grows
+- **Production Patterns** — Real-world architectural patterns applicable to enterprises of any size
+- **Team Autonomy at Scale** — How independent teams deliver independent modules with independent deploy cadences
+
+**All of this can be achieved using this software.** PatientRecords provides a fully functional, working implementation you can:
+- Clone and run immediately with Docker
+- Extend with your own modules
+- Study and learn from
+- Use as a foundation for your own systems
+- Adapt for your organization's architecture
+
+**Target Audience:**
+- Engineering leaders designing large-scale systems
+- Architects planning multi-team organizations
+- Teams adopting Module Federation for the first time
+- Organizations evolving from monoliths to service-oriented architectures
+
+**Use Case:** Educational, architectural reference, and production pattern demonstration. Not intended as production healthcare software (see [Liability & Compliance Disclaimer](#license)).
 
 ### The Core Problem This Solves
 
@@ -311,7 +336,7 @@ Two-tier approach for uninterrupted user experience:
 ## Project Structure
 
 ```
-patricents
+PatientRecords
 ├── frontend/
 │   ├── shell-app/              # Main application shell
 │   │   ├── src/
@@ -887,12 +912,29 @@ A suite of AI-driven autonomous agents that provide intelligent recommendations 
 - [Architecture Leadership: Organizational Scaling Patterns](./ARCHITECTURE_LEADERSHIP.md) — Why Module Federation, team structure implications, decision framework
 - [Lessons Learned: 20+ Years Building Software at Scale](./LESSONS_LEARNED.md) — Patterns, anti-patterns, and principles from two decades of engineering leadership
 
-**Technical**
-- [Architecture Decision Records](./docs/PROVIDERS.md)
-- [Session Timeout Implementation](./SESSION_TIMEOUT_IMPLEMENTATION.md)
-- [Micro-Frontend Architecture](./MICRO_FRONTEND_ARCHITECTURE.md)
-- [Backend README](./backend/README.md)
-- [Frontend README](./frontend/README.md)
+**Technical Documentation**
+- [Module Federation Implementation](./docs/PLUGIN_ARCHITECTURE_V2.md)
+- [Micro-Frontend Architecture](./docs/MICRO_FRONTEND_ARCHITECTURE.md)
+- [System Architecture Diagrams](./docs/SYSTEM_DIAGRAMS.md)
+- [Backend README](./docs/backend/README.md)
+
+### How-To Guides
+
+**Module Development**
+- [Adding a Module](./docs/howto/ADDING_A_MODULE.md) — Quick reference for adding new clinical modules
+- [Add Remote Module (Detailed)](./docs/howto/ADD_REMOTE_MODULE_DETAILED.md) — Comprehensive step-by-step guide with all integration points
+- [Module Federation Testing Quick Start](./docs/howto/QUICK_START_MF_TESTING.md) — Testing multi-framework modules
+
+**Deployment & Operations**
+- [Installation Guide](./docs/howto/INSTALLATION_GUIDE.md) — Complete setup and installation instructions
+- [Customer Deployment Guide](./docs/howto/CUSTOMER_DEPLOYMENT_GUIDE.md) — Guide for deploying to customer environments
+- [Deployment Implementation Roadmap](./docs/howto/DEPLOYMENT_IMPLEMENTATION_ROADMAP.md) — Deployment strategy and planning
+- [On-Premise Deployment Test](./docs/howto/ONPREMISE_DEPLOYMENT_TEST.md) — Testing on-premise deployments
+
+**Build & Configuration**
+- [Build and Release](./docs/howto/BUILD_AND_RELEASE.md) — Build pipeline and release procedures
+- [Registry Setup](./docs/howto/REGISTRY_SETUP.md) — Configuring the plugin registry
+- [CI Secrets](./docs/howto/CI-SECRETS.md) — Managing secrets in CI/CD pipeline
 
 [⬆️ Back to Top](#table-of-contents)
 
@@ -915,7 +957,14 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - ✅ Modification
 - ✅ Distribution
 - ✅ Private use
-- ⚠️ Liability: provided as-is, use at your own risk
+- ⚠️ **Liability & Compliance Disclaimer**: 
+  - PROVIDED AS-IS without any warranties or guarantees
+  - NOT HIPAA compliant — Do not use in production healthcare systems
+  - NOT certified for any security or compliance standards (SOC 2, ISO 27001, etc.)
+  - NOT intended for handling real patient data or protected health information (PHI)
+  - Use at your own risk; assumes full responsibility on user/organization
+  - Suitable only for educational, research, and demonstration purposes
+  - For production healthcare systems, conduct full security audit and compliance review
 
 [⬆️ Back to Top](#table-of-contents)
 
@@ -928,7 +977,7 @@ For issues, questions, or suggestions:
 
 ---
 
-**Last Updated**: Phase 6a (Shareable Patient URLs & Observable Pattern - Complete)
+**Last Updated**: Plugin Architecture V2 - Complete with multi-framework micro-frontends
 **System Status**: ✅ All services operational
-**Latest Commit**: cdcb4d1
-**Latest Feature**: URL-based patient routing with real-time cross-module synchronization
+**Latest Feature**: Multi-framework Module Federation (6 Angular + 1 React modules)
+**Current Phase**: Phase 6 Complete - Ready for Phase 7 (Clinical Notes Module)
