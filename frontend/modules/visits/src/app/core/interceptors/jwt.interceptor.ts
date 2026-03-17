@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
   private hasRetried = false;
-  private apiUrl = 'http://localhost:5001';
+  private apiUrl = 'http://localhost:8001';
 
   constructor(
     private http: HttpClient,

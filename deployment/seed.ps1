@@ -22,7 +22,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "Access the application:"
     Write-Host "  UI:  http://localhost:4200"
-    Write-Host "  API: http://localhost:5001/api-docs"
+    Write-Host "  API: http://localhost:8001/api-docs"
     Write-Host ""
 } else {
     Write-Host "Seeding failed" -ForegroundColor Red

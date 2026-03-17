@@ -141,7 +141,7 @@ export class DemographicsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:5001/api/patients/${patientId}`;
+    const apiUrl = `http://localhost:8001/api/patients/${patientId}`;
     
     this.http.get<any>(apiUrl)
       .pipe(takeUntil(this.destroy$))

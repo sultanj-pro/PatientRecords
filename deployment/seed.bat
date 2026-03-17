@@ -120,7 +120,7 @@ if %ERRORLEVEL% EQU 0 (
     echo.
     echo You can now access the application:
     echo   Shell App:    http://localhost:4200
-    echo   API:          http://localhost:5001/api-docs
+    echo   API:          http://localhost:8001/api-docs
     echo.
 ) else (
     echo.

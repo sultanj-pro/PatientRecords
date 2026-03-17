@@ -126,11 +126,11 @@ services:
     container_name: patientrecord-backend
     environment:
       - NODE_ENV=development
-      - PORT=5001
+      - PORT=8001
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
       - TOKEN_EXPIRATION_MINUTES=60
     ports:
-      - "5001:5001"
+      - "8001:8001"
     volumes:
       - ../POC-ccnc/data:/data:ro
     depends_on:

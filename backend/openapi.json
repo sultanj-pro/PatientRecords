@@ -6,7 +6,7 @@
     "description": "Minimal API spec for development — includes auth and patient endpoints."
   },
   "servers": [
-    { "url": "http://localhost:5001", "description": "Local dev" }
+    { "url": "http://localhost:8001", "description": "Local dev" }
   ],
   "tags": [
     { "name": "System", "description": "System health and status endpoints" },

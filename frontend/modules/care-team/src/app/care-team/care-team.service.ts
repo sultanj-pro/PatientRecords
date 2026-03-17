@@ -9,7 +9,7 @@ import { PatientContextService } from './services/patient-context.service';
   providedIn: 'root'
 })
 export class CareTeamService {
-  private apiBaseUrl = 'http://localhost:5001'; // Backend URL
+  private apiBaseUrl = 'http://localhost:8001'; // Backend URL
   private careTeamSubject = new BehaviorSubject<CareTeamMember[]>([]);
   public careTeam$ = this.careTeamSubject.asObservable();
 
