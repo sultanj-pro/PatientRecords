@@ -88,7 +88,7 @@ export class LabsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:8001/api/patients/${patientId}/labs`;
+    const apiUrl = `http://localhost:5000/api/patients/${patientId}/labs`;
     console.log('Labs component - Calling API:', apiUrl);
     
     this.http.get<any>(apiUrl)

@@ -20,8 +20,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
-const TOKEN_EXPIRATION_MINUTES = parseInt(process.env.TOKEN_EXPIRATION_MINUTES || '60', 10);
-const TOKEN_EXPIRATION_SECONDS = TOKEN_EXPIRATION_MINUTES * 60;
 
 // Define Patient schema
 const patientSchema = new mongoose.Schema({
@@ -265,10 +263,6 @@ mongoose.connect(MONGODB_URI)
     }
   });
 
-function signToken(username, role) {
-  return jwt.sign({ sub: username, role }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_SECONDS });
-}
-
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', mongodb: dbConnected });
 });
@@ -450,44 +444,6 @@ app.patch('/api/admin/registry/modules/:id/toggle', adminMiddleware, async (req,
   } catch (err) {
     console.error('Error toggling module status:', err);
     res.status(500).json({ error: 'Failed to toggle module status' });
-  }
-});
-
-// Simple login: accepts { username, password }
-app.post('/api/auth/login', (req, res) => {
-  const { username } = req.body || {};
-  if (!username) return res.status(400).json({ error: 'username required' });
-
-  // Assign role based on username pattern
-  const role = username === 'admin' ? 'admin' : username.startsWith('doc') ? 'physician' : 'nurse';
-  const token = signToken(username, role);
-  res.json({ accessToken: token, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS, role });
-});
-
-// Refresh token: accepts { token }
-// IMPORTANT: Does NOT accept expired tokens - enforces hard session timeout
-app.post('/api/auth/refresh', (req, res) => {
-  const { token } = req.body || {};
-  if (!token) return res.status(400).json({ error: 'token required' });
-  try {
-    // Verify token is STILL VALID (not expired) - do NOT use ignoreExpiration
-    const payload = jwt.verify(token, JWT_SECRET);
-    const newToken = signToken(payload.sub, payload.role || 'nurse');
-    return res.json({ accessToken: newToken, tokenType: 'Bearer', expiresIn: TOKEN_EXPIRATION_SECONDS });
-  } catch (err) {
-    return res.status(401).json({ error: 'invalid token' });
-  }
-});
-
-// Validate token: check if a token is still valid
-app.post('/api/auth/validate', (req, res) => {
-  const { token } = req.body || {};
-  if (!token) return res.status(400).json({ error: 'token required' });
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    res.json({ valid: true, username: payload.sub, role: payload.role });
-  } catch (err) {
-    return res.status(401).json({ valid: false, error: 'token invalid or expired' });
   }
 });
 

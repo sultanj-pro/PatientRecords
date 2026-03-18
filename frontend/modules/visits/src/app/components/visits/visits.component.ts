@@ -87,7 +87,7 @@ export class VisitsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:8001/api/patients/${patientId}/visits`;
+    const apiUrl = `http://localhost:5000/api/patients/${patientId}/visits`;
     console.log('Visits component - Calling API:', apiUrl);
     
     this.http.get<any>(apiUrl)

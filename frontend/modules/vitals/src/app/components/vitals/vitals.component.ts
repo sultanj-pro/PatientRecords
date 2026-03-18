@@ -77,7 +77,7 @@ export class VitalsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:8001/api/patients/${patientId}/vitals`;
+    const apiUrl = `http://localhost:5000/api/patients/${patientId}/vitals`;
 
     this.http.get<any>(apiUrl)
       .pipe(takeUntil(this.destroy$))

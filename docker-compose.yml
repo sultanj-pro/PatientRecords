@@ -118,6 +118,83 @@ services:
     networks:
       - patientrecords
 
+  patientrecord-api-gateway:
+    build:
+      context: ./backend/services/api-gateway
+      dockerfile: Dockerfile
+    image: patientrecord-api-gateway
+    container_name: patientrecord-api-gateway
+    environment:
+      - PORT=5000
+      - BACKEND_URL=http://patientrecord-backend:8001
+      - AUTH_SERVICE_URL=http://patientrecord-auth-service:5001
+      - PATIENT_SERVICE_URL=http://patientrecord-patient-service:5002
+      - REGISTRY_SERVICE_URL=http://patientrecord-registry-service:5100
+    ports:
+      - "5000:5000"
+    depends_on:
+      patientrecord-backend:
+        condition: service_started
+      patientrecord-auth-service:
+        condition: service_started
+      patientrecord-patient-service:
+        condition: service_started
+      patientrecord-registry-service:
+        condition: service_started
+    networks:
+      - patientrecords
+
+  patientrecord-auth-service:
+    build:
+      context: ./backend/services/auth-service
+      dockerfile: Dockerfile
+    image: patientrecord-auth-service
+    container_name: patientrecord-auth-service
+    environment:
+      - PORT=5001
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - TOKEN_EXPIRATION_MINUTES=${TOKEN_EXPIRATION_MINUTES:-60}
+    ports:
+      - "5001:5001"
+    networks:
+      - patientrecords
+
+  patientrecord-patient-service:
+    build:
+      context: ./backend/services/patient-service
+      dockerfile: Dockerfile
+    image: patientrecord-patient-service
+    container_name: patientrecord-patient-service
+    environment:
+      - PORT=5002
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+    ports:
+      - "5002:5002"
+    depends_on:
+      patientrecord-mongodb:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
+  patientrecord-registry-service:
+    build:
+      context: ./backend/services/registry-service
+      dockerfile: Dockerfile
+    image: patientrecord-registry-service
+    container_name: patientrecord-registry-service
+    environment:
+      - PORT=5100
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+    ports:
+      - "5100:5100"
+    depends_on:
+      patientrecord-mongodb:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
   patientrecord-backend:
     build:
       context: .

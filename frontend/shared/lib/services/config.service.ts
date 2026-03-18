@@ -10,7 +10,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ConfigService {
-  private apiUrl = 'http://localhost:8001';
+  private apiUrl = 'http://localhost:5000';
   private appName = 'PatientRecords';
   private appVersion = '1.0.0';
 
