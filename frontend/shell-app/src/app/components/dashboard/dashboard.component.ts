@@ -18,6 +18,8 @@ import { PatientService } from '../../core/services/patient.service';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   patient: any = null;
+  patientNotFound: boolean = false;
+  patientNotFoundId: string | null = null;
   userRole: string = 'nurse';
   availableModules: ModuleMetadata[] = [];
   selectedModule: string | null = null;
@@ -74,6 +76,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         // Update currentPatientId when patient is selected
         if (patient) {
           this.currentPatientId = (patient.patientid || '').toString();
+          this.patientNotFound = false;
+          this.patientNotFoundId = null;
           console.log('[Dashboard] Patient selected, updated currentPatientId:', this.currentPatientId);
         }
         // Share patient context with micro-frontends
@@ -299,12 +303,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
         console.log('[Dashboard] Patient API response received:', patient.patientid);
         this.lastLoadedPatientId = patientId;
         this.patientApiInProgress = null;
+        this.patientNotFound = false;
+        this.patientNotFoundId = null;
         this.patientContextService.setSelectedPatient(patient);
         this.sharePatientContext(patient);
       },
       error: (err) => {
         console.error('[Dashboard] Failed to load patient from URL:', err);
         this.patientApiInProgress = null;
+        this.patientNotFound = true;
+        this.patientNotFoundId = patientId;
+        this.patient = null;
+        this.patientContextService.clearPatient();
       }
     });
   }

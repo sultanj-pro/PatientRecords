@@ -8,9 +8,10 @@ services:
     container_name: patientrecord-shell
     ports:
       - "4200:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -23,9 +24,10 @@ services:
     container_name: patientrecord-demographics
     ports:
       - "4201:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -38,9 +40,10 @@ services:
     container_name: patientrecord-vitals
     ports:
       - "4202:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -53,9 +56,10 @@ services:
     container_name: patientrecord-labs
     ports:
       - "4203:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -68,9 +72,10 @@ services:
     container_name: patientrecord-medications
     ports:
       - "4204:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -83,9 +88,10 @@ services:
     container_name: patientrecord-visits
     ports:
       - "4205:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -98,9 +104,10 @@ services:
     container_name: patientrecord-care-team
     ports:
       - "4206:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -112,9 +119,10 @@ services:
     container_name: patientrecord-procedures
     ports:
       - "4207:4200"
+    restart: unless-stopped
     depends_on:
       patientrecord-api-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -136,23 +144,30 @@ services:
       - CARE_TEAM_SERVICE_URL=http://patientrecord-care-team-service:5007
     ports:
       - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-auth-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-patient-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-registry-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-vitals-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-labs-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-medications-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-visits-service:
-        condition: service_started
+        condition: service_healthy
       patientrecord-care-team-service:
-        condition: service_started
+        condition: service_healthy
     networks:
       - patientrecords
 
@@ -168,6 +183,13 @@ services:
       - TOKEN_EXPIRATION_MINUTES=${TOKEN_EXPIRATION_MINUTES:-60}
     ports:
       - "5001:5001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - patientrecords
 
@@ -183,6 +205,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5002:5002"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
@@ -201,6 +230,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5003:5003"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
@@ -219,6 +255,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5004:5004"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5004/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
@@ -237,6 +280,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5005:5005"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5005/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
@@ -255,6 +305,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5006:5006"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5006/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
@@ -273,6 +330,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5007:5007"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5007/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
@@ -291,6 +355,13 @@ services:
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
     ports:
       - "5100:5100"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5100/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy

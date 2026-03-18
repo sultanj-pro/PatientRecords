@@ -1,0 +1,525 @@
+﻿{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PatientRecords API (stub)",
+    "version": "0.1.0",
+    "description": "Minimal API spec for development â€” includes auth and patient endpoints."
+  },
+  "servers": [
+    { "url": "http://localhost:5000", "description": "Local dev" }
+  ],
+  "tags": [
+    { "name": "System", "description": "System health and status endpoints" },
+    { "name": "Registry", "description": "Module registry and plugin management" },
+    { "name": "Authentication", "description": "User authentication and token management" },
+    { "name": "Patient Demographics", "description": "Patient demographics and general information" },
+    { "name": "Vitals", "description": "Patient vital signs management" },
+    { "name": "Labs", "description": "Patient laboratory results management" },
+    { "name": "Medications", "description": "Patient medication records management" },
+    { "name": "Visits", "description": "Patient visit records (hospital, clinic, office)" },
+    { "name": "Provider Options", "description": "Healthcare provider lookup and options" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Liveness check",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/registry": {
+      "get": {
+        "tags": ["Registry"],
+        "summary": "Get Module Registry",
+        "description": "Retrieves the registry of available micro-frontend modules. No authentication required. Used by the shell app to discover and load dynamic modules.",
+        "responses": {
+          "200": {
+            "description": "Module registry retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string", "example": "1.0.0" },
+                    "description": { "type": "string" },
+                    "modules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "example": "demographics" },
+                          "name": { "type": "string", "example": "Demographics" },
+                          "description": { "type": "string" },
+                          "icon": { "type": "string" },
+                          "path": { "type": "string", "example": "demographics" },
+                          "enabled": { "type": "boolean" },
+                          "framework": { "type": "string", "enum": ["angular", "react"] },
+                          "roles": { "type": "array", "items": { "type": "string" } },
+                          "order": { "type": "number" },
+                          "version": { "type": "string" },
+                          "remoteEntry": { "type": "string", "example": "http://localhost:4201/remoteEntry.js" },
+                          "remoteName": { "type": "string", "example": "demographicsApp" },
+                          "exposedModule": { "type": "string", "example": "./DemographicsModule" }
+                        },
+                        "required": ["id", "name", "path", "enabled", "framework", "roles", "remoteEntry", "remoteName", "exposedModule"]
+                      }
+                    }
+                  },
+                  "required": ["version", "modules"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load registry"
+          }
+        }
+      }
+    },
+    "/api/admin/registry": {
+      "get": {
+        "tags": ["Registry"],
+        "summary": "Get Full Registry (Admin)",
+        "description": "Retrieves the complete registry with all details. Admin access required.",
+        "responses": {
+          "200": { "description": "Full registry retrieved successfully" },
+          "401": { "description": "Unauthorized - no token provided" },
+          "403": { "description": "Forbidden - admin access required" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/admin/registry/modules": {
+      "post": {
+        "tags": ["Registry"],
+        "summary": "Add Module to Registry (Admin)",
+        "description": "Add a new module to the registry. Admin access required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "example": "demographics" },
+                  "name": { "type": "string", "example": "Demographics" },
+                  "description": { "type": "string" },
+                  "icon": { "type": "string" },
+                  "path": { "type": "string" },
+                  "enabled": { "type": "boolean" },
+                  "roles": { "type": "array", "items": { "type": "string" } },
+                  "order": { "type": "number" }
+                },
+                "required": ["id", "name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Module added successfully" },
+          "400": { "description": "Bad request - missing required fields" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "409": { "description": "Conflict - module already exists" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/admin/registry/modules/{id}": {
+      "put": {
+        "tags": ["Registry"],
+        "summary": "Update Module (Admin)",
+        "description": "Update a module's properties. Admin access required.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Module ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "enabled": { "type": "boolean" },
+                  "order": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Module updated successfully" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "404": { "description": "Module not found" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "delete": {
+        "tags": ["Registry"],
+        "summary": "Delete Module (Admin)",
+        "description": "Remove a module from the registry. Admin access required.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Module ID" }
+        ],
+        "responses": {
+          "200": { "description": "Module deleted successfully" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "404": { "description": "Module not found" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/admin/registry/modules/{id}/toggle": {
+      "patch": {
+        "tags": ["Registry"],
+        "summary": "Toggle Module Enable/Disable (Admin)",
+        "description": "Enable or disable a module. Admin access required. If 'enabled' not specified, toggles current state.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Module ID" }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Module status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "module": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "enabled": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - admin access required" },
+          "404": { "description": "Module not found" }
+        },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login (returns JWT)",
+        "description": "Authenticate with username and get JWT token. Username 'admin' gets admin role, usernames starting with 'doc' get physician role, others get nurse role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "username": { "type": "string", "example": "admin" } },
+                "required": ["username"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { 
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "tokenType": { "type": "string", "example": "Bearer" },
+                    "expiresIn": { "type": "number" },
+                    "role": { "type": "string", "enum": ["admin", "physician", "nurse"] }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request - username required" }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Refresh token",
+        "description": "Refresh an existing JWT token. Note: does NOT accept expired tokens - enforces hard session timeout.",
+        "requestBody": {
+          "required": true,
+          "content": { 
+            "application/json": { 
+              "schema": { 
+                "type": "object", 
+                "properties": { "token": { "type": "string" } },
+                "required": ["token"]
+              } 
+            } 
+          }
+        },
+        "responses": { 
+          "200": { 
+            "description": "Token refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "expiresIn": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }, 
+          "400": { "description": "Bad request - token required" },
+          "401": { "description": "Token expired or invalid" }
+        }
+      }
+    },
+    "/api/auth/validate": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Validate token",
+        "description": "Check if a token is valid and get user information.",
+        "requestBody": {
+          "required": true,
+          "content": { 
+            "application/json": { 
+              "schema": { 
+                "type": "object", 
+                "properties": { "token": { "type": "string" } },
+                "required": ["token"]
+              } 
+            } 
+          }
+        },
+        "responses": { 
+          "200": { 
+            "description": "Token is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": { "type": "boolean", "example": true },
+                    "user": { "type": "object" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }, 
+          "400": { "description": "Bad request" },
+          "401": { "description": "Token invalid or expired" }
+        }
+      }
+    },
+    "/api/patients": {
+      "get": {
+        "tags": ["Patient Demographics"],
+        "summary": "List patients",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search query" }
+        ],
+        "responses": { "200": { "description": "A list of patients" }, "401": { "description": "Unauthorized" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}": {
+      "get": {
+        "tags": ["Patient Demographics"],
+        "summary": "Get patient details",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Patient object" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/vitals": {
+      "get": {
+        "tags": ["Vitals"],
+        "summary": "Get vitals for a patient",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "from", "in": "query", "schema": { "type": "string" }, "description": "Start date (inclusive)" },
+          { "name": "to", "in": "query", "schema": { "type": "string" }, "description": "End date (inclusive)" },
+          { "name": "type", "in": "query", "schema": { "type": "string" }, "description": "Filter by vital type" }
+        ],
+        "responses": { "200": { "description": "Array of vitals" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Vitals"],
+        "summary": "Create new vital record",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateofobservation": { "type": "string" },
+                  "observationcode": { "type": "string" },
+                  "observationcodesystem": { "type": "string" },
+                  "organizationname": { "type": "string" },
+                  "vital_description": { "type": "string" },
+                  "unit": { "type": "string" },
+                  "value": { "type": "string" },
+                  "percentile": { "type": "string" }
+                },
+                "required": ["dateofobservation", "vital_description"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Vital record created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/labs": {
+      "get": {
+        "tags": ["Labs"],
+        "summary": "Get labs for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of labs" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Labs"],
+        "summary": "Create new lab record",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "test_name": { "type": "string" },
+                  "test_code": { "type": "string" },
+                  "result": { "type": "string" },
+                  "unit": { "type": "string" },
+                  "reference_range": { "type": "string" }
+                },
+                "required": ["date", "test_name"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Lab record created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/medications": {
+      "get": {
+        "tags": ["Medications"],
+        "summary": "Get medications for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of medications" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Medications"],
+        "summary": "Create new medication",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startDate": { "type": "string" },
+                  "name": { "type": "string" },
+                  "dose": { "type": "string" },
+                  "frequency": { "type": "string" },
+                  "indication": { "type": "string" },
+                  "route": { "type": "string" }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Medication created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/patients/{id}/visits": {
+      "get": {
+        "tags": ["Visits"],
+        "summary": "Get visits for a patient",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of visits" }, "404": { "description": "Not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      },
+      "post": {
+        "tags": ["Visits"],
+        "summary": "Create new visit record",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "visitType": { "type": "string", "enum": ["hospital", "clinic", "office"] },
+                  "reason": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "provider_name": { "type": "string" },
+                  "facility_name": { "type": "string" },
+                  "discharge_status": { "type": "string" }
+                },
+                "required": ["date", "visitType"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Visit created" }, "400": { "description": "Bad request" }, "404": { "description": "Patient not found" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    },
+    "/api/meds": {
+      "get": {
+        "tags": ["Medications"],
+        "summary": "Alias for /api/patients/{id}/medications",
+        "parameters": [ { "name": "id", "in": "query", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Array of medications" } },
+        "security": [ { "bearerAuth": [] } ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  }
+}
+
+
+

@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const swaggerUi = require('swagger-ui-express');
+const openapiSpec = require('./openapi.json');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +18,12 @@ const CARE_TEAM_SERVICE_URL = process.env.CARE_TEAM_SERVICE_URL || 'http://local
 
 app.use(cors());
 
+// Swagger UI — available at /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
+  customSiteTitle: 'PatientRecords API',
+  swaggerOptions: { persistAuthorization: true }
+}));
+
 const proxyOpts = (target) => ({
   target,
   changeOrigin: true,
@@ -26,9 +35,42 @@ const proxyOpts = (target) => ({
   }
 });
 
-// Health check
+// Shallow health check (used by Docker healthcheck)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'api-gateway', port: PORT });
+});
+
+// Deep health check — fans out to all upstream services
+app.get('/health/deep', async (req, res) => {
+  const services = [
+    { name: 'auth-service',        url: AUTH_SERVICE_URL },
+    { name: 'patient-service',     url: PATIENT_SERVICE_URL },
+    { name: 'vitals-service',      url: VITALS_SERVICE_URL },
+    { name: 'labs-service',        url: LABS_SERVICE_URL },
+    { name: 'medications-service', url: MEDICATIONS_SERVICE_URL },
+    { name: 'visits-service',      url: VISITS_SERVICE_URL },
+    { name: 'care-team-service',   url: CARE_TEAM_SERVICE_URL },
+    { name: 'registry-service',    url: REGISTRY_SERVICE_URL },
+  ];
+
+  const checkService = (url) => new Promise((resolve) => {
+    const req = http.get(`${url}/health`, { timeout: 3000 }, (r) => {
+      resolve(r.statusCode === 200 ? 'ok' : 'degraded');
+    });
+    req.on('error', () => resolve('unreachable'));
+    req.on('timeout', () => { req.destroy(); resolve('timeout'); });
+  });
+
+  const results = await Promise.all(
+    services.map(async (s) => ({ name: s.name, status: await checkService(s.url) }))
+  );
+
+  const allOk = results.every((r) => r.status === 'ok');
+  res.status(allOk ? 200 : 207).json({
+    status: allOk ? 'ok' : 'degraded',
+    gateway: 'ok',
+    services: Object.fromEntries(results.map((r) => [r.name, r.status])),
+  });
 });
 
 // PHASE 1b routing — peel off services one by one

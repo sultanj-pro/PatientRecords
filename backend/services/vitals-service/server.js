@@ -6,6 +6,14 @@ const mongoose = require('mongoose');
 
 const app = express();
 app.use(cors());
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    console.log(JSON.stringify({ time: new Date().toISOString(), method: req.method, path: req.path, status: res.statusCode, ms: Date.now() - start }));
+  });
+  next();
+});
+
 app.use(bodyParser.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
@@ -88,3 +96,4 @@ app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Vitals Service listening on port ${PORT}`);
 });
+

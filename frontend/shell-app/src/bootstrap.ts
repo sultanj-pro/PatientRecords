@@ -6,6 +6,7 @@ import { importProvidersFrom } from '@angular/core';
 import { AppComponent } from './app/app.component';
 import { JwtInterceptor } from './app/core/interceptors/jwt.interceptor';
 import { authGuard } from './app/core/guards/auth.guard';
+import { moduleAvailabilityGuard } from './app/core/guards/module-availability.guard';
 
 /**
  * Bootstrap configuration
@@ -19,34 +20,42 @@ const baseRoutes: Routes = [
     children: [
       {
         path: 'demographics/:patientId',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('demographicsApp/DemographicsModule') as any).then((m: any) => m.DEMOGRAPHICS_ROUTES)
       },
       {
         path: 'demographics',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('demographicsApp/DemographicsModule') as any).then((m: any) => m.DEMOGRAPHICS_ROUTES)
       },
       {
         path: 'vitals/:patientId',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('vitalsApp/VitalsModule') as any).then((m: any) => m.VITALS_ROUTES)
       },
       {
         path: 'vitals',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('vitalsApp/VitalsModule') as any).then((m: any) => m.VITALS_ROUTES)
       },
       {
         path: 'medications/:patientId',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('medicationsApp/MedicationsModule') as any).then((m: any) => m.MEDICATIONS_ROUTES)
       },
       {
         path: 'medications',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('medicationsApp/MedicationsModule') as any).then((m: any) => m.MEDICATIONS_ROUTES)
       },
       {
         path: 'labs/:patientId',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
       },
       {
         path: 'labs',
+        canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
       }
     ]

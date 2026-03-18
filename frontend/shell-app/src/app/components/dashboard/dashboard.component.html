@@ -36,22 +36,28 @@
     </div>
 
     <ng-template #noPatient>
-      <div class="alert alert-warning">
-        No patient selected. Please use the search function to select a patient.
+      <div class="alert alert-danger" *ngIf="patientNotFound; else noPatientSelected">
+        <strong>Patient not found.</strong>
+        Patient ID <code>{{ patientNotFoundId }}</code> does not exist. Please search for a valid patient.
       </div>
+      <ng-template #noPatientSelected>
+        <div class="alert alert-warning">
+          No patient selected. Please use the search function to select a patient.
+        </div>
+      </ng-template>
     </ng-template>
 
     <!-- Module Content (loaded via router) -->
     <div class="module-content">
       <!-- Module Header -->
-      <div class="module-header" *ngIf="selectedModuleMetadata">
+      <div class="module-header" *ngIf="selectedModuleMetadata && !patientNotFound">
         <div class="module-header-content">
           <span class="module-icon">{{ selectedModuleMetadata.icon }}</span>
           <span class="module-name">{{ selectedModuleMetadata.name }}</span>
         </div>
       </div>
 
-      <div class="module-viewport">
+      <div class="module-viewport" *ngIf="!patientNotFound">
         <router-outlet></router-outlet>
       </div>
     </div>
