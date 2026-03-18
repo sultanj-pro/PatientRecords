@@ -95,11 +95,6 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function parseDate(d) {
-  const dt = Date.parse(d);
-  return isNaN(dt) ? null : new Date(dt);
-}
-
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'patient-service', port: PORT });
 });
@@ -138,7 +133,10 @@ app.get('/api/patients/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/patients/:id/vitals
+app.listen(PORT, () => {
+  console.log(`Patient Service listening on port ${PORT}`);
+});
+
 app.get('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
