@@ -1,0 +1,317 @@
+/* ── Layout ── */
+.admin-wrapper {
+  min-height: 100vh;
+  background: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Header ── */
+.admin-header {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.back-btn:hover { background: rgba(255, 255, 255, 0.25); }
+
+.admin-logout-btn {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.admin-logout-btn:hover { background: #a93226; }
+
+/* ── Alert toasts ── */
+.alert {
+  margin: 16px 24px 0;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.alert-danger  { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* ── Sections ── */
+.admin-section {
+  margin: 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.health-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-ok          { background: #d4edda; color: #155724; }
+.badge-degraded,
+.badge-unreachable,
+.badge-loading     { background: #ffeeba; color: #856404; }
+
+.refresh-btn {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.825rem;
+}
+
+.refresh-btn:hover:not([disabled]) { background: #e0e0e0; }
+.refresh-btn[disabled] { opacity: 0.5; cursor: default; }
+
+.loading-row {
+  padding: 20px;
+  color: #888;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* ── Service health grid ── */
+.health-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.health-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  background: #fafafa;
+  min-width: 130px;
+}
+
+.health-ok  { border-color: #27ae60; background: #f0fff4; }
+.health-bad { border-color: #e74c3c; background: #fff5f5; }
+
+.health-dot        { font-size: 1.1rem; }
+.health-name       { font-size: 0.8rem; font-weight: 600; color: #333; text-align: center; }
+.health-status-text { font-size: 0.72rem; color: #777; }
+
+/* ── Module table ── */
+.modules-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.modules-table th {
+  background: #f8f8f8;
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 1px solid #eee;
+}
+
+.modules-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.row-disabled td { opacity: 0.55; }
+
+.module-icon { margin-right: 8px; }
+
+.module-name { font-weight: 500; }
+
+.module-id {
+  display: block;
+  font-size: 0.72rem;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* Framework badge */
+.fw-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.fw-angular { background: #fce4ec; color: #c2185b; }
+.fw-react   { background: #e3f2fd; color: #1565c0; }
+
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  background: #eee;
+  color: #555;
+  margin-right: 4px;
+}
+
+.roles-cell { position: relative; }
+
+.edit-roles-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  padding: 0 4px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.edit-roles-btn:hover { opacity: 1; }
+
+/* Inline role editor */
+.role-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  min-width: 150px;
+  z-index: 10;
+}
+
+.role-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-check input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #2980b9;
+}
+
+.role-editor-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.save-roles-btn {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.save-roles-btn:hover:not([disabled]) { background: #1e8449; }
+.save-roles-btn[disabled] { opacity: 0.6; cursor: default; }
+
+.cancel-roles-btn {
+  background: #f0f0f0;
+  color: #555;
+  border: 1px solid #ddd;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+.cancel-roles-btn:hover { background: #e0e0e0; }
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-enabled  { background: #d4edda; color: #155724; }
+.badge-disabled { background: #f8d7da; color: #721c24; }
+
+/* Toggle button */
+.toggle-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 500;
+  min-width: 70px;
+}
+
+.btn-disable { background: #e74c3c; color: #fff; }
+.btn-disable:hover:not([disabled]) { background: #c0392b; }
+
+.btn-enable  { background: #27ae60; color: #fff; }
+.btn-enable:hover:not([disabled]) { background: #1e8449; }
+
+.toggle-btn[disabled] { opacity: 0.6; cursor: default; }

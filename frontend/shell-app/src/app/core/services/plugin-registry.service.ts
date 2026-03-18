@@ -211,6 +211,41 @@ export class PluginRegistryService {
   }
 
   /**
+   * Get all modules (including disabled) sorted by order — for admin views.
+   */
+  getAllModulesAdmin(): ModuleMetadata[] {
+    if (!this.registry) return [];
+    return [...this.registry.modules].sort((a, b) => a.order - b.order);
+  }
+
+  /**
+   * Toggle a module's enabled flag via the backend admin API, then bust
+   * the local cache so subsequent reads reflect the persisted change.
+   */
+  async toggleModuleRemote(moduleId: string, enabled: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.patch(
+        `/api/admin/registry/modules/${moduleId}/toggle`,
+        { enabled }
+      )
+    );
+    // Clear cache and reload so getAllModulesAdmin() reflects the change
+    this.registry = null;
+    await this.loadRegistry();
+  }
+
+  /**
+   * Update a module's roles via the backend admin API (PUT), then reload cache.
+   */
+  async updateModuleRoles(moduleId: string, roles: string[]): Promise<void> {
+    await firstValueFrom(
+      this.http.put(`/api/admin/registry/modules/${moduleId}`, { roles })
+    );
+    this.registry = null;
+    await this.loadRegistry();
+  }
+
+  /**
    * Get a specific module by display name (e.g., 'Demographics')
    */
   getModuleByName(name: string): ModuleMetadata | undefined {

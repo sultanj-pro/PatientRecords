@@ -5,6 +5,7 @@
     [modules]="availableModules"
     [selectedModule]="selectedModule || ''"
     [currentPatientId]="currentPatientId"
+    [userRole]="userRole"
     (moduleSelected)="onModuleSelected($event)"
     (logout)="onLogout()">
   </app-side-navigation>

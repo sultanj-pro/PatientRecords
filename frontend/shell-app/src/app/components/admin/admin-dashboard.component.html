@@ -1,0 +1,119 @@
+<div class="admin-wrapper">
+
+  <!-- ── Header ── -->
+  <div class="admin-header">
+    <div class="admin-header-left">
+      <button class="back-btn" (click)="goToDashboard()">← Dashboard</button>
+      <h1>⚙️ Admin Panel</h1>
+    </div>
+    <button class="admin-logout-btn" (click)="logout()">🚪 Logout</button>
+  </div>
+
+  <!-- ── Toast messages ── -->
+  <div class="alert alert-success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="alert alert-danger"  *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <!-- ── Service Health ── -->
+  <section class="admin-section">
+    <div class="section-header">
+      <h2>
+        Service Health
+        <span class="health-badge" [class]="'badge-' + overallHealthStatus">
+          {{ overallHealthStatus }}
+        </span>
+      </h2>
+      <button class="refresh-btn" (click)="loadHealth()" [disabled]="loadingHealth">↻ Refresh</button>
+    </div>
+
+    <div class="loading-row" *ngIf="loadingHealth">Checking services…</div>
+
+    <div class="health-grid" *ngIf="!loadingHealth">
+      <div
+        *ngFor="let svc of services"
+        class="health-card"
+        [class.health-ok]="svc.status === 'ok'"
+        [class.health-bad]="svc.status !== 'ok'">
+        <span class="health-dot">{{ svc.status === 'ok' ? '✅' : '❌' }}</span>
+        <span class="health-name">{{ svc.name }}</span>
+        <span class="health-status-text">{{ svc.status }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Module Registry ── -->
+  <section class="admin-section">
+    <div class="section-header">
+      <h2>Module Registry</h2>
+      <button class="refresh-btn" (click)="loadModules()" [disabled]="loadingModules">↻ Refresh</button>
+    </div>
+
+    <div class="loading-row" *ngIf="loadingModules">Loading modules…</div>
+
+    <table class="modules-table" *ngIf="!loadingModules">
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>Framework</th>
+          <th>Roles</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of modules" [class.row-disabled]="!m.enabled">
+          <td>
+            <span class="module-icon">{{ m.icon }}</span>
+            <span class="module-name">{{ m.name }}</span>
+            <small class="module-id">{{ m.id }}</small>
+          </td>
+          <td>
+            <span class="fw-badge" [class]="'fw-' + m.framework">{{ m.framework }}</span>
+          </td>
+          <td class="roles-cell">
+            <!-- View mode: badges + edit pencil -->
+            <ng-container *ngIf="editingRolesId !== m.id">
+              <span class="role-badge" *ngFor="let r of m.roles">{{ r }}</span>
+              <button class="edit-roles-btn" (click)="openRoleEditor(m)" title="Edit roles">✏️</button>
+            </ng-container>
+
+            <!-- Edit mode: inline checkboxes -->
+            <div class="role-editor" *ngIf="editingRolesId === m.id">
+              <label *ngFor="let role of allRoles" class="role-check">
+                <input
+                  type="checkbox"
+                  [checked]="pendingRoles.has(role)"
+                  (change)="togglePendingRole(role)" />
+                {{ role }}
+              </label>
+              <div class="role-editor-actions">
+                <button
+                  class="save-roles-btn"
+                  [disabled]="savingRolesId === m.id"
+                  (click)="saveRoles(m)">
+                  {{ savingRolesId === m.id ? '…' : 'Save' }}
+                </button>
+                <button class="cancel-roles-btn" (click)="cancelRoleEdit()">Cancel</button>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [class.badge-enabled]="m.enabled" [class.badge-disabled]="!m.enabled">
+              {{ m.enabled ? 'Enabled' : 'Disabled' }}
+            </span>
+          </td>
+          <td>
+            <button
+              class="toggle-btn"
+              [class.btn-disable]="m.enabled"
+              [class.btn-enable]="!m.enabled"
+              [disabled]="togglingId === m.id"
+              (click)="toggleModule(m)">
+              {{ togglingId === m.id ? '…' : (m.enabled ? 'Disable' : 'Enable') }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>

@@ -14,6 +14,7 @@ export class SideNavigationComponent implements OnInit {
   @Input() modules: ModuleMetadata[] = [];
   @Input() selectedModule: string = '';
   @Input() currentPatientId: string | null = null; // Patient ID to preserve when navigating
+  @Input() userRole: string = '';
   @Output() moduleSelected = new EventEmitter<ModuleMetadata>();
   @Output() logout = new EventEmitter<void>();
 
@@ -42,5 +43,9 @@ export class SideNavigationComponent implements OnInit {
 
   onLogout(): void {
     this.logout.emit();
+  }
+
+  goToAdmin(): void {
+    this.router.navigate(['/admin']);
   }
 }

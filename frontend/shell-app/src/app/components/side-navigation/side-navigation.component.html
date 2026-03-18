@@ -23,6 +23,14 @@
 
   <!-- Sidebar Footer -->
   <div class="side-nav-footer">
+    <button
+      *ngIf="userRole === 'admin'"
+      class="admin-btn"
+      (click)="goToAdmin()"
+      [title]="isCollapsed ? 'Admin Panel' : ''">
+      <span class="admin-icon">⚙️</span>
+      <span class="nav-label" *ngIf="!isCollapsed">Admin Panel</span>
+    </button>
     <button 
       class="logout-btn"
       (click)="onLogout()"

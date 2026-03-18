@@ -6,6 +6,7 @@ import { importProvidersFrom } from '@angular/core';
 import { AppComponent } from './app/app.component';
 import { JwtInterceptor } from './app/core/interceptors/jwt.interceptor';
 import { authGuard } from './app/core/guards/auth.guard';
+import { adminGuard } from './app/core/guards/admin.guard';
 import { moduleAvailabilityGuard } from './app/core/guards/module-availability.guard';
 
 /**
@@ -57,8 +58,43 @@ const baseRoutes: Routes = [
         path: 'labs',
         canActivate: [moduleAvailabilityGuard],
         loadChildren: () => (import('labsApp/LabsModule') as any).then((m: any) => m.LABS_ROUTES)
+      },
+      {
+        path: 'visits/:patientId',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('visitsApp/VisitsModule') as any).then((m: any) => m.VISITS_ROUTES)
+      },
+      {
+        path: 'visits',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('visitsApp/VisitsModule') as any).then((m: any) => m.VISITS_ROUTES)
+      },
+      {
+        path: 'care-team/:patientId',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('careTeamApp/CareTeamRoutes') as any).then((m: any) => m.CARE_TEAM_ROUTES)
+      },
+      {
+        path: 'care-team',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('careTeamApp/CareTeamRoutes') as any).then((m: any) => m.CARE_TEAM_ROUTES)
+      },
+      {
+        path: 'procedures/:patientId',
+        canActivate: [moduleAvailabilityGuard],
+        loadComponent: () => import('./app/components/procedures-wrapper/procedures-wrapper.component').then(m => m.ProceduresWrapperComponent)
+      },
+      {
+        path: 'procedures',
+        canActivate: [moduleAvailabilityGuard],
+        loadComponent: () => import('./app/components/procedures-wrapper/procedures-wrapper.component').then(m => m.ProceduresWrapperComponent)
       }
     ]
+  },
+  {
+    path: 'admin',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./app/components/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent)
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' }

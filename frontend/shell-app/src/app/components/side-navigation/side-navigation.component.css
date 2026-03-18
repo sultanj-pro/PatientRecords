@@ -126,6 +126,33 @@
   transition: background-color 0.2s ease;
 }
 
+.admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  background-color: #2980b9;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.admin-btn:hover { background-color: #1a5276; }
+
+.admin-icon { font-size: 18px; }
+
+.side-nav-container.collapsed .admin-btn {
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 8px;
+}
+
 .side-nav-container.collapsed .logout-btn {
   justify-content: center;
   gap: 0;

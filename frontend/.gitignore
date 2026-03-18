@@ -9,6 +9,9 @@ out/
 build/
 *.js.map
 *.js
+!webpack.config.js
+!jest.config.js
+!jest.preset.js
 
 # Environment
 .env
