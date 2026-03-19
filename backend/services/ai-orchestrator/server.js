@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const cors       = require('cors');
 const jwt        = require('jsonwebtoken');
 const mongoose   = require('mongoose');
+const axios      = require('axios');
 
 const { buildContext }       = require('./contextBuilder');
 const { createRecommendation, getRecommendations, setStatus } = require('./approvalStore');
@@ -14,6 +15,7 @@ const PORT       = process.env.PORT       || 5008;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const MONGODB_URI = process.env.MONGODB_URI ||
   'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
+const MEDICATION_AGENT_URL = process.env.MEDICATION_AGENT_URL || 'http://localhost:5009';
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -56,6 +58,21 @@ function authMiddleware(req, res, next) {
   }
 }
 
+/**
+ * Call a domain agent's /analyze endpoint. Returns empty findings on failure
+ * so that one agent being offline doesn't break the whole recommendation.
+ */
+async function callAgent(url, payload) {
+  try {
+    const { data } = await axios.post(`${url}/analyze`, payload, { timeout: 8000 });
+    return Array.isArray(data.findings) ? data.findings : [];
+  } catch (err) {
+    const status = err.response ? err.response.status : null;
+    console.error(`[ai-orchestrator] Agent call to ${url} failed (${status || err.message})`);
+    return [];
+  }
+}
+
 // ── Health ──────────────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => {
@@ -74,7 +91,22 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
 
   try {
     const context = await buildContext(patientId, req.authHeader);
-    const recommendation = await createRecommendation(patientId, context);
+
+    // Fan out to domain agents in parallel (fail-soft per agent)
+    const [medicationFindings] = await Promise.all([
+      callAgent(MEDICATION_AGENT_URL, {
+        medications: context.medications,
+        labs:        context.labs,
+        patient:     context.patient,
+      }),
+    ]);
+
+    const findings = [
+      ...medicationFindings,
+      // labs-agent and comms-agent findings will be added in 8.4 and 8.5
+    ];
+
+    const recommendation = await createRecommendation(patientId, context, findings);
     res.status(201).json(recommendation);
   } catch (err) {
     console.error('[ai-orchestrator] recommend error:', err.message);

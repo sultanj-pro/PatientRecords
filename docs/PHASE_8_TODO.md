@@ -47,14 +47,14 @@
 
 ## Milestone 8.3 — Medication Agent (~3–4 days)
 
-- [ ] **8.3.1** Scaffold `backend/medication-agent/` — `server.js`, `analyzer.js`, `rules/interactions.js`, `rules/contraindications.js`, `package.json`, `Dockerfile`
-- [ ] **8.3.2** Implement drug-drug interaction rule set (20–30 high-risk pairs)
-- [ ] **8.3.3** Implement allergy contraindication check
-- [ ] **8.3.4** Implement renal dose adjustment flag (based on creatinine labs)
-- [ ] **8.3.5** Implement duplicate therapy detection (same pharmacological class)
-- [ ] **8.3.6** Wire Medication Agent into Orchestrator (`POST /analyze` internal call)
-- [ ] **8.3.7** Add `patientrecord-medication-agent` to `docker-compose.yml` (internal only, no external port)
-- [ ] **8.3.8** Manual test: verify Orchestrator includes medication findings for a patient with known interactions
+- [x] **8.3.1** Scaffold `backend/medication-agent/` — `server.js`, `analyzer.js`, `rules/interactions.js`, `rules/contraindications.js`, `package.json`, `Dockerfile`
+- [x] **8.3.2** Implement drug-drug interaction rule set (20–30 high-risk pairs)
+- [x] **8.3.3** Implement allergy contraindication check
+- [x] **8.3.4** Implement renal dose adjustment flag (based on creatinine labs)
+- [x] **8.3.5** Implement duplicate therapy detection (same pharmacological class)
+- [x] **8.3.6** Wire Medication Agent into Orchestrator (`POST /analyze` internal call)
+- [x] **8.3.7** Add `patientrecord-medication-agent` to `docker-compose.yml` (internal only, no external port)
+- [x] **8.3.8** Manual test: verify Orchestrator includes medication findings for a patient with known interactions
 
 ---
 
@@ -155,10 +155,10 @@
 | Pre-work decisions | 6 | 🔲 Not started |
 | 8.1 Infrastructure | 11 | ✅ Complete |
 | 8.2 Orchestrator | 7 | ✅ Complete |
-| 8.3 Medication Agent | 8 | 🔲 Not started |
+| 8.3 Medication Agent | 8 | ✅ Complete |
 | 8.4 Labs Agent | 8 | 🔲 Not started |
 | 8.5 Comms Agent | 9 | 🔲 Not started |
 | 8.6 Frontend | 11 | 🔲 Not started |
 | 8.7 LLM | 9 | 🔲 Not started |
 | 8.8 Hardening | 13 | 🔲 Not started |
-| **Total** | **76 + 6 decisions** | **18 / 82 complete** |
+| **Total** | **76 + 6 decisions** | **26 / 82 complete** |
