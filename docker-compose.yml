@@ -220,14 +220,16 @@ services:
 
   patientrecord-vitals-service:
     build:
-      context: ./backend/services/vitals-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: services/vitals-service/Dockerfile
     image: patientrecord-vitals-service
     container_name: patientrecord-vitals-service
     environment:
       - PORT=5003
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
     ports:
       - "5003:5003"
     restart: unless-stopped
@@ -240,19 +242,23 @@ services:
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
+      patientrecord-redis:
+        condition: service_healthy
     networks:
       - patientrecords
 
   patientrecord-labs-service:
     build:
-      context: ./backend/services/labs-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: services/labs-service/Dockerfile
     image: patientrecord-labs-service
     container_name: patientrecord-labs-service
     environment:
       - PORT=5004
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
     ports:
       - "5004:5004"
     restart: unless-stopped
@@ -265,19 +271,23 @@ services:
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
+      patientrecord-redis:
+        condition: service_healthy
     networks:
       - patientrecords
 
   patientrecord-medications-service:
     build:
-      context: ./backend/services/medications-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: services/medications-service/Dockerfile
     image: patientrecord-medications-service
     container_name: patientrecord-medications-service
     environment:
       - PORT=5005
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
     ports:
       - "5005:5005"
     restart: unless-stopped
@@ -290,19 +300,23 @@ services:
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
+      patientrecord-redis:
+        condition: service_healthy
     networks:
       - patientrecords
 
   patientrecord-visits-service:
     build:
-      context: ./backend/services/visits-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: services/visits-service/Dockerfile
     image: patientrecord-visits-service
     container_name: patientrecord-visits-service
     environment:
       - PORT=5006
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
     ports:
       - "5006:5006"
     restart: unless-stopped
@@ -315,19 +329,23 @@ services:
     depends_on:
       patientrecord-mongodb:
         condition: service_healthy
+      patientrecord-redis:
+        condition: service_healthy
     networks:
       - patientrecords
 
   patientrecord-care-team-service:
     build:
-      context: ./backend/services/care-team-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: services/care-team-service/Dockerfile
     image: patientrecord-care-team-service
     container_name: patientrecord-care-team-service
     environment:
       - PORT=5007
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
       - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
     ports:
       - "5007:5007"
     restart: unless-stopped
@@ -339,6 +357,8 @@ services:
       start_period: 10s
     depends_on:
       patientrecord-mongodb:
+        condition: service_healthy
+      patientrecord-redis:
         condition: service_healthy
     networks:
       - patientrecords
@@ -368,6 +388,43 @@ services:
     networks:
       - patientrecords
 
+  patientrecord-redis:
+    build:
+      context: ./redis
+      dockerfile: Dockerfile
+    image: patientrecord-redis
+    container_name: patientrecord-redis
+    command: redis-server --appendonly yes --appendfsync everysec
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - patientrecords
+
+  # RedisInsight — browser UI for Redis (dev only) → http://localhost:5540
+  patientrecord-redisinsight:
+    build:
+      context: ./redisinsight
+      dockerfile: Dockerfile
+    image: patientrecord-redisinsight
+    container_name: patientrecord-redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      patientrecord-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - patientrecords
+
   patientrecord-mongodb:
     build:
       context: ./mongo
@@ -391,6 +448,8 @@ services:
 
 volumes:
   mongo_data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

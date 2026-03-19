@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const { publishEvent } = require('./shared/eventPublisher');
 
 const app = express();
 app.use(cors());
@@ -74,6 +75,7 @@ app.post('/api/patients/:id/labs', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'date and test_name are required' });
     patient.labs.push(req.body);
     await patient.save();
+    publishEvent('labs-resulted', { patientId: req.params.id, testName: req.body.test_name, testCode: req.body.test_code });
     res.status(201).json(req.body);
   } catch (err) {
     res.status(500).json({ error: 'failed to create lab', detail: err.message });

@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const { publishEvent } = require('./shared/eventPublisher');
 
 const app = express();
 app.use(cors());
@@ -83,6 +84,7 @@ app.post('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
     patient.careTeam.push(req.body);
     patient.markModified('careTeam');
     await patient.save();
+    publishEvent('care-team-updated', { patientId: req.params.id, action: 'added' });
     res.status(201).json(mapMember(patient.careTeam[patient.careTeam.length - 1]));
   } catch (err) {
     res.status(500).json({ error: 'failed to create care team member', detail: err.message });
@@ -107,6 +109,7 @@ app.put('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res
     }
     patient.markModified('careTeam');
     await patient.save();
+    publishEvent('care-team-updated', { patientId: req.params.id, action: 'updated', memberId: req.params.memberId });
     res.json(mapMember(member));
   } catch (err) {
     res.status(500).json({ error: 'failed to update care team member', detail: err.message });

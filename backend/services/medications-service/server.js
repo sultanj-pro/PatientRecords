@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const { publishEvent } = require('./shared/eventPublisher');
 
 const app = express();
 app.use(cors());
@@ -81,6 +82,7 @@ app.post('/api/patients/:id/medications', authMiddleware, async (req, res) => {
     if (!req.body.name) return res.status(400).json({ error: 'name is required' });
     patient.medications.push(req.body);
     await patient.save();
+    publishEvent('medication-changed', { patientId: req.params.id, action: 'added', medicationName: req.body.name });
     res.status(201).json(req.body);
   } catch (err) {
     res.status(500).json({ error: 'failed to create medication', detail: err.message });

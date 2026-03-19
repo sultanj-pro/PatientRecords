@@ -141,10 +141,6 @@ app.get('/api/patients/:id', authMiddleware, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Patient Service listening on port ${PORT}`);
-});
-
 app.get('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   try {
     const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });

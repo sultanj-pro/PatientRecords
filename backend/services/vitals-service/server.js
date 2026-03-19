@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const { publishEvent } = require('./shared/eventPublisher');
 
 const app = express();
 app.use(cors());
@@ -87,6 +88,7 @@ app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
     patient.vitals.push(newVital);
     patient.markModified('vitals');
     await patient.save();
+    publishEvent('vitals-recorded', { patientId: req.params.id, vitalType: newVital.vital_description });
     res.status(201).json(newVital);
   } catch (err) {
     res.status(500).json({ error: 'failed to create vital', detail: err.message });

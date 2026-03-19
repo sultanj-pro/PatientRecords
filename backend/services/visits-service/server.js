@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const { publishEvent } = require('./shared/eventPublisher');
 
 const app = express();
 app.use(cors());
@@ -78,6 +79,7 @@ app.post('/api/patients/:id/visits', authMiddleware, async (req, res) => {
     patient.visits.push(req.body);
     patient.markModified('visits');
     await patient.save();
+    publishEvent('visit-completed', { patientId: req.params.id, visitType: req.body.visitType });
     res.status(201).json(req.body);
   } catch (err) {
     res.status(500).json({ error: 'failed to create visit', detail: err.message });
