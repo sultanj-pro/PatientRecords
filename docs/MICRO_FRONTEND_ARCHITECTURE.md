@@ -1,9 +1,9 @@
 # PatientRecords Micro-Frontend Architecture
 
-**Date:** January 22, 2026  
+**Date:** January 22, 2026 (Updated March 18, 2026)  
 **Framework:** Angular 17+ with TypeScript  
 **Module Federation:** Webpack 5 Module Federation  
-**Backend:** Node.js Express API (existing)
+**Backend:** Node.js/Express Microservices (API Gateway + 8 domain services)
 
 ---
 
@@ -20,20 +20,32 @@ User's Browser
 │  - Patient Search                               │
 │  - Authentication/Login                         │
 │  - Navigation & Layout                          │
-│  - Role-based Module Loader                     │
+│  - Role-based Module Loader (Plugin Registry)   │
+│  - Admin Dashboard (/admin, admin role only)     │
 └─────────────────────────────────────────────────┘
     ↓
-    ├─ Demographics Module (Port 4201)
-    ├─ Vitals Module (Port 4202)
-    ├─ Labs Module (Port 4203)
-    ├─ Medications Module (Port 4204)
-    └─ Visits Module (Port 4205)
+    ├─ Demographics Module (Port 4201) [Angular]
+    ├─ Vitals Module (Port 4202) [Angular]
+    ├─ Labs Module (Port 4203) [Angular]
+    ├─ Medications Module (Port 4204) [Angular]
+    ├─ Visits Module (Port 4205) [Angular]
+    ├─ Care Team Module (Port 4206) [Angular]
+    └─ Procedures Module (Port 4207) [React ⭐]
     
     All micro-frontends share:
     └─ Shared Library (Auth, Services, Models)
     
     ↓
-Node.js Backend API (Port 5001)
+API Gateway (Port 5000)  ←── single entry point for all /api/* traffic
+    ↓
+    ├─ Auth Service (5001)
+    ├─ Patient Service (5002)
+    ├─ Vitals Service (5003)
+    ├─ Labs Service (5004)
+    ├─ Medications Service (5005)
+    ├─ Visits Service (5006)
+    ├─ Care Team Service (5007)
+    └─ Registry Service (5100)  ←── module metadata + admin API
     ↓
 MongoDB Database
 ```
@@ -99,7 +111,9 @@ patient-records/
 │   │
 │   ├── labs/                     # Labs Micro-Frontend
 │   ├── medications/              # Medications Micro-Frontend
-│   └── visits/                   # Visits Micro-Frontend
+   ├── visits/                   # Visits Micro-Frontend
+   ├── care-team/                # Care Team Micro-Frontend [Angular]
+   └── procedures-react/         # Procedures Micro-Frontend [React ⭐]
 │
 ├── shared/                       # Shared Library
 │   ├── src/
@@ -184,9 +198,38 @@ patient-records/
   - Provider/facility information
 - **Actions**: Add visit (Physician only)
 
+#### Care Team Module
+- **Purpose**: Manage clinical team members and assignments
+- **Port**: 4206
+- **Framework**: Angular
+- **Visibility**: Admin, Physician
+- **Features**:
+  - Team member roster
+  - Specialty and role tracking
+  - License verification status
+
+#### Procedures Module ⭐ (React)
+- **Purpose**: Track surgical and clinical procedures
+- **Port**: 4207
+- **Framework**: React 18 (demonstrates multi-framework MF support)
+- **Visibility**: Admin, Physician
+- **Loading**: `ProceduresWrapperComponent` in the Angular shell uses
+  `loadRemoteModule({ type: 'script', remoteName: 'proceduresApp', ... })` to bridge React→Angular
+
 ---
 
-## 4. Authentication & Authorization
+## 3a. Admin Dashboard
+
+- **Route**: `/admin`
+- **Guard**: `authGuard` + `adminGuard` (requires `role=admin` JWT)
+- **Access**: Via ⚙️ Admin Panel button in side navigation (visible to admin users only)
+
+**Features:**
+- **Service health grid** — polls `/health/deep` and shows UP/DOWN status per service
+- **Module management table** — enable/disable any module at runtime (no rebuild)
+- **Inline role editor** — per-module permission editing (admin / physician / nurse checkboxes)
+
+---
 
 ### Login Flow
 1. User navigates to Shell App (`http://localhost:4200`)
@@ -215,14 +258,15 @@ patient-records/
 
 ### User Roles & Permissions
 
-| Role | Demographics | Vitals | Labs | Medications | Visits | Add Data |
-|------|---|---|---|---|---|---|
-| Physician | View | View + Add | View + Add | View + Add | View + Add | Yes |
-| Nurse | View | View + Add | View | View | View | Vitals only |
-| Physical Therapy | View | View | - | - | View | Notes only |
-| Radiology | View | - | View + Add | - | View | Reports only |
-| Nutrition | View | View | - | View | - | Plans only |
-| Lab Tech | View | - | View + Add | - | - | Results only |
+Roles are derived statically from username: `admin` → admin, `doc*` → physician, anything else → nurse.
+
+| Role | Demographics | Vitals | Labs | Medications | Visits | Care Team | Procedures | Admin Panel |
+|------|---|---|---|---|---|---|---|---|
+| Admin | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Physician | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Nurse | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+> Module visibility is controlled by the Registry Service. Roles per module are editable at runtime via the Admin Dashboard.
 
 ---
 
@@ -231,27 +275,25 @@ patient-records/
 ### Shell App webpack.config.js
 
 ```javascript
-const ModuleFederationPlugin = require('webpack').container.ModuleFederationPlugin;
+const { withModuleFederation } = require('@angular-architects/module-federation');
 
-module.exports = {
-  output: {
-    publicPath: 'http://localhost:4200/',
+module.exports = withModuleFederation({
+  name: 'shell',
+  remotes: {
+    demographicsApp: 'http://localhost:4201/remoteEntry.js',
+    vitalsApp:       'http://localhost:4202/remoteEntry.js',
+    labsApp:         'http://localhost:4203/remoteEntry.js',
+    medicationsApp:  'http://localhost:4204/remoteEntry.js',
+    visitsApp:       'http://localhost:4205/remoteEntry.js',
+    careTeamApp:     'http://localhost:4206/remoteEntry.js',
+    // proceduresApp loaded dynamically via loadRemoteModule(type:'script')
   },
-  plugins: [
-    new ModuleFederationPlugin({
-      name: 'shell',
-      filename: 'remoteEntry.js',
-      remotes: {
-        '@demographics': 'demographics@http://localhost:4201/remoteEntry.js',
-        '@vitals': 'vitals@http://localhost:4202/remoteEntry.js',
-        '@labs': 'labs@http://localhost:4203/remoteEntry.js',
-        '@medications': 'medications@http://localhost:4204/remoteEntry.js',
-        '@visits': 'visits@http://localhost:4205/remoteEntry.js',
-      },
-      shared: ['@angular/core', '@angular/common', 'rxjs'],
-    }),
-  ],
-};
+  shared: share({
+    '@angular/core': { singleton: true, strictVersion: true },
+    '@angular/common': { singleton: true, strictVersion: true },
+    'rxjs': { singleton: true, strictVersion: true },
+  }),
+});
 ```
 
 ### Micro-Frontend webpack.config.js (example: Vitals)
@@ -325,23 +367,21 @@ app.use(cors({
 }));
 ```
 
-### 2. Role-Based Access Control (New)
-Add middleware to check role before returning data:
-```javascript
-// Example: Only Physician can add vitals
-app.post('/api/patients/:id/vitals', authenticate, roleRequired('physician'), createVital);
-```
+### 2. Role-Based Access Control
+Roles are enforced in the API Gateway via JWT middleware. Each downstream service trusts the forwarded role header. Module visibility is managed by the Registry Service — the shell polls `GET /api/modules?role={role}` and renders only permitted modules in the navigation.
 
-### 3. Dashboard Config Endpoint (New)
+### 3. API Gateway `/health/deep` Endpoint
 ```
-GET /api/config/dashboard?role={role}
+GET /health/deep
 
 Response:
 {
-  "modules": ["demographics", "vitals", "labs", "medications", "visits"],
-  "features": {
-    "vitals": { "canAdd": true, "canEdit": false, "canDelete": false },
-    "labs": { "canAdd": false, "canEdit": false, "canDelete": false }
+  "status": "healthy",
+  "services": {
+    "auth-service": { "status": "up" },
+    "patient-service": { "status": "up" },
+    "vitals-service": { "status": "up" },
+    ...
   }
 }
 ```

@@ -1,3 +1,22 @@
+# PatientRecords - Visual System Diagrams
+
+> **Last Updated:** March 18, 2026
+
+## Current System State
+
+| Layer | Components | Notes |
+|---|---|---|
+| Frontend Shell | Port 4200 (Angular 17) | Auth, routing, patient search, admin dashboard |
+| Micro-Frontends | 4201–4207 (6 Angular + 1 React) | Demographics, Vitals, Labs, Medications, Visits, Care Team, Procedures |
+| API Gateway | Port 5000 | Single entry point; JWT validation; routes to all services |
+| Auth Service | Port 5001 | Login, token refresh, logout |
+| Patient Service | Port 5002 | Patient CRUD |
+| Clinical Services | Ports 5003–5007 | Vitals, Labs, Medications, Visits, Care Team |
+| Registry Service | Port 5100 | Plugin metadata + admin API (enable/disable modules, role management) |
+| MongoDB | Port 27017 | Shared data store |
+
+---
+
 # PatientRecords Phase 4 - Visual System Diagram
 
 ## Overall System Architecture
@@ -21,10 +40,13 @@
 ┃  │  │        Modules Dashboard (Role-Based Access)            │  │  ┃
 ┃  │  ├──────────────────────────────────────────────────────────┤  │  ┃
 ┃  │  │ [👤 Demographics] [💓 Vitals] [🧬 Labs]                 │  │  ┃
-┃  │  │ [💊 Medications] [📅 Visits]                             │  │  ┃
+┃  │  │ [💊 Medications] [📅 Visits] [👥 Care Team]              │  │  ┃
+┃  │  │ [🔬 Procedures]                                           │  │  ┃
 ┃  │  │                                                           │  │  ┃
-┃  │  │ Visible modules depend on user's role                   │  │  ┃
-┃  │  │ Admin: 5/5  │  Clinician: 4/5  │  Patient: 3/5         │  │  ┃
+┃  │  │ Visible modules depend on user's role + registry config  │  │  ┃
+┃  │  │ Admin: 7/7  │  Physician: 7/7  │  Nurse: 2/7            │  │  ┃
+┃  │  │                                                           │  │  ┃
+┃  │  │ ⚙️ Admin Panel button (admin-only) → /admin              │  │  ┃
 ┃  │  └──────────────────────────────────────────────────────────┘  │  ┃
 ┃  │                          ↓ Click Module ↓                       │  ┃
 ┃  │  ┌──────────────────────────────────────────────────────────┐  │  ┃
@@ -70,16 +92,21 @@
                             HTTP API Requests
                                     ↓
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                          BACKEND SERVER                                 ┃
-┃                       http://localhost:3001                             ┃
+┃                     MICROSERVICES BACKEND                               ┃
+┃                   API Gateway: http://localhost:5000                    ┃
 ┃                                                                          ┃
-┃  Express.js API Server                                                 ┃
-┃  ├─ GET /api/patients                                                 ┃
-┃  ├─ GET /api/patients/:id                                             ┃
-┃  ├─ GET /api/patients/:id/vitals                                      ┃
-┃  ├─ GET /api/patients/:id/labs                                        ┃
-┃  ├─ GET /api/patients/:id/medications                                 ┃
-┃  └─ GET /api/patients/:id/visits                                      ┃
+┃  API Gateway (5000) ─ routes /api/* traffic                           ┃
+┃  ├─ Auth Service      (5001) ─ /auth/login, /auth/refresh             ┃
+┃  ├─ Patient Service   (5002) ─ /api/patients                          ┃
+┃  ├─ Vitals Service    (5003) ─ /api/patients/:id/vitals               ┃
+┃  ├─ Labs Service      (5004) ─ /api/patients/:id/labs                 ┃
+┃  ├─ Medications Svc   (5005) ─ /api/patients/:id/medications          ┃
+┃  ├─ Visits Service    (5006) ─ /api/patients/:id/visits               ┃
+┃  ├─ Care Team Service (5007) ─ /api/patients/:id/care-team            ┃
+┃  └─ Registry Service  (5100) ─ /api/modules, /api/admin/registry      ┃
+┃                                                                          ┃
+┃  All services: structured JSON logging + /health endpoint              ┃
+┃  Gateway: /health/deep aggregates health across all services           ┃
 ┃                                                                          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                     ↓
@@ -116,7 +143,7 @@
 │                                                             │
 │  Shell App (HOST)          Micro-Frontends (REMOTES)       │
 │  ─────────────────         ──────────────────────           │
-│  Port 4200                 Port 4201-4205                   │
+│  Port 4200                 Ports 4201-4207                  │
 │                                                             │
 │  webpack.config.js         webpack.config.js               │
 │  ┌─────────────────┐       ┌──────────────────┐            │
@@ -127,18 +154,17 @@
 │  │ 'shell-app'     │       │ 'demographics'   │ (+ others) │
 │  │                 │       │                  │            │
 │  │ remotes: {      │       │ exposes: {       │            │
-│  │   'demographics'│◄──┐   │   './Module':    │            │
-│  │   'vitals'      │◄──┼─→ │   './module.ts'  │            │
-│  │   'labs'        │◄──┤   │   './Component'  │            │
-│  │   'medications' │◄──┤   │ }                │            │
-│  │   'visits'      │◄──┤   │                  │            │
-│  │ }               │   │   │ shared: {        │            │
-│  │                 │   │   │   '@angular/*',  │            │
-│  │ exposes: {      │   │   │   'rxjs',        │            │
-│  │   './Auth':     │───┼──►│   '@patient...' │            │
-│  │   './Patient':  │   │   │ }                │            │
-│  │   './Context':  │   │   └──────────────────┘            │
-│  │ }               │   │                                    │
+│  │  demographicsApp│◄──┐   │   './Module':    │            │
+│  │  vitalsApp      │◄──┼─→ │   './module.ts'  │            │
+│  │  labsApp        │◄──┤   │   './Component'  │            │
+│  │  medicationsApp │◄──┤   │ }                │            │
+│  │  visitsApp      │◄──┤   │                  │            │
+│  │  careTeamApp    │◄──┤   │ shared: {        │            │
+│  │  (* procedures  │   │   │   '@angular/*',  │            │
+│  │   via dynamic   │   │   │   'rxjs',        │            │
+│  │   loadRemote)   │   │   │   '@patient...' │            │
+│  │ }               │   │   │ }                │            │
+│  │                 │   │   └──────────────────┘            │
 │  │                 │   │   Dynamic Load on Click:           │
 │  │ shared: {       │   │   import(remoteUrl +               │
 │  │   singleton:    │───┼──►'remoteEntry.js').then(load)    │
@@ -194,22 +220,21 @@
              ↓
 ┌─────────────────────────────────────────────────────────┐
 │ MODULE CONFIG - ROLE-BASED ACCESS MATRIX               │
+│ (Roles managed at runtime via Admin Dashboard)         │
 │                                                         │
 │ ADMIN sees: [Demographics] [Vitals] [Labs]            │
-│             [Medications] [Visits]  (5/5)             │
+│             [Medications] [Visits] [Care Team]        │
+│             [Procedures]   (7/7) + Admin Panel        │
 │                                                         │
-│ CLINICIAN sees: [Demographics] [Vitals] [Labs]        │
-│                 [Medications]  (4/5 - no Visits)      │
+│ PHYSICIAN sees: [Demographics] [Vitals] [Labs]        │
+│                 [Medications] [Visits] [Care Team]    │
+│                 [Procedures]  (7/7)                   │
 │                                                         │
-│ PATIENT sees: [Demographics] [Labs] [Visits]          │
-│               (3/5 - no Vitals, Medications)          │
+│ NURSE sees: [Demographics] [Vitals] (2/7)            │
+│             (configurable via Admin Dashboard)         │
 │                                                         │
-│ NURSE sees: [Demographics] [Vitals] [Labs]            │
-│             [Medications]  (4/5 - no Visits)          │
-│                                                         │
-│ PHARMACIST sees: [Medications] (1/5)                  │
-│                                                         │
-│ RECEPTIONIST sees: [Visits] (1/5)                     │
+│ Note: Module visibility is registry-driven and        │
+│ editable at runtime — no code changes required.       │
 └────────────┬────────────────────────────────────────────┘
              │
              ↓
@@ -226,9 +251,10 @@
 │ User Sees Dashboard with Role-Based Tabs             │
 │                                                      │
 │ [👤 Demographics] [💓 Vitals] [🧬 Labs]           │
-│ [💊 Medications] [📅 Visits]                        │
+│ [💊 Medications] [📅 Visits] [👥 Care Team]        │
+│ [🔬 Procedures]                                     │
 │                                                      │
-│ (Only these tabs appear for user's role)            │
+│ (Only modules allowed for user's role appear)       │
 └──────────────────────────────────────────────────────┘
              │
              ↓ (User clicks module)

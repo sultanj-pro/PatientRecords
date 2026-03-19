@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sultanj-pro/PatientRecords/blob/main/LICENSE)
 
-A modern, scalable healthcare information system built with Angular 17 and Module Federation micro-frontend architecture.
+A modern, scalable healthcare information system built with Angular 17, Module Federation micro-frontend architecture, and a fully decomposed microservices backend.
 
 ## Table of Contents
 
@@ -35,7 +35,7 @@ PatientRecords is a production-grade reference architecture demonstrating **how 
 
 - **Incremental Architecture** — Building systems piece by piece without architectural rewrites
 - **Module Federation Frontends** — Managing multiple teams and technology choices in a unified UI
-- **Future Microservices Backend** — Roadmap for evolving from monolithic backend to specialized microservices as complexity and team count grows
+- **Microservices Backend** — Fully decomposed backend with API Gateway, Auth, Patient, Registry, and 5 clinical domain services, each in its own container
 - **Production Patterns** — Real-world architectural patterns applicable to enterprises of any size
 - **Team Autonomy at Scale** — How independent teams deliver independent modules with independent deploy cadences
 
@@ -99,10 +99,15 @@ See **[ARCHITECTURE_LEADERSHIP.md](./ARCHITECTURE_LEADERSHIP.md)** for strategic
 
 See **[LESSONS_LEARNED.md](./LESSONS_LEARNED.md)** for 20+ years of patterns and anti-patterns from building systems at scale.
 
+### Current State (Implemented)
+
+- **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Registry (5100), all in separate containers
+- **Admin Dashboard** — Runtime module management: enable/disable modules, edit per-module role permissions, view service health grid
+- **7 Micro-frontends** — 6 Angular modules + 1 React module, all dynamically loaded via plugin registry
+
 ### Future Vision
 
 This foundation will evolve into:
-- **Distributed Microservices Backend** — Multiple specialized services (Patient Service, Procedures Service, Analytics Service, etc.) replacing monolithic architecture
 - **Agentic AI Integration** — Autonomous agents for clinical decision support, schedule optimization, and real-time alerts
 - **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
 - **Advanced Module Orchestration** — Dynamic module loading based on user roles, device capabilities, and network conditions
@@ -110,14 +115,16 @@ This foundation will evolve into:
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
 - **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, and procedures
+- **Microservices backend** — API Gateway routing to 8 independent domain services
+- **Admin Dashboard** — Runtime module management with enable/disable toggles and per-module role editor
 - **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
 - **Real-time patient context sync** across all modules using Observable pattern
 - **Real-time session management** with automatic token refresh
-- **Role-based access control** (RBAC) for clinical workflows
+- **Role-based access control** (RBAC) for clinical workflows — roles: `admin`, `physician`, `nurse`
 - **Framework-agnostic module loading** — load Angular or React modules dynamically
 - **Responsive web design** for desktop and tablet use
-- **Containerized deployment** using Docker and Docker Compose
-- **Comprehensive API** with OpenAPI/Swagger documentation
+- **Containerized deployment** using Docker and Docker Compose (17 containers)
+- **Comprehensive API** with OpenAPI/Swagger documentation and structured JSON logging
 
 [⬆️ Back to Top](#table-of-contents)
 
@@ -132,12 +139,20 @@ This foundation will evolve into:
 - **Karma & Jasmine** — Unit testing framework
 - **Nginx** — Reverse proxy and HTTP server for production deployments
 
-### Backend
-- **Node.js 18+** — JavaScript runtime environment
-- **Express.js** — Lightweight web application framework
-- **MongoDB with Mongoose** — NoSQL database and ODM
-- **JWT (jsonwebtoken)** — Token-based authentication and authorization
-- **Swagger/OpenAPI** — API documentation and validation
+### Backend (Microservices)
+- **API Gateway** (port 5000) — Single entry point, request routing, JWT validation
+- **Auth Service** (port 5001) — Login, token refresh/logout, role derivation
+- **Patient Service** (port 5002) — Patient CRUD and search
+- **Vitals Service** (port 5003) — Vital signs with structured logging
+- **Labs Service** (port 5004) — Lab results
+- **Medications Service** (port 5005) — Medication management
+- **Visits Service** (port 5006) — Clinical encounter records
+- **Care Team Service** (port 5007) — Team member management
+- **Registry Service** (port 5100) — Plugin registry: module metadata, enable/disable, role management
+- **Node.js 18+ / Express.js** — Runtime and framework for all services
+- **MongoDB with Mongoose** — Shared NoSQL data store
+- **JWT (jsonwebtoken)** — Stateless auth; role derived from username (`admin`→admin, `doc*`→physician, else→nurse)
+- **Swagger/OpenAPI** — API documentation at `/api-docs` on every service
 - **Jest** — Testing framework with coverage reporting
 
 ### Infrastructure & DevOps
@@ -254,34 +269,48 @@ Two-tier approach for uninterrupted user experience:
    docker compose ps
    ```
 
-   Expected output:
+   Expected output (17 containers):
    ```
-   NAME                      STATUS          PORTS
-   patientrecord-shell           Up      0.0.0.0:4200->4200/tcp
-   patientrecord-demographics    Up      0.0.0.0:4201->4201/tcp
-   patientrecord-vitals          Up      0.0.0.0:4202->4202/tcp
-   patientrecord-labs            Up      0.0.0.0:4203->4203/tcp
-   patientrecord-medications     Up      0.0.0.0:4204->4204/tcp
-   patientrecord-visits          Up      0.0.0.0:4205->4205/tcp
-   patientrecord-care-team       Up      0.0.0.0:4206->4206/tcp
-   patientrecord-procedures      Up      0.0.0.0:4207->4207/tcp (React Module)
-   patientrecord-backend         Up      0.0.0.0:5001->5001/tcp
-   patientrecord-mongo           Up      0.0.0.0:27017->27017/tcp
+   NAME                                STATUS    PORTS
+   # Frontend micro-frontends
+   patientrecord-shell                 Up        0.0.0.0:4200->4200/tcp
+   patientrecord-demographics          Up        0.0.0.0:4201->4200/tcp
+   patientrecord-vitals                Up        0.0.0.0:4202->4200/tcp
+   patientrecord-labs                  Up        0.0.0.0:4203->4200/tcp
+   patientrecord-medications           Up        0.0.0.0:4204->4200/tcp
+   patientrecord-visits                Up        0.0.0.0:4205->4200/tcp
+   patientrecord-care-team             Up        0.0.0.0:4206->4200/tcp
+   patientrecord-procedures            Up        0.0.0.0:4207->4200/tcp  (React)
+   # Backend microservices
+   patientrecord-api-gateway           Up        0.0.0.0:5000->5000/tcp
+   patientrecord-auth-service          Up        0.0.0.0:5001->5001/tcp
+   patientrecord-patient-service       Up        0.0.0.0:5002->5002/tcp
+   patientrecord-vitals-service        Up        0.0.0.0:5003->5003/tcp
+   patientrecord-labs-service          Up        0.0.0.0:5004->5004/tcp
+   patientrecord-medications-service   Up        0.0.0.0:5005->5005/tcp
+   patientrecord-visits-service        Up        0.0.0.0:5006->5006/tcp
+   patientrecord-care-team-service     Up        0.0.0.0:5007->5007/tcp
+   patientrecord-registry-service      Up        0.0.0.0:5100->5100/tcp
+   patientrecord-mongo                 Up        0.0.0.0:27017->27017/tcp
    ```
 
 4. **Access the application**
 
    - **Web UI**: http://localhost:4200
+   - **Admin Panel**: http://localhost:4200/admin *(login as `admin` / `password123`)*
    - **Direct Patient View**: http://localhost:4200/dashboard/vitals/20001
    - **Procedures Module** (React): http://localhost:4200/dashboard/procedures/20001
-   - **API Documentation**: http://localhost:5001/api-docs
-   - **Backend Health**: http://localhost:5001/health
+   - **API Gateway**: http://localhost:5000
+   - **API Documentation**: http://localhost:5000/api-docs
+   - **System Health**: http://localhost:5000/health/deep
 
 5. **Default credentials**
-   ```
-   Email: test@example.com
-   Password: password123
-   ```
+
+   | Username | Password | Role |
+   |---|---|---|
+   | `admin` | `password123` | Admin — access to Admin Panel |
+   | `doc1` | `password123` | Physician — clinical modules |
+   | `nurse1` | `password123` | Nurse — clinical modules |
 
 6. **Test patients** (with varied clinical data)
    - Patient 20001 (Sarah Mitchell): Healthy, minimal medications
@@ -364,12 +393,16 @@ PatientRecords
 │           └── index.ts
 │
 ├── backend/
-│   ├── server.js              # Express application
-│   ├── routes/
-│   │   ├── auth.js            # /auth/login, /auth/refresh, /auth/logout
-│   │   ├── patients.js        # CRUD operations
-│   │   └── vitals.js          # Vital signs endpoints
-│   ├── middlewares/           # Authentication, error handling
+│   ├── services/
+│   │   ├── api-gateway/       # Port 5000 — routing, JWT validation
+│   │   ├── auth-service/      # Port 5001 — login, refresh, logout
+│   │   ├── patient-service/   # Port 5002 — patient CRUD
+│   │   ├── vitals-service/    # Port 5003 — vital signs
+│   │   ├── labs-service/      # Port 5004 — lab results
+│   │   ├── medications-service/ # Port 5005 — medications
+│   │   ├── visits-service/    # Port 5006 — clinical visits
+│   │   ├── care-team-service/ # Port 5007 — care team
+│   │   └── registry-service/  # Port 5100 — plugin registry + admin API
 │   ├── init-db.js             # MongoDB initialization
 │   └── Dockerfile
 │
@@ -438,9 +471,23 @@ PatientRecords
 
 ### Platform Features
 
+**Admin Dashboard** ⚙️
+- Accessible at `/admin` — visible only to users with `admin` role
+- **Service health grid** — real-time status of all backend microservices via `/health/deep`
+- **Module management table** — enable or disable any clinical module at runtime without redeployment
+- **Inline role editor** — per-module role permissions (admin / physician / nurse) with save/cancel
+- Changes persist to MongoDB via Registry Service admin API
+
+**Microservices Backend** 🏗️
+- **API Gateway** (port 5000) — single entry point; routes all `/api/*` traffic to the correct service
+- **Auth Service** — stateless JWT; role derived from username prefix
+- **5 Clinical Domain Services** — Vitals, Labs, Medications, Visits, Care Team — each independently deployable
+- **Registry Service** — stores module metadata; admin endpoints protected by `role=admin` JWT check
+- Structured JSON logging and deep health checks across all services
+
 **Multi-Framework Architecture** ⭐
 - **6 Angular micro-frontends** — Demographics, Vitals, Medications, Labs, Visits, Care Team
-- **1 React micro-frontend** — Procedures module
+- **1 React micro-frontend** — Procedures module (loaded via `loadRemoteModule(type:'script')`)
 - **Framework-agnostic loading** — Dynamic module discovery via registry
 - **Shared dependencies** — React, React-DOM shared between shell and React module
 - **Cross-framework state** — Patient context synchronized across all modules regardless of framework
@@ -626,8 +673,9 @@ nc -z localhost 27017 || exit 1
 
 ### Base URL
 ```
-http://localhost:5001/api
+http://localhost:5000/api
 ```
+> All requests go through the **API Gateway** on port 5000. Direct service ports (5001–5007, 5100) are also accessible for development/debugging.
 
 ### Authentication Endpoints
 
@@ -701,11 +749,44 @@ Content-Type: application/json
 }
 ```
 
+### Admin / Registry Endpoints
+
+> Requires `role=admin` JWT token.
+
+**List All Modules (including disabled)**
+```http
+GET /api/admin/registry
+Authorization: Bearer <admin_token>
+```
+
+**Toggle Module Enable/Disable**
+```http
+PATCH /api/admin/registry/modules/:id/toggle
+Authorization: Bearer <admin_token>
+
+Response: { "id": "vitals", "enabled": false }
+```
+
+**Update Module Roles**
+```http
+PUT /api/admin/registry/modules/:id
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{ "roles": ["admin", "physician"] }
+```
+
+**Service Health (deep)**
+```http
+GET /health/deep
+Authorization: Bearer <token>
+```
+
 ### OpenAPI/Swagger
 
 Full API documentation available at:
 ```
-http://localhost:5001/api-docs
+http://localhost:5000/api-docs
 ```
 
 [⬆️ Back to Top](#table-of-contents)

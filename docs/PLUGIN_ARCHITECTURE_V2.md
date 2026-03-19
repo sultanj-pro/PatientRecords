@@ -98,7 +98,7 @@ The registry is the source of truth for which modules are available and how to l
       "path": "care-team",
       "url": "/modules/care-team/index.js",
       "version": "1.0.0",
-      "enabled": false,
+      "enabled": true,
       "roles": ["admin", "physician"],
       "order": 6
     },
@@ -110,7 +110,7 @@ The registry is the source of truth for which modules are available and how to l
       "path": "procedures",
       "url": "/modules/procedures/index.js",
       "version": "1.0.0",
-      "enabled": false,
+      "enabled": true,
       "roles": ["admin", "physician"],
       "order": 7
     }
@@ -433,6 +433,72 @@ backend/
 }
 ```
 
+## Admin Dashboard (Phase 4 — Implemented)
+
+The registry is now fully manageable at runtime through a built-in Admin Dashboard, eliminating the need to manually edit JSON files or restart services.
+
+### Access
+- URL: `/admin`
+- Requires JWT with `role=admin` (enforced by `adminGuard` in the shell + `adminMiddleware` in the registry service)
+
+### Features
+
+**Service Health Grid**
+- Polls `GET /health/deep` on page load
+- Displays real-time status (UP/DOWN/DEGRADED) for all backend microservices
+
+**Module Management Table**
+- Lists all registered modules including disabled ones
+- **Enable/Disable toggle** — `PATCH /api/admin/registry/modules/:id/toggle` — persists to MongoDB immediately; no restart needed
+- **Inline role editor** — click the ✏️ pencil to expand a checkbox multiselect (admin / physician / nurse); click Save to call `PUT /api/admin/registry/modules/:id` with the new roles array; Cancel discards changes
+
+### Shell-Side Implementation
+
+```typescript
+// frontend/shell-app/src/app/components/admin/admin-dashboard.component.ts
+
+// Load all modules (including disabled)
+this.pluginRegistry.getAllModulesAdmin().subscribe(modules => ...);
+
+// Toggle enable/disable
+this.pluginRegistry.toggleModuleRemote(moduleId, !currentEnabled).subscribe(...);
+
+// Save role changes
+this.pluginRegistry.updateModuleRoles(moduleId, [...this.pendingRoles]).subscribe(...);
+```
+
+### Registry-Service Admin API
+
+```
+GET    /api/admin/registry                    → All modules (including disabled)
+PATCH  /api/admin/registry/modules/:id/toggle → Toggle enabled, persist to MongoDB
+PUT    /api/admin/registry/modules/:id        → Full update (roles, metadata)
+```
+
+All admin routes are protected by `adminMiddleware`: validates JWT and checks `payload.role === 'admin'`.
+
+---
+
+## Microservices Backend (Phase 2 — Implemented)
+
+The backend is no longer a monolith. Each clinical domain is an independent service:
+
+| Service | Port | Responsibility |
+|---|---|---|
+| api-gateway | 5000 | Routes all `/api/*` traffic; validates JWT globally |
+| auth-service | 5001 | Login, token refresh, logout |
+| patient-service | 5002 | Patient CRUD and search |
+| vitals-service | 5003 | Vital signs |
+| labs-service | 5004 | Lab results |
+| medications-service | 5005 | Medication management |
+| visits-service | 5006 | Clinical encounters |
+| care-team-service | 5007 | Team member management |
+| registry-service | 5100 | Plugin registry + admin API |
+
+All services include structured JSON logging and `/health` endpoints. The gateway provides a `/health/deep` endpoint that aggregates health from all services.
+
+---
+
 ## Migration Path (Current → V2)
 
 ### Phase 1: Prepare Shell App (Sprint 1)
@@ -453,11 +519,14 @@ backend/
 - ✅ Procedures module (new)
 - ✅ Future domains...
 
-### Phase 4: Testing & Rollout
-- ✅ Registry loading and validation
-- ✅ Module isolation testing
-- ✅ Role-based visibility testing
-- ✅ Cross-module data consistency
+### Phase 4: Admin Dashboard + All Modules (Implemented ✅)
+- ✅ Admin Dashboard component with service health grid
+- ✅ Runtime module enable/disable via Registry Service admin API
+- ✅ Inline role editor (per-module admin/physician/nurse permissions)
+- ✅ `adminGuard` protecting `/admin` route
+- ✅ Side navigation admin panel button (admin-role conditional)
+- ✅ Care Team + Procedures routed and working in shell
+- ✅ `ProceduresWrapperComponent` — Angular→React MF bridge
 
 ## Benefits Summary
 
@@ -473,12 +542,12 @@ backend/
 
 ## Technical Stack
 
-- **Frontend Shell:** Angular
-- **Modules:** Angular (or framework-agnostic via web components)
-- **Module Loading:** Web Components + dynamic script loading
-- **Registry:** JSON file (or REST API)
-- **Backend:** Node.js/Express (monolithic)
-- **Database:** MongoDB
+- **Frontend Shell:** Angular 17 (standalone components)
+- **Modules:** Angular 17 (x6) + React 18 (x1, via `loadRemoteModule(type:'script')`)
+- **Module Loading:** Webpack Module Federation + `@angular-architects/module-federation`
+- **Registry:** MongoDB-backed REST API (registry-service on port 5100)
+- **Backend:** Node.js/Express microservices (9 services) behind API Gateway
+- **Database:** MongoDB (shared)
 
 ## Future Enhancements
 
