@@ -6,6 +6,21 @@
 
 ---
 
+## Legal Disclaimer
+
+> **This software is not certified, cleared, or approved by any regulatory body.**
+>
+> Completion of Phase 8 — including all hardening, audit logging, and HIPAA-aligned design practices — does **not** constitute HIPAA certification, FDA clearance, CE marking, or any other regulatory certification. No such claim should be made in product documentation, marketing materials, customer agreements, or user-facing interfaces.
+>
+> This system is a **technology demonstration and reference architecture**. Any use in a real clinical environment requires independent compliance assessment, legal review, and where applicable, regulatory clearance by qualified professionals. The architectural patterns described here (human-in-the-loop, audit logging, PHI handling) are intended as engineering good practice, not as a substitute for formal compliance processes.
+>
+> Specifically:
+> - **HIPAA compliance** must be assessed and attested by a qualified compliance officer, not inferred from the presence of audit logs or encryption
+> - **FDA regulatory status** of any AI-based clinical decision support tool must be determined by legal and regulatory counsel before deployment
+> - **Clinical validation** of any AI recommendation output must be performed by qualified clinicians before the system is used to inform patient care
+
+---
+
 ## Overview
 
 Phase 8 adds a clinical decision support layer built on an **Orchestrator + Specialized Agents** pattern. The AI layer integrates as peer microservices behind the existing API Gateway — no changes are required to the current domain services, authentication, or frontend modules. New `/api/ai/*` routes are added to the gateway, and new containers join the existing docker-compose stack.
