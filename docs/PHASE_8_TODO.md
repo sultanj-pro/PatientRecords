@@ -35,13 +35,13 @@
 
 ## Milestone 8.2 — AI Orchestrator Skeleton (~3–4 days) ✅ First dev-testable checkpoint
 
-- [ ] **8.2.1** Scaffold `backend/ai-orchestrator/` — `server.js`, `contextBuilder.js`, `approvalStore.js`, `package.json`, `Dockerfile`
-- [ ] **8.2.2** Implement `contextBuilder.js` — parallel calls to Patient, Vitals, Labs, Meds, Visits (forward JWT)
-- [ ] **8.2.3** Implement `approvalStore.js` — MongoDB `ai_recommendations` collection with immutable status rules
-- [ ] **8.2.4** Implement `POST /recommend/:patientId`, `GET /recommendations/:patientId`, approve/dismiss endpoints, `GET /health`
-- [ ] **8.2.5** Add `/api/ai/*` proxy route to API Gateway with `requireAuth` middleware
-- [ ] **8.2.6** Add `patientrecord-ai-orchestrator` to `docker-compose.yml` with all service URL env vars
-- [ ] **8.2.7** Manual test: Postman `POST /api/ai/recommend/:patientId` — verify all 5 context sections populated
+- [x] **8.2.1** Scaffold `backend/ai-orchestrator/` — `server.js`, `contextBuilder.js`, `approvalStore.js`, `package.json`, `Dockerfile`
+- [x] **8.2.2** Implement `contextBuilder.js` — parallel calls to Patient, Vitals, Labs, Meds, Visits (forward JWT)
+- [x] **8.2.3** Implement `approvalStore.js` — MongoDB `ai_recommendations` collection with immutable status rules
+- [x] **8.2.4** Implement `POST /recommend/:patientId`, `GET /recommendations/:patientId`, approve/dismiss endpoints, `GET /health`
+- [x] **8.2.5** Add `/api/ai/*` proxy route to API Gateway with `requireAuth` middleware
+- [x] **8.2.6** Add `patientrecord-ai-orchestrator` to `docker-compose.yml` with all service URL env vars
+- [x] **8.2.7** Manual test: Postman `POST /api/ai/recommend/:patientId` — verify all 5 context sections populated
 
 ---
 
@@ -154,11 +154,11 @@
 |---|---|---|
 | Pre-work decisions | 6 | 🔲 Not started |
 | 8.1 Infrastructure | 11 | ✅ Complete |
-| 8.2 Orchestrator | 7 | 🔲 Not started |
+| 8.2 Orchestrator | 7 | ✅ Complete |
 | 8.3 Medication Agent | 8 | 🔲 Not started |
 | 8.4 Labs Agent | 8 | 🔲 Not started |
 | 8.5 Comms Agent | 9 | 🔲 Not started |
 | 8.6 Frontend | 11 | 🔲 Not started |
 | 8.7 LLM | 9 | 🔲 Not started |
 | 8.8 Hardening | 13 | 🔲 Not started |
-| **Total** | **76 + 6 decisions** | **11 / 82 complete** |
+| **Total** | **76 + 6 decisions** | **18 / 82 complete** |

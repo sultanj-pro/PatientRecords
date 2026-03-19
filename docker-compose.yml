@@ -142,6 +142,7 @@ services:
       - MEDICATIONS_SERVICE_URL=http://patientrecord-medications-service:5005
       - VISITS_SERVICE_URL=http://patientrecord-visits-service:5006
       - CARE_TEAM_SERVICE_URL=http://patientrecord-care-team-service:5007
+      - AI_ORCHESTRATOR_URL=http://patientrecord-ai-orchestrator:5008
     ports:
       - "5000:5000"
     restart: unless-stopped
@@ -167,6 +168,8 @@ services:
       patientrecord-visits-service:
         condition: service_healthy
       patientrecord-care-team-service:
+        condition: service_healthy
+      patientrecord-ai-orchestrator:
         condition: service_healthy
     networks:
       - patientrecords
@@ -359,6 +362,46 @@ services:
       patientrecord-mongodb:
         condition: service_healthy
       patientrecord-redis:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
+  patientrecord-ai-orchestrator:
+    build:
+      context: ./backend/services/ai-orchestrator
+      dockerfile: Dockerfile
+    image: patientrecord-ai-orchestrator
+    container_name: patientrecord-ai-orchestrator
+    environment:
+      - PORT=5008
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - PATIENT_SERVICE_URL=http://patientrecord-patient-service:5002
+      - VITALS_SERVICE_URL=http://patientrecord-vitals-service:5003
+      - LABS_SERVICE_URL=http://patientrecord-labs-service:5004
+      - MEDICATIONS_SERVICE_URL=http://patientrecord-medications-service:5005
+      - VISITS_SERVICE_URL=http://patientrecord-visits-service:5006
+    ports:
+      - "5008:5008"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5008/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      patientrecord-mongodb:
+        condition: service_healthy
+      patientrecord-patient-service:
+        condition: service_healthy
+      patientrecord-vitals-service:
+        condition: service_healthy
+      patientrecord-labs-service:
+        condition: service_healthy
+      patientrecord-medications-service:
+        condition: service_healthy
+      patientrecord-visits-service:
         condition: service_healthy
     networks:
       - patientrecords
