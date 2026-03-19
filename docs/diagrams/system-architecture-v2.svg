@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1300" height="1520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      /* ── Existing components ── */
+      .registry  { fill: #E3F2FD; stroke: #1976D2; stroke-width: 2; }
+      .shell     { fill: #FFFDE7; stroke: #F57F17; stroke-width: 2; }
+      .admin     { fill: #FCE4EC; stroke: #C62828; stroke-width: 2; }
+      .module    { fill: #F3E5F5; stroke: #7B1FA2; stroke-width: 2; }
+      .react-mod { fill: #E8EAF6; stroke: #283593; stroke-width: 2; }
+      .gateway   { fill: #E0F2F1; stroke: #00695C; stroke-width: 3; }
+      .service   { fill: #E8F5E9; stroke: #388E3C; stroke-width: 2; }
+      .reg-svc   { fill: #E3F2FD; stroke: #1976D2; stroke-width: 2; }
+      .database  { fill: #FFE0B2; stroke: #E65100; stroke-width: 2; }
+      /* ── Phase 8 AI Layer ── */
+      .ai-bg     { fill: #F9FBE7; stroke: #C5E1A5; stroke-width: 1.5; }
+      .ai-orch   { fill: #FFF8E1; stroke: #F9A825; stroke-width: 3; }
+      .ai-sync   { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 2; }
+      .ai-async  { fill: #FCE4EC; stroke: #AD1457; stroke-width: 2; }
+      .ai-bus    { fill: #EDE7F6; stroke: #5E35B1; stroke-width: 2; }
+      .ai-notif  { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; }
+      .ai-note   { fill: #FFFDE7; stroke: #F9A825; stroke-width: 1; }
+      /* ── Text ── */
+      .text-bold  { font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; }
+      .text-title { font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; }
+      .text-small { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }
+      .text-tiny  { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; fill: #555; }
+      .text-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #333; }
+      .text-ai-h  { font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; fill: #1B5E20; }
+      .text-panel { font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #5D4037; }
+      /* ── Arrows ── */
+      .arrow      { stroke: #BDBDBD; stroke-width: 2; fill: none; marker-end: url(#arr); }
+      .arrow-ai   { stroke: #F9A825; stroke-width: 2; fill: none; marker-end: url(#arr-gold); }
+      .arrow-ev   { stroke: #7B1FA2; stroke-width: 2; fill: none; marker-end: url(#arr-purple); }
+    </style>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#BDBDBD"/>
+    </marker>
+    <marker id="arr-gold" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#F9A825"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#7B1FA2"/>
+    </marker>
+  </defs>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- CURRENT ARCHITECTURE (v1 — implemented)                       -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+
+  <!-- ROW 1 — Shell App -->
+  <g>
+    <rect x="362" y="18" width="576" height="138" class="shell" rx="8"/>
+    <text x="650" y="46"  text-anchor="middle" class="text-bold">&#127968;</text>
+    <text x="650" y="68"  text-anchor="middle" class="text-title">Angular Shell App</text>
+    <text x="650" y="84"  text-anchor="middle" class="text-small">Port 4200</text>
+    <text x="650" y="101" text-anchor="middle" class="text-tiny">Authentication · Patient Context Sync · Navigation · Role-based Module Loader</text>
+    <text x="650" y="116" text-anchor="middle" class="text-tiny">Webpack Module Federation Host · Session Management · JWT Interceptor</text>
+    <rect x="527" y="126" width="246" height="24" class="admin" rx="5"/>
+    <text x="650" y="142" text-anchor="middle" class="text-label">&#9881;&#65039; Admin Dashboard  /admin  (admin role only)</text>
+  </g>
+
+  <!-- Arrows Shell -> Modules -->
+  <g>
+    <path d="M 430 156 L  90 250" class="arrow"/>
+    <path d="M 480 156 L 240 250" class="arrow"/>
+    <path d="M 540 156 L 390 250" class="arrow"/>
+    <path d="M 650 156 L 540 250" class="arrow"/>
+    <path d="M 760 156 L 690 250" class="arrow"/>
+    <path d="M 820 156 L 860 250" class="arrow"/>
+    <path d="M 870 156 L 1025 250" class="arrow"/>
+  </g>
+
+  <!-- ROW 2 — Micro-Frontend Modules (7) -->
+  <g>
+    <rect x="20"  y="250" width="140" height="72" class="module" rx="7"/>
+    <text x="90"  y="274" text-anchor="middle" class="text-bold">&#128101;</text>
+    <text x="90"  y="293" text-anchor="middle" class="text-title">Demographics</text>
+    <text x="90"  y="308" text-anchor="middle" class="text-tiny">Port 4201 · Angular</text>
+  </g>
+  <g>
+    <rect x="170" y="250" width="140" height="72" class="module" rx="7"/>
+    <text x="240" y="274" text-anchor="middle" class="text-bold">&#10084;&#65039;</text>
+    <text x="240" y="293" text-anchor="middle" class="text-title">Vitals</text>
+    <text x="240" y="308" text-anchor="middle" class="text-tiny">Port 4202 · Angular</text>
+  </g>
+  <g>
+    <rect x="320" y="250" width="140" height="72" class="module" rx="7"/>
+    <text x="390" y="274" text-anchor="middle" class="text-bold">&#129514;</text>
+    <text x="390" y="293" text-anchor="middle" class="text-title">Labs</text>
+    <text x="390" y="308" text-anchor="middle" class="text-tiny">Port 4203 · Angular</text>
+  </g>
+  <g>
+    <rect x="470" y="250" width="140" height="72" class="module" rx="7"/>
+    <text x="540" y="274" text-anchor="middle" class="text-bold">&#128138;</text>
+    <text x="540" y="293" text-anchor="middle" class="text-title">Medications</text>
+    <text x="540" y="308" text-anchor="middle" class="text-tiny">Port 4204 · Angular</text>
+  </g>
+  <g>
+    <rect x="620" y="250" width="140" height="72" class="module" rx="7"/>
+    <text x="690" y="274" text-anchor="middle" class="text-bold">&#128197;</text>
+    <text x="690" y="293" text-anchor="middle" class="text-title">Visits</text>
+    <text x="690" y="308" text-anchor="middle" class="text-tiny">Port 4205 · Angular</text>
+  </g>
+  <g>
+    <rect x="790" y="250" width="140" height="72" class="module" rx="7"/>
+    <text x="860" y="274" text-anchor="middle" class="text-bold">&#128104;&#8205;&#9877;&#65039;</text>
+    <text x="860" y="293" text-anchor="middle" class="text-title">Care Team</text>
+    <text x="860" y="308" text-anchor="middle" class="text-tiny">Port 4206 · Angular</text>
+  </g>
+  <g>
+    <rect x="950" y="250" width="150" height="72" class="react-mod" rx="7"/>
+    <text x="1025" y="274" text-anchor="middle" class="text-bold">&#127973;</text>
+    <text x="1025" y="293" text-anchor="middle" class="text-title">Procedures &#11088;</text>
+    <text x="1025" y="308" text-anchor="middle" class="text-tiny">Port 4207 · React 18</text>
+  </g>
+
+  <!-- Arrows Modules -> API Gateway -->
+  <g>
+    <path d="M  90 322 L 600 438" class="arrow"/>
+    <path d="M 240 322 L 615 438" class="arrow"/>
+    <path d="M 390 322 L 628 438" class="arrow"/>
+    <path d="M 540 322 L 643 438" class="arrow"/>
+    <path d="M 690 322 L 657 438" class="arrow"/>
+    <path d="M 860 322 L 672 438" class="arrow"/>
+    <path d="M 1025 322 L 690 438" class="arrow"/>
+  </g>
+
+  <!-- ROW 3 — API Gateway -->
+  <g>
+    <rect x="352" y="438" width="596" height="96" class="gateway" rx="10"/>
+    <text x="650" y="464" text-anchor="middle" class="text-bold">&#127760;</text>
+    <text x="650" y="486" text-anchor="middle" class="text-title">API Gateway</text>
+    <text x="650" y="503" text-anchor="middle" class="text-small">Port 5000 · Single entry point for all /api/* traffic</text>
+    <text x="650" y="519" text-anchor="middle" class="text-tiny">JWT validation · Request routing · /health/deep · Swagger /api-docs</text>
+  </g>
+
+  <!-- Arrows Gateway -> Domain Services -->
+  <g>
+    <path d="M 432 534 L 115 630" class="arrow"/>
+    <path d="M 500 534 L 265 630" class="arrow"/>
+    <path d="M 570 534 L 415 630" class="arrow"/>
+    <path d="M 640 534 L 575 630" class="arrow"/>
+    <path d="M 710 534 L 725 630" class="arrow"/>
+    <path d="M 780 534 L 875 630" class="arrow"/>
+    <path d="M 850 534 L 1025 630" class="arrow"/>
+    <path d="M 868 534 L 1175 630" class="arrow"/>
+  </g>
+
+  <!-- ROW 4 — Domain Services (8) -->
+  <g>
+    <rect x="20"  y="630" width="140" height="76" class="service" rx="7"/>
+    <text x="90"  y="654" text-anchor="middle" class="text-bold">&#128272;</text>
+    <text x="90"  y="674" text-anchor="middle" class="text-title">Auth Service</text>
+    <text x="90"  y="688" text-anchor="middle" class="text-tiny">Port 5001</text>
+    <text x="90"  y="700" text-anchor="middle" class="text-tiny">Login · Refresh · Logout</text>
+  </g>
+  <g>
+    <rect x="170" y="630" width="140" height="76" class="service" rx="7"/>
+    <text x="240" y="654" text-anchor="middle" class="text-bold">&#127991;&#65039;</text>
+    <text x="240" y="674" text-anchor="middle" class="text-title">Patient Service</text>
+    <text x="240" y="688" text-anchor="middle" class="text-tiny">Port 5002</text>
+    <text x="240" y="700" text-anchor="middle" class="text-tiny">Patient CRUD · Search</text>
+  </g>
+  <g>
+    <rect x="320" y="630" width="140" height="76" class="service" rx="7"/>
+    <text x="390" y="654" text-anchor="middle" class="text-bold">&#10084;&#65039;</text>
+    <text x="390" y="674" text-anchor="middle" class="text-title">Vitals Service</text>
+    <text x="390" y="688" text-anchor="middle" class="text-tiny">Port 5003</text>
+    <text x="390" y="700" text-anchor="middle" class="text-tiny">Vital signs</text>
+  </g>
+  <g>
+    <rect x="470" y="630" width="140" height="76" class="service" rx="7"/>
+    <text x="540" y="654" text-anchor="middle" class="text-bold">&#129514;</text>
+    <text x="540" y="674" text-anchor="middle" class="text-title">Labs Service</text>
+    <text x="540" y="688" text-anchor="middle" class="text-tiny">Port 5004</text>
+    <text x="540" y="700" text-anchor="middle" class="text-tiny">Lab results</text>
+  </g>
+  <g>
+    <rect x="620" y="630" width="140" height="76" class="service" rx="7"/>
+    <text x="690" y="654" text-anchor="middle" class="text-bold">&#128138;</text>
+    <text x="690" y="674" text-anchor="middle" class="text-title">Meds Service</text>
+    <text x="690" y="688" text-anchor="middle" class="text-tiny">Port 5005</text>
+    <text x="690" y="700" text-anchor="middle" class="text-tiny">Medications</text>
+  </g>
+  <g>
+    <rect x="770" y="630" width="140" height="76" class="service" rx="7"/>
+    <text x="840" y="654" text-anchor="middle" class="text-bold">&#128197;</text>
+    <text x="840" y="674" text-anchor="middle" class="text-title">Visits Service</text>
+    <text x="840" y="688" text-anchor="middle" class="text-tiny">Port 5006</text>
+    <text x="840" y="700" text-anchor="middle" class="text-tiny">Clinical encounters</text>
+  </g>
+  <g>
+    <rect x="920" y="630" width="150" height="76" class="service" rx="7"/>
+    <text x="995" y="654" text-anchor="middle" class="text-bold">&#128104;&#8205;&#9877;&#65039;</text>
+    <text x="995" y="674" text-anchor="middle" class="text-title">Care Team Svc</text>
+    <text x="995" y="688" text-anchor="middle" class="text-tiny">Port 5007</text>
+    <text x="995" y="700" text-anchor="middle" class="text-tiny">Team management</text>
+  </g>
+  <g>
+    <rect x="1080" y="630" width="190" height="76" class="reg-svc" rx="7"/>
+    <text x="1175" y="654" text-anchor="middle" class="text-bold">&#128203;</text>
+    <text x="1175" y="674" text-anchor="middle" class="text-title">Registry Service</text>
+    <text x="1175" y="688" text-anchor="middle" class="text-tiny">Port 5100</text>
+    <text x="1175" y="700" text-anchor="middle" class="text-tiny">Plugin registry · Admin API</text>
+  </g>
+
+  <!-- Arrows Services -> MongoDB -->
+  <g>
+    <path d="M  90 706 L 560 800" class="arrow"/>
+    <path d="M 240 706 L 585 800" class="arrow"/>
+    <path d="M 390 706 L 610 800" class="arrow"/>
+    <path d="M 540 706 L 630 800" class="arrow"/>
+    <path d="M 690 706 L 650 800" class="arrow"/>
+    <path d="M 840 706 L 668 800" class="arrow"/>
+    <path d="M 995 706 L 692 800" class="arrow"/>
+    <path d="M 1175 706 L 718 800" class="arrow"/>
+  </g>
+
+  <!-- ROW 5 — MongoDB -->
+  <g>
+    <rect x="480" y="800" width="340" height="100" class="database" rx="8"/>
+    <text x="650" y="830"  text-anchor="middle" class="text-bold">&#128374;&#65039;</text>
+    <text x="650" y="852"  text-anchor="middle" class="text-title">MongoDB</text>
+    <text x="650" y="868"  text-anchor="middle" class="text-small">Port 27017</text>
+    <text x="650" y="884"  text-anchor="middle" class="text-tiny">patients · vitals · labs · medications · visits · care-team · modules</text>
+  </g>
+
+  <!-- Legend (v1) -->
+  <g>
+    <rect x="20" y="926" width="1260" height="100" rx="8" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="1"/>
+    <text x="40" y="948" class="text-label">Legend</text>
+    <rect x="40"  y="957" width="16" height="16" class="shell" rx="3"/>
+    <text x="62"  y="969" class="text-tiny">Shell App</text>
+    <rect x="160" y="957" width="16" height="16" class="admin" rx="3"/>
+    <text x="182" y="969" class="text-tiny">Admin Dashboard</text>
+    <rect x="320" y="957" width="16" height="16" class="module" rx="3"/>
+    <text x="342" y="969" class="text-tiny">Angular MF Module</text>
+    <rect x="490" y="957" width="16" height="16" class="react-mod" rx="3"/>
+    <text x="512" y="969" class="text-tiny">React MF Module &#11088;</text>
+    <rect x="660" y="957" width="16" height="16" class="gateway" rx="3"/>
+    <text x="682" y="969" class="text-tiny">API Gateway</text>
+    <rect x="800" y="957" width="16" height="16" class="service" rx="3"/>
+    <text x="822" y="969" class="text-tiny">Backend Microservice</text>
+    <rect x="990" y="957" width="16" height="16" class="reg-svc" rx="3"/>
+    <text x="1012" y="969" class="text-tiny">Registry Service</text>
+    <rect x="1140" y="957" width="16" height="16" class="database" rx="3"/>
+    <text x="1162" y="969" class="text-tiny">Database</text>
+    <text x="40" y="993" class="text-tiny">Frontend: Shell 4200 · Demographics 4201 · Vitals 4202 · Labs 4203 · Medications 4204 · Visits 4205 · Care Team 4206 · Procedures 4207</text>
+    <text x="40" y="1010" class="text-tiny">Backend: API Gateway 5000 · Auth 5001 · Patient 5002 · Vitals 5003 · Labs 5004 · Medications 5005 · Visits 5006 · Care Team 5007 · Registry 5100 · MongoDB 27017</text>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- PHASE 8: AI MULTI-AGENT LAYER (v2 — Roadmap)                  -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+
+  <!-- Section divider -->
+  <line x1="20" y1="1052" x2="1280" y2="1052" stroke="#C5E1A5" stroke-width="2" stroke-dasharray="8,4"/>
+
+  <!-- AI section background -->
+  <rect x="20" y="1060" width="1260" height="438" class="ai-bg" rx="12"/>
+
+  <!-- Section header -->
+  <text x="650" y="1083" text-anchor="middle" class="text-ai-h">&#129302; Phase 8: AI Multi-Agent Layer — v2 Roadmap</text>
+  <text x="650" y="1099" text-anchor="middle" class="text-tiny">New /api/ai/* routes added to existing API Gateway · AI services are peer microservices in the same stack · No changes to existing services</text>
+
+  <!-- Vertical panel divider -->
+  <line x1="645" y1="1107" x2="645" y2="1486" stroke="#C5E1A5" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- LEFT PANEL — Sync / Request-Driven                            -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+
+  <text x="323" y="1115" text-anchor="middle" class="text-panel">&#8635; SYNC · Request-Driven</text>
+
+  <!-- AI Orchestrator -->
+  <rect x="32" y="1122" width="590" height="108" class="ai-orch" rx="10"/>
+  <text x="327" y="1146" text-anchor="middle" class="text-title">&#129504; AI Orchestrator Service · Port 5300</text>
+  <text x="327" y="1162" text-anchor="middle" class="text-tiny">Receives: POST /api/ai/recommend/:patientId  (routed via API Gateway)</text>
+  <text x="327" y="1177" text-anchor="middle" class="text-tiny">Assembles full patient context · Calls Patient, Vitals, Labs, Medications, Visits services</text>
+  <text x="327" y="1192" text-anchor="middle" class="text-tiny">Delegates to specialized agents · Aggregates all recommendations into one response</text>
+  <text x="327" y="1207" text-anchor="middle" class="text-tiny">LLM tool-calling loop · each tool resolves to an existing domain service API endpoint</text>
+
+  <!-- Arrows Orchestrator -> Agents -->
+  <path d="M 200 1230 L 200 1272" class="arrow-ai"/>
+  <path d="M 455 1230 L 455 1272" class="arrow-ai"/>
+
+  <!-- Medication Agent -->
+  <rect x="32" y="1272" width="262" height="92" class="ai-sync" rx="7"/>
+  <text x="163" y="1296" text-anchor="middle" class="text-title">&#128138; Medication Agent</text>
+  <text x="163" y="1312" text-anchor="middle" class="text-tiny">Recommends medication adjustments</text>
+  <text x="163" y="1326" text-anchor="middle" class="text-tiny">Flags drug-drug interactions</text>
+  <text x="163" y="1340" text-anchor="middle" class="text-tiny">Checks contraindications · allergies</text>
+  <text x="163" y="1355" text-anchor="middle" class="text-tiny">Tools: get_meds · check_interactions</text>
+
+  <!-- Labs Agent -->
+  <rect x="308" y="1272" width="262" height="92" class="ai-sync" rx="7"/>
+  <text x="439" y="1296" text-anchor="middle" class="text-title">&#129514; Labs Agent</text>
+  <text x="439" y="1312" text-anchor="middle" class="text-tiny">Recommends diagnostic tests</text>
+  <text x="439" y="1326" text-anchor="middle" class="text-tiny">Identifies gaps in patient data</text>
+  <text x="439" y="1340" text-anchor="middle" class="text-tiny">Prioritizes urgent lab orders</text>
+  <text x="439" y="1355" text-anchor="middle" class="text-tiny">Tools: get_labs · assess_gaps</text>
+
+  <!-- Physician approval note -->
+  <rect x="32" y="1378" width="590" height="30" class="ai-note" rx="5"/>
+  <text x="327" y="1397" text-anchor="middle" class="text-tiny">&#9877;&#65039; All recommendations require physician review and explicit approval before any action is taken — Human-in-the-Loop mandatory</text>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- RIGHT PANEL — Async / Event-Driven                            -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+
+  <text x="965" y="1115" text-anchor="middle" class="text-panel">&#9889; ASYNC · Event-Driven</text>
+
+  <!-- Event Bus -->
+  <rect x="657" y="1122" width="601" height="58" class="ai-bus" rx="8"/>
+  <text x="957" y="1147" text-anchor="middle" class="text-title">&#128232; Event Bus  (Redis Streams)</text>
+  <text x="957" y="1163" text-anchor="middle" class="text-tiny">Domain services publish on data change: vitals-recorded · labs-resulted · medication-changed · visit-completed</text>
+
+  <!-- Arrow Event Bus -> Comms Agent -->
+  <path d="M 957 1180 L 957 1222" class="arrow-ev"/>
+
+  <!-- Comms Agent -->
+  <rect x="657" y="1222" width="601" height="106" class="ai-async" rx="8"/>
+  <text x="957" y="1247" text-anchor="middle" class="text-title">&#128226; Comms Agent  (Autonomous · Event-Driven)</text>
+  <text x="957" y="1264" text-anchor="middle" class="text-tiny">Subscribes to all domain events · Evaluates configurable notification rules</text>
+  <text x="957" y="1279" text-anchor="middle" class="text-tiny">Generates contextual messages for care team and patient</text>
+  <text x="957" y="1294" text-anchor="middle" class="text-tiny">Escalation thresholds reviewed and approved by clinicians · Operates independently of Orchestrator</text>
+  <text x="957" y="1309" text-anchor="middle" class="text-tiny">Critical value → immediate alert · Routine change → daily digest · All actions logged for HIPAA audit</text>
+
+  <!-- Arrows Comms Agent -> Notification outputs -->
+  <path d="M 770 1328 L 770 1368" class="arrow-ev"/>
+  <path d="M 957 1328 L 957 1368" class="arrow-ev"/>
+  <path d="M 1145 1328 L 1145 1368" class="arrow-ev"/>
+
+  <!-- Care Team Alert -->
+  <rect x="660" y="1368" width="185" height="74" class="ai-notif" rx="7"/>
+  <text x="752" y="1392" text-anchor="middle" class="text-bold">&#128104;&#8205;&#9877;&#65039;</text>
+  <text x="752" y="1410" text-anchor="middle" class="text-title">Care Team Alert</text>
+  <text x="752" y="1426" text-anchor="middle" class="text-tiny">In-app · SMS · Email</text>
+
+  <!-- Patient Notification -->
+  <rect x="860" y="1368" width="185" height="74" class="ai-notif" rx="7"/>
+  <text x="952" y="1392" text-anchor="middle" class="text-bold">&#128100;</text>
+  <text x="952" y="1410" text-anchor="middle" class="text-title">Patient Notification</text>
+  <text x="952" y="1426" text-anchor="middle" class="text-tiny">Portal · Mobile push</text>
+
+  <!-- EHR Audit Log -->
+  <rect x="1060" y="1368" width="185" height="74" class="ai-notif" rx="7"/>
+  <text x="1152" y="1392" text-anchor="middle" class="text-bold">&#128203;</text>
+  <text x="1152" y="1410" text-anchor="middle" class="text-title">EHR Audit Log</text>
+  <text x="1152" y="1426" text-anchor="middle" class="text-tiny">HIPAA · Immutable record</text>
+
+  <!-- Phase 8 legend row -->
+  <rect x="20" y="1456" width="1260" height="34" rx="6" fill="#F1F8E9" stroke="#C5E1A5" stroke-width="1"/>
+  <text x="40" y="1472" class="text-tiny">Phase 8 colors:</text>
+  <rect x="130" y="1461" width="12" height="12" class="ai-orch" rx="2"/>
+  <text x="147" y="1472" class="text-tiny">AI Orchestrator (port 5300)</text>
+  <rect x="310" y="1461" width="12" height="12" class="ai-sync" rx="2"/>
+  <text x="327" y="1472" class="text-tiny">Sync Agents (request-driven)</text>
+  <rect x="510" y="1461" width="12" height="12" class="ai-async" rx="2"/>
+  <text x="527" y="1472" class="text-tiny">Comms Agent (async/event-driven)</text>
+  <rect x="720" y="1461" width="12" height="12" class="ai-bus" rx="2"/>
+  <text x="737" y="1472" class="text-tiny">Event Bus (Redis Streams)</text>
+  <rect x="900" y="1461" width="12" height="12" class="ai-notif" rx="2"/>
+  <text x="917" y="1472" class="text-tiny">Notification channels</text>
+  <text x="1060" y="1472" class="text-tiny">· LLM: tool-calling pattern · Human-in-loop required</text>
+</svg>
