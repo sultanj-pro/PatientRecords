@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc/modules/clinical-notes",
+    "baseUrl": ".",
+    "paths": {
+      "@patient-records/shared": ["../shared"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

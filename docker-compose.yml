@@ -126,6 +126,21 @@ services:
     networks:
       - patientrecords
 
+  patientrecord-clinical-notes:
+    build:
+      context: ./frontend
+      dockerfile: modules/clinical-notes/Dockerfile
+    image: patientrecord-clinical-notes
+    container_name: patientrecord-clinical-notes
+    ports:
+      - "4209:4200"
+    restart: unless-stopped
+    depends_on:
+      patientrecord-api-gateway:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
   patientrecord-api-gateway:
     build:
       context: ./backend/services/api-gateway
@@ -144,6 +159,7 @@ services:
       - CARE_TEAM_SERVICE_URL=http://patientrecord-care-team-service:5007
       - AI_ORCHESTRATOR_URL=http://patientrecord-ai-orchestrator:5008
       - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
+      - CLINICAL_NOTES_URL=http://patientrecord-clinical-notes-service:5012
     ports:
       - "5000:5000"
     restart: unless-stopped
@@ -173,6 +189,8 @@ services:
       patientrecord-ai-orchestrator:
         condition: service_healthy
       patientrecord-comms-agent:
+        condition: service_healthy
+      patientrecord-clinical-notes-service:
         condition: service_healthy
     networks:
       - patientrecords
@@ -365,6 +383,31 @@ services:
       patientrecord-mongodb:
         condition: service_healthy
       patientrecord-redis:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
+  patientrecord-clinical-notes-service:
+    build:
+      context: ./backend
+      dockerfile: services/clinical-notes-service/Dockerfile
+    image: patientrecord-clinical-notes-service
+    container_name: patientrecord-clinical-notes-service
+    environment:
+      - PORT=5012
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+    ports:
+      - "5012:5012"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5012/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      patientrecord-mongodb:
         condition: service_healthy
     networks:
       - patientrecords

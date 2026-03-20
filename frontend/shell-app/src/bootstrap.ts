@@ -90,6 +90,16 @@ const baseRoutes: Routes = [
         loadChildren: () => (import('aiInsightsApp/AiInsightsModule') as any).then((m: any) => m.AI_INSIGHTS_ROUTES)
       },
       {
+        path: 'clinical-notes/:patientId',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('clinicalNotesApp/ClinicalNotesModule') as any).then((m: any) => m.CLINICAL_NOTES_ROUTES)
+      },
+      {
+        path: 'clinical-notes',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('clinicalNotesApp/ClinicalNotesModule') as any).then((m: any) => m.CLINICAL_NOTES_ROUTES)
+      },
+      {
         path: 'procedures/:patientId',
         canActivate: [moduleAvailabilityGuard],
         loadComponent: () => import('./app/components/procedures-wrapper/procedures-wrapper.component').then(m => m.ProceduresWrapperComponent)

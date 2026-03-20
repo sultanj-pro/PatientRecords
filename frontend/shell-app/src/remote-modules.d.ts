@@ -55,6 +55,10 @@ declare module 'aiInsightsApp/AiInsightsModule' {
   export const AI_INSIGHTS_ROUTES: any[];
 }
 
+declare module 'clinicalNotesApp/ClinicalNotesModule' {
+  export const CLINICAL_NOTES_ROUTES: any[];
+}
+
 declare module 'proceduresApp/ProceduresModule' {
   export const PROCEDURES_ROUTES: any[];
 }

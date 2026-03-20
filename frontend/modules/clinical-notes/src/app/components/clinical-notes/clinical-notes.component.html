@@ -1,0 +1,130 @@
+<div class="cn-container">
+
+  <!-- Header -->
+  <div class="cn-header">
+    <div class="header-title">
+      <span class="header-icon">📝</span>
+      <div>
+        <h1>Clinical Notes</h1>
+        <p class="header-sub">Provider observations, diagnostics, prognosis and care plans</p>
+      </div>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateForm()" [disabled]="!patientId || showCreateForm">
+      + New Note
+    </button>
+  </div>
+
+  <!-- Error banner -->
+  <div *ngIf="error" class="error-banner">
+    <span>⚠️ {{ error }}</span>
+    <button class="btn-close" (click)="error = null">✕</button>
+  </div>
+
+  <!-- Create Note Form -->
+  <div *ngIf="showCreateForm" class="note-form-card">
+    <h2 class="form-title">New Clinical Note</h2>
+    <div class="form-group">
+      <label class="form-label">Note Type</label>
+      <select class="form-control" [(ngModel)]="newNote.type">
+        <option *ngFor="let t of noteTypes" [value]="t">{{ typeLabel(t) }}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content</label>
+      <textarea
+        class="form-control"
+        rows="5"
+        placeholder="Enter your clinical note here…"
+        [(ngModel)]="newNote.content">
+      </textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" (click)="cancelCreate()">Cancel</button>
+      <button
+        class="btn btn-primary"
+        [disabled]="submitting || !newNote.content.trim()"
+        (click)="submitNote()">
+        {{ submitting ? 'Saving…' : 'Save Note' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <button
+      *ngFor="let f of typeFilters"
+      class="filter-tab"
+      [class.active]="activeFilter === f.value"
+      (click)="setFilter(f.value)">
+      {{ f.label }}
+      <span *ngIf="f.value === 'all'" class="tab-count">{{ notes.length }}</span>
+      <span *ngIf="f.value !== 'all'" class="tab-count">{{ countByType(f.value) }}</span>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Loading clinical notes…</p>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && filteredNotes.length === 0" class="empty-state">
+    <span class="empty-icon">📋</span>
+    <p *ngIf="activeFilter === 'all'">No clinical notes yet. Add the first note for this patient.</p>
+    <p *ngIf="activeFilter !== 'all'">No {{ typeLabel(activeFilter) }} notes found.</p>
+  </div>
+
+  <!-- Notes list -->
+  <div class="notes-list" *ngIf="!loading">
+    <div *ngFor="let note of filteredNotes" class="note-card">
+
+      <!-- View mode -->
+      <ng-container *ngIf="editingId !== note._id">
+        <div class="note-header">
+          <span class="note-badge" [ngClass]="typeBadgeClass(note.type)">{{ typeLabel(note.type) }}</span>
+          <span class="note-meta">{{ note.providerName || note.providerId }} · {{ formatDate(note.createdAt) }}</span>
+          <div class="note-actions" *ngIf="canEdit(note)">
+            <button class="btn btn-sm btn-outline" (click)="startEdit(note)">Edit</button>
+            <button
+              class="btn btn-sm btn-danger"
+              [disabled]="deletingId === note._id"
+              (click)="deleteNote(note)">
+              {{ deletingId === note._id ? '…' : 'Delete' }}
+            </button>
+          </div>
+        </div>
+        <div class="note-role" *ngIf="note.providerRole">{{ note.providerRole }}</div>
+        <div class="note-content">{{ note.content }}</div>
+        <div class="note-updated" *ngIf="note.updatedAt !== note.createdAt">
+          Edited {{ formatDate(note.updatedAt) }}
+        </div>
+      </ng-container>
+
+      <!-- Edit mode -->
+      <ng-container *ngIf="editingId === note._id">
+        <div class="form-group">
+          <label class="form-label">Note Type</label>
+          <select class="form-control" [(ngModel)]="editType">
+            <option *ngFor="let t of noteTypes" [value]="t">{{ typeLabel(t) }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Content</label>
+          <textarea class="form-control" rows="5" [(ngModel)]="editContent"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" (click)="cancelEdit()">Cancel</button>
+          <button
+            class="btn btn-primary"
+            [disabled]="savingEdit || !editContent.trim()"
+            (click)="saveEdit(note)">
+            {{ savingEdit ? 'Saving…' : 'Save Changes' }}
+          </button>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+
+</div>
