@@ -14,6 +14,7 @@ const mfConfig = {
     medicationsApp: 'http://localhost:4204/remoteEntry.js',
     visitsApp: 'http://localhost:4205/remoteEntry.js',
     careTeamApp: 'http://localhost:4206/remoteEntry.js',
+    aiInsightsApp: 'http://localhost:4208/remoteEntry.js',
   },
   shared: {
     ...shareAll({

@@ -1,0 +1,456 @@
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.ai-container {
+  padding: 28px 32px;
+  background: #f8f9fa;
+  min-height: 100vh;
+  max-width: 1100px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  font-size: 40px;
+}
+
+.ai-header h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #1a1a2e;
+  font-weight: 700;
+}
+
+.header-sub {
+  margin: 4px 0 0;
+  color: #666;
+  font-size: 13px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-generate {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 28px;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.btn-generate:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.btn-generate.loading {
+  background: linear-gradient(135deg, #999 0%, #777 100%);
+}
+
+.btn-approve {
+  background: #28a745;
+  color: white;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.btn-dismiss {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-dismiss:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.btn-ack {
+  background: white;
+  border: 1px solid currentColor;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: inherit;
+  padding: 0 4px;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.error-banner {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #856404;
+  font-weight: 500;
+}
+
+/* ── Notifications panel ─────────────────────────────────────────────────── */
+.notif-panel {
+  margin-bottom: 28px;
+}
+
+.notif-card {
+  background: white;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  border-left: 5px solid #ccc;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.notif-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.notif-title {
+  font-weight: 600;
+  color: #1a1a2e;
+  flex: 1;
+}
+
+.notif-msg {
+  margin: 0 0 6px;
+  color: #444;
+  font-size: 13px;
+}
+
+.notif-time {
+  font-size: 11px;
+  color: #999;
+}
+
+/* ── Section title ───────────────────────────────────────────────────────── */
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  font-size: 11px;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+.badge-critical {
+  background: #dc3545;
+  color: white;
+}
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 16px;
+  color: #666;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #e9ecef;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.empty-icon {
+  font-size: 72px;
+  margin-bottom: 16px;
+}
+
+.empty-state h2 {
+  color: #333;
+  margin: 0 0 12px;
+}
+
+.empty-state p {
+  color: #666;
+  font-size: 15px;
+}
+
+/* ── Recommendation card ─────────────────────────────────────────────────── */
+.recs-list {
+  margin-top: 8px;
+}
+
+.rec-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.rec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.rec-header:hover {
+  background: #f8f9fa;
+}
+
+.rec-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rec-date {
+  color: #555;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.finding-count {
+  color: #666;
+  font-size: 13px;
+}
+
+.expand-icon {
+  color: #999;
+  font-size: 12px;
+}
+
+/* Status badge */
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pending  { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-dismissed{ background: #f8d7da; color: #721c24; }
+
+/* Severity pills */
+.sev-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sev-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ── Rec body / findings ─────────────────────────────────────────────────── */
+.rec-body {
+  padding: 0 20px 20px;
+  border-top: 1px solid #f0f0f0;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.no-findings {
+  padding: 20px;
+  text-align: center;
+  color: #28a745;
+  font-weight: 600;
+}
+
+/* ── Finding card ─────────────────────────────────────────────────────────── */
+.finding-card {
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  border-left: 5px solid #dee2e6;
+  background: #fdfdfd;
+}
+
+.finding-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.finding-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.finding-title-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.finding-type-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.finding-title {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 14px;
+}
+
+.finding-desc {
+  margin: 0 0 8px;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.finding-rec {
+  font-size: 12px;
+  color: #333;
+  background: rgba(0,0,0,0.03);
+  padding: 8px 10px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+/* Severity badge (inline) */
+.sev-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Severity color system ───────────────────────────────────────────────── */
+/* Used on: notif-card, finding-card left border + pill/badge bg/fg */
+
+.sev-critical { border-left-color: #dc3545 !important; }
+.sev-critical.sev-badge, .sev-critical.sev-pill { background: #dc3545; color: white; }
+.sev-critical.finding-card { background: #fff8f8; }
+
+.sev-high { border-left-color: #fd7e14 !important; }
+.sev-high.sev-badge, .sev-high.sev-pill { background: #fd7e14; color: white; }
+.sev-high.finding-card { background: #fffbf7; }
+
+.sev-moderate, .sev-medium { border-left-color: #ffc107 !important; }
+.sev-moderate.sev-badge, .sev-medium.sev-badge,
+.sev-moderate.sev-pill, .sev-medium.sev-pill { background: #ffc107; color: #333; }
+.sev-moderate.finding-card, .sev-medium.finding-card { background: #fffef5; }
+
+.sev-low { border-left-color: #17a2b8 !important; }
+.sev-low.sev-badge, .sev-low.sev-pill { background: #17a2b8; color: white; }
+.sev-low.finding-card { background: #f5fdff; }
+
+/* Notification card severity colors */
+.notif-card.sev-critical { border-left-color: #dc3545; background: #fff8f8; }
+.notif-card.sev-high     { border-left-color: #fd7e14; background: #fffbf7; }
+.notif-card.sev-medium   { border-left-color: #ffc107; background: #fffef5; }
+.notif-card.sev-moderate { border-left-color: #ffc107; background: #fffef5; }
+.notif-card.sev-low      { border-left-color: #17a2b8; background: #f5fdff; }
+
+/* ── Rec actions ────────────────────────────────────────────────────────── */
+.rec-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.rec-status-notice {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.status-notice-approved { background: #d4edda; color: #155724; }
+.status-notice-dismissed { background: #f8d7da; color: #721c24; }

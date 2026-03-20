@@ -16,6 +16,7 @@ const MEDICATIONS_SERVICE_URL = process.env.MEDICATIONS_SERVICE_URL || 'http://l
 const VISITS_SERVICE_URL = process.env.VISITS_SERVICE_URL || 'http://localhost:5006';
 const CARE_TEAM_SERVICE_URL      = process.env.CARE_TEAM_SERVICE_URL      || 'http://localhost:5007';
 const AI_ORCHESTRATOR_URL        = process.env.AI_ORCHESTRATOR_URL        || 'http://localhost:5008';
+const COMMS_AGENT_URL            = process.env.COMMS_AGENT_URL            || 'http://localhost:5011';
 
 app.use(cors());
 
@@ -53,6 +54,7 @@ app.get('/health/deep', async (req, res) => {
     { name: 'care-team-service',   url: CARE_TEAM_SERVICE_URL },
     { name: 'registry-service',    url: REGISTRY_SERVICE_URL },
     { name: 'ai-orchestrator',      url: AI_ORCHESTRATOR_URL },
+    { name: 'comms-agent',          url: COMMS_AGENT_URL },
   ];
 
   const checkService = (url) => new Promise((resolve) => {
@@ -92,6 +94,12 @@ app.use(/^\/api\/patients\/[^/]+\/care-team/, createProxyMiddleware(proxyOpts(CA
 
 // /api/ai/* -> AI Orchestrator (5008)
 app.use('/api/ai', createProxyMiddleware(proxyOpts(AI_ORCHESTRATOR_URL)));
+
+// /api/notifications/* -> Comms Agent (5011)  [strip /api prefix]
+app.use('/api/notifications', createProxyMiddleware({
+  ...proxyOpts(COMMS_AGENT_URL),
+  pathRewrite: { '^/api/notifications': '/notifications' }
+}));
 
 // /api/patients (list + identity) -> Patient Service (5002)
 app.use('/api/patients', createProxyMiddleware(proxyOpts(PATIENT_SERVICE_URL)));

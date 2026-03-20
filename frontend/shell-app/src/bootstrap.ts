@@ -80,6 +80,16 @@ const baseRoutes: Routes = [
         loadChildren: () => (import('careTeamApp/CareTeamRoutes') as any).then((m: any) => m.CARE_TEAM_ROUTES)
       },
       {
+        path: 'ai-insights/:patientId',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('aiInsightsApp/AiInsightsModule') as any).then((m: any) => m.AI_INSIGHTS_ROUTES)
+      },
+      {
+        path: 'ai-insights',
+        canActivate: [moduleAvailabilityGuard],
+        loadChildren: () => (import('aiInsightsApp/AiInsightsModule') as any).then((m: any) => m.AI_INSIGHTS_ROUTES)
+      },
+      {
         path: 'procedures/:patientId',
         canActivate: [moduleAvailabilityGuard],
         loadComponent: () => import('./app/components/procedures-wrapper/procedures-wrapper.component').then(m => m.ProceduresWrapperComponent)

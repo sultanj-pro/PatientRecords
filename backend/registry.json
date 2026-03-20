@@ -78,6 +78,17 @@
       "roles": ["admin", "physician"],
       "order": 7,
       "version": "1.0.0"
+    },
+    {
+      "id": "ai-insights",
+      "name": "Care Intelligence",
+      "description": "AI-powered clinical recommendations and care coordination alerts",
+      "icon": "🤖",
+      "path": "ai-insights",
+      "enabled": true,
+      "roles": ["admin", "physician", "nurse", "pharmacist"],
+      "order": 8,
+      "version": "1.0.0"
     }
   ]
 }

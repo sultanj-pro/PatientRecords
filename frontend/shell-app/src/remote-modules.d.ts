@@ -51,6 +51,10 @@ declare module 'careTeamApp/CareTeamRoutes' {
   export const CARE_TEAM_ROUTES: any[];
 }
 
+declare module 'aiInsightsApp/AiInsightsModule' {
+  export const AI_INSIGHTS_ROUTES: any[];
+}
+
 declare module 'proceduresApp/ProceduresModule' {
   export const PROCEDURES_ROUTES: any[];
 }

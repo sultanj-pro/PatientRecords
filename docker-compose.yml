@@ -143,6 +143,7 @@ services:
       - VISITS_SERVICE_URL=http://patientrecord-visits-service:5006
       - CARE_TEAM_SERVICE_URL=http://patientrecord-care-team-service:5007
       - AI_ORCHESTRATOR_URL=http://patientrecord-ai-orchestrator:5008
+      - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
     ports:
       - "5000:5000"
     restart: unless-stopped
@@ -170,6 +171,8 @@ services:
       patientrecord-care-team-service:
         condition: service_healthy
       patientrecord-ai-orchestrator:
+        condition: service_healthy
+      patientrecord-comms-agent:
         condition: service_healthy
     networks:
       - patientrecords

@@ -1,0 +1,140 @@
+<div class="ai-container">
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <div class="ai-header">
+    <div class="header-title">
+      <span class="header-icon">🤖</span>
+      <div>
+        <h1>Care Intelligence</h1>
+        <p class="header-sub">Multi-agent analysis: Medications · Labs · Care Coordination</p>
+      </div>
+    </div>
+    <button
+      class="btn btn-generate"
+      [class.loading]="analyzing"
+      [disabled]="analyzing || !patientId"
+      (click)="generateAnalysis()">
+      <span *ngIf="!analyzing">⚡ Run New Analysis</span>
+      <span *ngIf="analyzing">🔄 Analyzing…</span>
+    </button>
+  </div>
+
+  <!-- ── Error banner ───────────────────────────────────────────────── -->
+  <div *ngIf="recError" class="error-banner">
+    <span>⚠️ {{ recError }}</span>
+    <button class="btn-close" (click)="recError = null">✕</button>
+  </div>
+
+  <!-- ── Pending Notifications panel ──────────────────────────────── -->
+  <div *ngIf="notifications.length > 0" class="notif-panel">
+    <h2 class="section-title">🔔 Real-Time Alerts <span class="badge badge-critical">{{ notifications.length }}</span></h2>
+    <div *ngFor="let n of notifications" class="notif-card" [ngClass]="severityClass(n.severity)">
+      <div class="notif-header">
+        <span class="notif-icon">{{ severityIcon(n.severity) }}</span>
+        <span class="notif-title">{{ n.title }}</span>
+        <button
+          class="btn btn-ack"
+          [disabled]="acknowledgingId === n._id"
+          (click)="acknowledge(n)">
+          {{ acknowledgingId === n._id ? '…' : 'Acknowledge' }}
+        </button>
+      </div>
+      <p class="notif-msg">{{ n.message }}</p>
+      <span class="notif-time">{{ formatDate(n.createdAt) }}</span>
+    </div>
+  </div>
+
+  <!-- ── Loading state ──────────────────────────────────────────────── -->
+  <div *ngIf="loadingRecs" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Loading recommendations…</p>
+  </div>
+
+  <!-- ── Empty state ────────────────────────────────────────────────── -->
+  <div *ngIf="!loadingRecs && recommendations.length === 0 && !recError" class="empty-state">
+    <div class="empty-icon">🤖</div>
+    <h2>No Analysis Yet</h2>
+    <p>Click <strong>Run New Analysis</strong> to generate AI-powered clinical insights for this patient.</p>
+  </div>
+
+  <!-- ── Recommendations list ──────────────────────────────────────── -->
+  <div *ngIf="!loadingRecs && recommendations.length > 0" class="recs-list">
+    <h2 class="section-title">📋 Analysis History</h2>
+
+    <div *ngFor="let rec of recommendations" class="rec-card">
+
+      <!-- Rec header (always visible) -->
+      <div class="rec-header" (click)="toggleExpand(rec._id)">
+        <div class="rec-meta">
+          <span class="rec-date">{{ formatDate(rec.createdAt) }}</span>
+          <span class="status-badge" [ngClass]="'status-' + rec.status">{{ rec.status }}</span>
+          <span class="finding-count">{{ rec.findings?.length || 0 }} findings</span>
+
+          <!-- Severity summary pills -->
+          <div class="sev-pills">
+            <span *ngIf="countBySeverity(rec.findings, 'critical') > 0" class="sev-pill sev-critical">
+              🚨 {{ countBySeverity(rec.findings, 'critical') }}
+            </span>
+            <span *ngIf="countBySeverity(rec.findings, 'high') > 0" class="sev-pill sev-high">
+              ⚠️ {{ countBySeverity(rec.findings, 'high') }}
+            </span>
+            <span *ngIf="(countBySeverity(rec.findings, 'medium') + countBySeverity(rec.findings, 'moderate')) > 0" class="sev-pill sev-medium">
+              🔔 {{ countBySeverity(rec.findings, 'medium') + countBySeverity(rec.findings, 'moderate') }}
+            </span>
+            <span *ngIf="countBySeverity(rec.findings, 'low') > 0" class="sev-pill sev-low">
+              ℹ️ {{ countBySeverity(rec.findings, 'low') }}
+            </span>
+          </div>
+        </div>
+        <span class="expand-icon">{{ isExpanded(rec._id) ? '▲' : '▼' }}</span>
+      </div>
+
+      <!-- Findings detail (collapsible) -->
+      <div *ngIf="isExpanded(rec._id)" class="rec-body">
+
+        <!-- No findings -->
+        <div *ngIf="!rec.findings || rec.findings.length === 0" class="no-findings">
+          ✅ No clinical findings identified.
+        </div>
+
+        <!-- Findings list -->
+        <div *ngFor="let f of findingsBySeverity(rec.findings)" class="finding-card" [ngClass]="severityClass(f.severity)">
+          <div class="finding-header">
+            <span class="finding-icon">{{ severityIcon(f.severity) }}</span>
+            <div class="finding-title-group">
+              <span class="finding-type-label">{{ findingTypeLabel(f.type) }}</span>
+              <span class="finding-title">{{ f.title }}</span>
+            </div>
+            <span class="sev-badge" [ngClass]="severityClass(f.severity)">{{ f.severity }}</span>
+          </div>
+          <p class="finding-desc">{{ f.description }}</p>
+          <div *ngIf="f.recommendation" class="finding-rec">
+            <strong>Recommendation:</strong> {{ f.recommendation }}
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div *ngIf="rec.status === 'pending'" class="rec-actions">
+          <button
+            class="btn btn-approve"
+            [disabled]="isActioning(rec._id)"
+            (click)="approve(rec)">
+            {{ isActioning(rec._id) ? '…' : '✅ Approve Recommendations' }}
+          </button>
+          <button
+            class="btn btn-dismiss"
+            [disabled]="isActioning(rec._id)"
+            (click)="dismiss(rec)">
+            {{ isActioning(rec._id) ? '…' : '❌ Dismiss' }}
+          </button>
+        </div>
+
+        <div *ngIf="rec.status !== 'pending'" class="rec-status-notice" [ngClass]="'status-notice-' + rec.status">
+          {{ rec.status === 'approved' ? '✅ These recommendations have been approved.' : '❌ This analysis was dismissed.' }}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
