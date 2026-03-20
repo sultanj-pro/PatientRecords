@@ -383,6 +383,7 @@ services:
       - VISITS_SERVICE_URL=http://patientrecord-visits-service:5006
       - MEDICATION_AGENT_URL=http://patientrecord-medication-agent:5009
       - LABS_AGENT_URL=http://patientrecord-labs-agent:5010
+      - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
     ports:
       - "5008:5008"
     restart: unless-stopped
@@ -408,6 +409,8 @@ services:
       patientrecord-medication-agent:
         condition: service_healthy
       patientrecord-labs-agent:
+        condition: service_healthy
+      patientrecord-comms-agent:
         condition: service_healthy
     networks:
       - patientrecords
@@ -445,6 +448,32 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    networks:
+      - patientrecords
+
+  patientrecord-comms-agent:
+    build:
+      context: ./backend/services/comms-agent
+      dockerfile: Dockerfile
+    image: patientrecord-comms-agent
+    container_name: patientrecord-comms-agent
+    environment:
+      - PORT=5011
+      - MONGODB_URI=mongodb://admin:admin@patientrecord-mongodb:27017/patientrecords?authSource=admin
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5011/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      patientrecord-mongodb:
+        condition: service_healthy
+      patientrecord-redis:
+        condition: service_healthy
     networks:
       - patientrecords
 

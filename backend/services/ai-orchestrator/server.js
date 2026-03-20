@@ -17,6 +17,7 @@ const MONGODB_URI = process.env.MONGODB_URI ||
   'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 const MEDICATION_AGENT_URL = process.env.MEDICATION_AGENT_URL || 'http://localhost:5009';
 const LABS_AGENT_URL       = process.env.LABS_AGENT_URL       || 'http://localhost:5010';
+const COMMS_AGENT_URL      = process.env.COMMS_AGENT_URL      || 'http://localhost:5011';
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -94,7 +95,7 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
     const context = await buildContext(patientId, req.authHeader);
 
     // Fan out to domain agents in parallel (fail-soft per agent)
-    const [medicationFindings, labsFindings] = await Promise.all([
+    const [medicationFindings, labsFindings, commsFindings] = await Promise.all([
       callAgent(MEDICATION_AGENT_URL, {
         medications: context.medications,
         labs:        context.labs,
@@ -106,12 +107,17 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
         patient:     context.patient,
         medications: context.medications,
       }),
+      callAgent(COMMS_AGENT_URL, {
+        visits:      context.visits,
+        medications: context.medications,
+        patient:     context.patient,
+      }),
     ]);
 
     const findings = [
       ...medicationFindings,
       ...labsFindings,
-      // comms-agent findings will be added in 8.5
+      ...commsFindings,
     ];
 
     const recommendation = await createRecommendation(patientId, context, findings);

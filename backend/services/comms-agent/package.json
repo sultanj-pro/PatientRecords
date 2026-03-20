@@ -1,0 +1,16 @@
+{
+  "name": "comms-agent",
+  "version": "1.0.0",
+  "description": "AI communications & escalation agent for PatientRecords",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "ioredis": "^5.3.2",
+    "mongoose": "^7.6.3"
+  }
+}
