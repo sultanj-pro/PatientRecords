@@ -16,6 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const MONGODB_URI = process.env.MONGODB_URI ||
   'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 const MEDICATION_AGENT_URL = process.env.MEDICATION_AGENT_URL || 'http://localhost:5009';
+const LABS_AGENT_URL       = process.env.LABS_AGENT_URL       || 'http://localhost:5010';
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -93,17 +94,24 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
     const context = await buildContext(patientId, req.authHeader);
 
     // Fan out to domain agents in parallel (fail-soft per agent)
-    const [medicationFindings] = await Promise.all([
+    const [medicationFindings, labsFindings] = await Promise.all([
       callAgent(MEDICATION_AGENT_URL, {
         medications: context.medications,
         labs:        context.labs,
         patient:     context.patient,
       }),
+      callAgent(LABS_AGENT_URL, {
+        labs:        context.labs,
+        vitals:      context.vitals,
+        patient:     context.patient,
+        medications: context.medications,
+      }),
     ]);
 
     const findings = [
       ...medicationFindings,
-      // labs-agent and comms-agent findings will be added in 8.4 and 8.5
+      ...labsFindings,
+      // comms-agent findings will be added in 8.5
     ];
 
     const recommendation = await createRecommendation(patientId, context, findings);
