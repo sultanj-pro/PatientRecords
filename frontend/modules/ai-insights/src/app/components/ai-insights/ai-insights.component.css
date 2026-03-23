@@ -319,6 +319,63 @@
   border-radius: 10px;
 }
 
+/* ── LLM Narrative Summary ───────────────────────────────────────────────── */
+.llm-summary-section {
+  border: 1px solid #d0e8ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: #f0f7ff;
+  overflow: hidden;
+}
+
+.llm-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #1a4f8a;
+  user-select: none;
+}
+
+.llm-summary-header:hover {
+  background: #dceeff;
+}
+
+.llm-badge {
+  display: inline-block;
+  background: #1a4f8a;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+  letter-spacing: 0.5px;
+}
+
+.llm-toggle-icon {
+  font-size: 12px;
+  color: #5a82ad;
+}
+
+.llm-summary-body {
+  border-top: 1px solid #c8dcf5;
+  padding: 12px 16px;
+}
+
+.llm-text {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #2c3e50;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
 /* ── Rec body / findings ─────────────────────────────────────────────────── */
 .rec-body {
   padding: 0 20px 20px;

@@ -22,6 +22,7 @@ interface Recommendation {
   findings: Finding[];
   createdAt: string;
   updatedAt: string;
+  llmSummary?: string | null;
   [key: string]: any;
 }
 
@@ -57,6 +58,9 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
 
   // Which recommendation is expanded
   expandedRecId: string | null = null;
+
+  // LLM summary collapsible state (expanded by default when available)
+  llmExpanded = new Set<string>();
 
   // Approve / dismiss state
   actioning = new Set<string>();
@@ -103,6 +107,8 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
           // Auto-expand the most recent pending recommendation
           const firstPending = this.recommendations.find(r => r.status === 'pending');
           if (firstPending) this.expandedRecId = firstPending._id;
+          // Auto-expand LLM summary for any rec that has one
+          this.recommendations.forEach(r => { if (r.llmSummary) this.llmExpanded.add(r._id); });
           this.loadingRecs = false;
         },
         error: (err) => {
@@ -143,6 +149,8 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
         next: (rec) => {
           this.recommendations = [rec, ...this.recommendations];
           this.expandedRecId = rec._id;
+          // Auto-expand LLM summary if present
+          if (rec.llmSummary) this.llmExpanded.add(rec._id);
           this.analyzing = false;
           // Refresh notifications after analysis (comms-agent may have new ones)
           this.loadNotifications();
@@ -222,6 +230,18 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
 
   isExpanded(id: string): boolean {
     return this.expandedRecId === id;
+  }
+
+  toggleLlm(id: string): void {
+    if (this.llmExpanded.has(id)) {
+      this.llmExpanded.delete(id);
+    } else {
+      this.llmExpanded.add(id);
+    }
+  }
+
+  isLlmExpanded(id: string): boolean {
+    return this.llmExpanded.has(id);
   }
 
   isActioning(id: string): boolean {

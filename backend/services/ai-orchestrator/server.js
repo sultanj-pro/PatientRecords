@@ -18,6 +18,7 @@ const MONGODB_URI = process.env.MONGODB_URI ||
 const MEDICATION_AGENT_URL = process.env.MEDICATION_AGENT_URL || 'http://localhost:5009';
 const LABS_AGENT_URL       = process.env.LABS_AGENT_URL       || 'http://localhost:5010';
 const COMMS_AGENT_URL      = process.env.COMMS_AGENT_URL      || 'http://localhost:5011';
+const LLM_AGENT_URL        = process.env.LLM_AGENT_URL        || 'http://localhost:5013';
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -75,6 +76,27 @@ async function callAgent(url, payload) {
   }
 }
 
+async function callLlmAgent(patientId, context, findings, authHeader) {
+  try {
+    const { data } = await axios.post(
+      `${LLM_AGENT_URL}/summarize`,
+      {
+        patientId,
+        patient:     context.patient,
+        findings,
+        vitals:      context.vitals,
+        medications: context.medications,
+        labs:        context.labs,
+      },
+      { headers: { Authorization: authHeader }, timeout: 130000 }
+    );
+    return data.summary || null;
+  } catch (err) {
+    console.warn('[ai-orchestrator] LLM agent call failed (non-critical):', err.message);
+    return null;
+  }
+}
+
 // ── Health ──────────────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => {
@@ -120,7 +142,10 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
       ...commsFindings,
     ];
 
-    const recommendation = await createRecommendation(patientId, context, findings);
+    // Call LLM agent for narrative summary (fail-soft — null if Ollama unavailable)
+    const llmSummary = await callLlmAgent(patientId, context, findings, req.authHeader);
+
+    const recommendation = await createRecommendation(patientId, context, findings, llmSummary);
     res.status(201).json(recommendation);
   } catch (err) {
     console.error('[ai-orchestrator] recommend error:', err.message);

@@ -126,6 +126,22 @@ services:
     networks:
       - patientrecords
 
+  # AI Insights Micro-Frontend (Care Intelligence - port 4208)
+  patientrecord-ai-insights:
+    build:
+      context: ./frontend
+      dockerfile: modules/ai-insights/Dockerfile
+    image: patientrecord-ai-insights
+    container_name: patientrecord-ai-insights
+    ports:
+      - "4208:4200"
+    restart: unless-stopped
+    depends_on:
+      patientrecord-api-gateway:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
   patientrecord-clinical-notes:
     build:
       context: ./frontend
@@ -160,6 +176,7 @@ services:
       - AI_ORCHESTRATOR_URL=http://patientrecord-ai-orchestrator:5008
       - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
       - CLINICAL_NOTES_URL=http://patientrecord-clinical-notes-service:5012
+      - LLM_AGENT_URL=http://patientrecord-llm-agent:5013
     ports:
       - "5000:5000"
     restart: unless-stopped
@@ -412,6 +429,52 @@ services:
     networks:
       - patientrecords
 
+  patientrecord-ollama:
+    image: ollama/ollama
+    container_name: patientrecord-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - patientrecords
+
+  patientrecord-llm-agent:
+    build:
+      context: ./backend/services/llm-agent
+      dockerfile: Dockerfile
+    image: patientrecord-llm-agent
+    container_name: patientrecord-llm-agent
+    environment:
+      - PORT=5013
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - OLLAMA_URL=http://patientrecord-ollama:11434
+      - OLLAMA_MODEL=llama3
+      - CLINICAL_NOTES_URL=http://patientrecord-clinical-notes-service:5012
+    ports:
+      - "5013:5013"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5013/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      patientrecord-ollama:
+        condition: service_started
+      patientrecord-clinical-notes-service:
+        condition: service_healthy
+    networks:
+      - patientrecords
+
   patientrecord-ai-orchestrator:
     build:
       context: ./backend/services/ai-orchestrator
@@ -430,6 +493,7 @@ services:
       - MEDICATION_AGENT_URL=http://patientrecord-medication-agent:5009
       - LABS_AGENT_URL=http://patientrecord-labs-agent:5010
       - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
+      - LLM_AGENT_URL=http://patientrecord-llm-agent:5013
     ports:
       - "5008:5008"
     restart: unless-stopped
@@ -610,6 +674,8 @@ volumes:
   mongo_data:
     driver: local
   redis-data:
+    driver: local
+  ollama_data:
     driver: local
 
 networks:

@@ -18,6 +18,7 @@ const CARE_TEAM_SERVICE_URL      = process.env.CARE_TEAM_SERVICE_URL      || 'ht
 const AI_ORCHESTRATOR_URL        = process.env.AI_ORCHESTRATOR_URL        || 'http://localhost:5008';
 const COMMS_AGENT_URL            = process.env.COMMS_AGENT_URL            || 'http://localhost:5011';
 const CLINICAL_NOTES_URL         = process.env.CLINICAL_NOTES_URL         || 'http://localhost:5012';
+const LLM_AGENT_URL              = process.env.LLM_AGENT_URL              || 'http://localhost:5013';
 
 app.use(cors());
 
@@ -57,6 +58,7 @@ app.get('/health/deep', async (req, res) => {
     { name: 'ai-orchestrator',      url: AI_ORCHESTRATOR_URL },
     { name: 'comms-agent',          url: COMMS_AGENT_URL },
     { name: 'clinical-notes',       url: CLINICAL_NOTES_URL },
+    { name: 'llm-agent',            url: LLM_AGENT_URL },
   ];
 
   const checkService = (url) => new Promise((resolve) => {

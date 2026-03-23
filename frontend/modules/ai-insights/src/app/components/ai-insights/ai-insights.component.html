@@ -92,6 +92,17 @@
       <!-- Findings detail (collapsible) -->
       <div *ngIf="isExpanded(rec._id)" class="rec-body">
 
+        <!-- LLM Narrative Summary -->
+        <div *ngIf="rec.llmSummary" class="llm-summary-section">
+          <div class="llm-summary-header" (click)="toggleLlm(rec._id)">
+            <span>🧠 Clinical Summary <span class="llm-badge">llama3</span></span>
+            <span class="llm-toggle-icon">{{ isLlmExpanded(rec._id) ? '▲' : '▼' }}</span>
+          </div>
+          <div *ngIf="isLlmExpanded(rec._id)" class="llm-summary-body">
+            <pre class="llm-text">{{ rec.llmSummary }}</pre>
+          </div>
+        </div>
+
         <!-- No findings -->
         <div *ngIf="!rec.findings || rec.findings.length === 0" class="no-findings">
           ✅ No clinical findings identified.
