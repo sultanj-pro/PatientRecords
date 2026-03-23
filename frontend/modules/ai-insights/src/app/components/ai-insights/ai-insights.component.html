@@ -10,6 +10,7 @@
       </div>
     </div>
     <button
+      *ngIf="canApprove"
       class="btn btn-generate"
       [class.loading]="analyzing"
       [disabled]="analyzing || !patientId"
@@ -17,6 +18,7 @@
       <span *ngIf="!analyzing">⚡ Run New Analysis</span>
       <span *ngIf="analyzing">🔄 Analyzing…</span>
     </button>
+    <span *ngIf="!canApprove" class="role-badge nurse-badge">👩‍⚕️ Nurse View</span>
   </div>
 
   <!-- ── Error banner ───────────────────────────────────────────────── -->
@@ -124,8 +126,8 @@
           </div>
         </div>
 
-        <!-- Action buttons -->
-        <div *ngIf="rec.status === 'pending'" class="rec-actions">
+        <!-- Action buttons — physician/admin only -->
+        <div *ngIf="rec.status === 'pending' && canApprove" class="rec-actions">
           <button
             class="btn btn-approve"
             [disabled]="isActioning(rec._id)"
@@ -138,6 +140,11 @@
             (click)="dismiss(rec)">
             {{ isActioning(rec._id) ? '…' : '❌ Dismiss' }}
           </button>
+        </div>
+
+        <!-- Nurse view: pending approval notice -->
+        <div *ngIf="rec.status === 'pending' && !canApprove" class="rec-status-notice status-notice-nurse">
+          🔒 Pending physician review — approval required by a physician or administrator.
         </div>
 
         <div *ngIf="rec.status !== 'pending'" class="rec-status-notice" [ngClass]="'status-notice-' + rec.status">

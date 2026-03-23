@@ -509,5 +509,22 @@
   text-align: center;
 }
 
-.status-notice-approved { background: #d4edda; color: #155724; }
+.status-notice-approved  { background: #d4edda; color: #155724; }
 .status-notice-dismissed { background: #f8d7da; color: #721c24; }
+.status-notice-nurse     { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+
+/* ── Role badge (header) ─────────────────────────────────────────────────── */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nurse-badge {
+  background: #e8f4fd;
+  color: #1a6ca8;
+  border: 1px solid #b8d9f5;
+}

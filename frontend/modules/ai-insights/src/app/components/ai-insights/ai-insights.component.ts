@@ -73,6 +73,23 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private readonly apiBase = 'http://localhost:5000';
 
+  /** Role decoded from the JWT payload — no verification needed client-side. */
+  readonly userRole: string = (() => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) return 'nurse';
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role || 'nurse';
+    } catch {
+      return 'nurse';
+    }
+  })();
+
+  /** Only physicians and admins may approve or dismiss recommendations. */
+  get canApprove(): boolean {
+    return this.userRole === 'physician' || this.userRole === 'admin';
+  }
+
   constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
