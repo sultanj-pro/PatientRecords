@@ -1,6 +1,0 @@
-version: '3.8'
-services:
-  # Use an existing Postgres container instead of creating a new one.
-  # Ensure the existing container is reachable on the compose network by name.
-
-# No volumes declared; using existing Postgres container

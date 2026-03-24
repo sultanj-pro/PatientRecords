@@ -78,6 +78,28 @@
       "roles": ["admin", "physician"],
       "order": 7,
       "version": "1.0.0"
+    },
+    {
+      "id": "ai-insights",
+      "name": "Care Intelligence",
+      "description": "AI-powered clinical recommendations and care coordination alerts",
+      "icon": "🤖",
+      "path": "ai-insights",
+      "enabled": true,
+      "roles": ["admin", "physician", "nurse", "pharmacist"],
+      "order": 8,
+      "version": "1.0.0"
+    },
+    {
+      "id": "clinical-notes",
+      "name": "Clinical Notes",
+      "description": "Provider observations, diagnostics, prognosis and care plans",
+      "icon": "📝",
+      "path": "clinical-notes",
+      "enabled": true,
+      "roles": ["admin", "physician", "nurse"],
+      "order": 9,
+      "version": "1.0.0"
     }
   ]
 }
