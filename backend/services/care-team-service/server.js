@@ -132,7 +132,11 @@ app.delete('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, 
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Care Team Service listening on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Care Team Service listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
 

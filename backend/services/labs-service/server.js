@@ -82,7 +82,11 @@ app.post('/api/patients/:id/labs', authMiddleware, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Labs Service listening on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Labs Service listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
 

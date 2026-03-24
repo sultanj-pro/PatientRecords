@@ -172,7 +172,11 @@ app.patch('/api/admin/registry/modules/:id/toggle', adminMiddleware, async (req,
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Registry Service listening on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Registry Service listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
 

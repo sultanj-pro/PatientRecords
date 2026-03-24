@@ -24,7 +24,7 @@ jest.mock('mongoose', () => ({
   model: jest.fn().mockImplementation(() => MockModel),
 }));
 
-jest.mock('./shared/eventPublisher', () => ({ publishEvent: jest.fn().mockResolvedValue(true) }));
+jest.mock('./shared/eventPublisher', () => ({ publishEvent: jest.fn().mockResolvedValue(true) }), { virtual: true });
 
 let app;
 beforeAll(() => { app = require('./server'); });

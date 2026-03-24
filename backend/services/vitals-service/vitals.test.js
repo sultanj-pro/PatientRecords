@@ -23,7 +23,7 @@ jest.mock('mongoose', () => ({
   model: jest.fn().mockImplementation(() => MockModel),
 }));
 
-jest.mock('./shared/eventPublisher', () => ({ publishEvent: jest.fn().mockResolvedValue(true) }));
+jest.mock('./shared/eventPublisher', () => ({ publishEvent: jest.fn().mockResolvedValue(true) }), { virtual: true });
 
 // ── Load app after mocks ───────────────────────────────────────────────────
 let app;

@@ -19,20 +19,20 @@ describe('comms-agent escalation rules', () => {
     }
   });
 
-  it('critical lab result rule triggers on critically high glucose', () => {
-    const criticalLabRule = EVENT_ESCALATION_RULES.find(r =>
-      r.eventType === 'labs-resulted' && r.id.includes('critical')
+  it('critical troponin rule triggers on elevated troponin', () => {
+    const troponinRule = EVENT_ESCALATION_RULES.find(r =>
+      r.eventType === 'labs-resulted' && r.id === 'labs-critical-troponin'
     );
-    if (!criticalLabRule) return; // rule may not exist yet — skip gracefully
+    if (!troponinRule) return; // rule may not exist yet — skip gracefully
 
     const payload = {
       patientId: '20001',
-      testName: 'Glucose',
-      value: 510,
-      unit: 'mg/dL',
+      testName: 'Troponin I',
+      value: 0.10,
+      unit: 'ng/mL',
     };
-    expect(criticalLabRule.match(payload)).toBe(true);
-    expect(criticalLabRule.title(payload)).toBeTruthy();
+    expect(troponinRule.match(payload)).toBe(true);
+    expect(troponinRule.title(payload)).toBeTruthy();
   });
 
   it('rules do not trigger on normal lab values', () => {
