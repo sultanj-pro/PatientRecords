@@ -21,16 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 5006;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
-const patientSchema = new mongoose.Schema({
-  patientid: { type: Number, unique: true, required: true },
-  visits: [{
-    date: String, visitType: { type: String, enum: ['hospital', 'clinic', 'office'] },
-    reason: String, notes: String, provider_name: String, facility_name: String,
-    discharge_status: String, deletedAt: { type: Date, default: null }
-  }]
-}, { strict: false, timestamps: true });
-
-const Patient = mongoose.model('Patient', patientSchema);
+const getRepository = require('../../shared/repositories/repositoryFactory');
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
@@ -56,9 +47,11 @@ app.get('/health', (req, res) => {
 // GET /api/patients/:id/visits
 app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json((patient.visits || []).filter(v => !v.deletedAt).map(v => ({
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('visits');
+    const visits = await repo.getVisits(patientId);
+    if (visits === null) return res.status(404).json({ error: 'not found' });
+    res.json(visits.filter(v => !v.deletedAt).map(v => ({
       id: v._id?.toString(), visitDate: v.date, visitType: v.visitType, reason: v.reason,
       notes: v.notes, provider: v.provider_name, department: v.facility_name, discharge_status: v.discharge_status
     })));
@@ -70,15 +63,14 @@ app.get('/api/patients/:id/visits', authMiddleware, async (req, res) => {
 // POST /api/patients/:id/visits
 app.post('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    const patientId = parseInt(req.params.id);
     if (!req.body.date || !req.body.visitType)
       return res.status(400).json({ error: 'date and visitType are required' });
     if (!['hospital', 'clinic', 'office'].includes(req.body.visitType))
       return res.status(400).json({ error: 'visitType must be hospital, clinic, or office' });
-    patient.visits.push(req.body);
-    patient.markModified('visits');
-    await patient.save();
+    const repo = getRepository('visits');
+    const patient = await repo.addVisit(patientId, req.body);
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
     publishEvent('visit-completed', { patientId: req.params.id, visitType: req.body.visitType });
     res.status(201).json(req.body);
   } catch (err) {

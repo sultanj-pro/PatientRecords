@@ -8,16 +8,21 @@
 |---|---|---|
 | Frontend Shell | Port 4200 (Angular 17) | Auth, routing, patient search, admin dashboard |
 | Micro-Frontends | 4201–4207 (6 Angular + 1 React) | Demographics, Vitals, Labs, Medications, Visits, Care Team, Procedures |
-| API Gateway | Port 5000 | Single entry point; JWT validation; routes to all services |
-| Auth Service | Port 5001 | Login, token refresh, logout |
-| Patient Service | Port 5002 | Patient CRUD |
+| API Gateway | Port 5000 | Single entry point; JWT validation; routes to all services; Swagger at `/api-docs` |
+| Auth Service | Port 5001 | Login, token refresh, logout; role derived from username |
+| Patient Service | Port 5002 | Patient CRUD, search |
 | Clinical Services | Ports 5003–5007 | Vitals, Labs, Medications, Visits, Care Team |
+| Clinical Notes Service | Port 5012 | Free-text clinical notes (CRUD, separate `clinical_notes` collection) |
 | Registry Service | Port 5100 | Plugin metadata + admin API (enable/disable modules, role management) |
-| MongoDB | Port 27017 | Shared data store |
+| AI Orchestrator | Port 5300 | Multi-agent recommendation engine; delegates to specialized agents |
+| AI Agents | — | Medication Agent, Labs Agent, LLM Agent, Comms Agent |
+| MongoDB | Port 27017 | Primary data store — `patients` + `clinical_notes` collections |
+| Redis | Port 6379 | Pub/sub event bus for inter-service events (`eventPublisher.js`) |
+| Repository Pattern | `backend/shared/repositories/` | Adapter-based DAL; `DB_ADAPTER` env var selects backend |
 
 ---
 
-# PatientRecords Phase 4 - Visual System Diagram
+# PatientRecords - Visual System Diagram
 
 ## Overall System Architecture
 
@@ -96,40 +101,102 @@
 ┃                   API Gateway: http://localhost:5000                    ┃
 ┃                                                                          ┃
 ┃  API Gateway (5000) ─ routes /api/* traffic                           ┃
-┃  ├─ Auth Service      (5001) ─ /auth/login, /auth/refresh             ┃
-┃  ├─ Patient Service   (5002) ─ /api/patients                          ┃
-┃  ├─ Vitals Service    (5003) ─ /api/patients/:id/vitals               ┃
-┃  ├─ Labs Service      (5004) ─ /api/patients/:id/labs                 ┃
-┃  ├─ Medications Svc   (5005) ─ /api/patients/:id/medications          ┃
-┃  ├─ Visits Service    (5006) ─ /api/patients/:id/visits               ┃
-┃  ├─ Care Team Service (5007) ─ /api/patients/:id/care-team            ┃
-┃  └─ Registry Service  (5100) ─ /api/modules, /api/admin/registry      ┃
+┃  ├─ Auth Service         (5001) ─ /auth/login, /auth/refresh           ┃
+┃  ├─ Patient Service      (5002) ─ /api/patients                        ┃
+┃  ├─ Vitals Service       (5003) ─ /api/patients/:id/vitals             ┃
+┃  ├─ Labs Service         (5004) ─ /api/patients/:id/labs               ┃
+┃  ├─ Medications Svc      (5005) ─ /api/patients/:id/medications        ┃
+┃  ├─ Visits Service       (5006) ─ /api/patients/:id/visits             ┃
+┃  ├─ Care Team Service    (5007) ─ /api/patients/:id/care-team          ┃
+┃  ├─ Clinical Notes Svc   (5012) ─ /api/clinical-notes                  ┃
+┃  ├─ Registry Service     (5100) ─ /api/modules, /api/admin/registry    ┃
+┃  └─ AI Orchestrator      (5300) ─ /api/ai/recommend/:patientId         ┃
+┃       └─ Agents: Medication · Labs · LLM · Comms                       ┃
 ┃                                                                          ┃
 ┃  All services: structured JSON logging + /health endpoint              ┃
 ┃  Gateway: /health/deep aggregates health across all services           ┃
 ┃                                                                          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                     ↓
+                     Repository Pattern (shared/repositories/)
+                     DB_ADAPTER=mongo → MongoXxxRepository adapters
+                                    ↓
                             MongoDB Queries
                                     ↓
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                        DATABASE (MongoDB)                               ┃
+┃                        DATABASE (MongoDB :27017)                         ┃
 ┃                                                                          ┃
 ┃  patientrecords                                                        ┃
-┃  └─ patients collection                                                ┃
+┃  ├─ patients collection                                                ┃
+┃  │  ├─ _id: ObjectId                                                  ┃
+┃  │  ├─ patientid: Number                                              ┃
+┃  │  ├─ firstname / lastname: String                                   ┃
+┃  │  ├─ demographics: Array                                            ┃
+┃  │  ├─ vitals: Array        (soft-delete on new vital)                ┃
+┃  │  ├─ labs: Array                                                    ┃
+┃  │  ├─ medications: Array                                             ┃
+┃  │  ├─ visits: Array        (visitType: hospital/clinic/office)       ┃
+┃  │  └─ careTeam: Array                                                ┃
+┃  └─ clinical_notes collection                                          ┃
 ┃     ├─ _id: ObjectId                                                  ┃
-┃     ├─ patientid: Number                                              ┃
-┃     ├─ firstname: String                                              ┃
-┃     ├─ lastname: String                                               ┃
-┃     ├─ demographics: Array                                            ┃
-┃     ├─ vitals: Array                                                  ┃
-┃     │  └─ Auto-retirement on new vital (soft delete)                 ┃
-┃     ├─ labs: Array                                                    ┃
-┃     ├─ medications: Array                                             ┃
-┃     └─ visits: Array                                                  ┃
-┃        └─ visitType: enum (hospital, clinic, office)                  ┃
+┃     ├─ patientId: Number                                              ┃
+┃     ├─ authorId / authorName: String                                  ┃
+┃     ├─ noteType: String                                               ┃
+┃     ├─ content: String                                                ┃
+┃     └─ createdAt / updatedAt: Date                                    ┃
 ┃                                                                          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+                Redis Pub/Sub Event Bus (:6379)
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  eventPublisher.js (backend/shared/)                                    ┃
+┃  publish(channel, payload) ─ any service can fire an event             ┃
+┃  subscribe(channel, handler) ─ any service can react                   ┃
+┃  Typical events: patient.updated · vital.added · lab.added             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+---
+
+## Repository Pattern / Data Access Layer
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│              REPOSITORY PATTERN (backend/shared/repositories/)        │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  Service Route Handler                                                 │
+│  (vitals-service, labs-service, medications-service, ...)             │
+│                  │                                                     │
+│                  │  const repo = getRepository('vitals')              │
+│                  ▼                                                     │
+│  ┌─────────────────────────────────────────┐                          │
+│  │  repositoryFactory.js                   │                          │
+│  │  DB_ADAPTER env var → select adapter    │                          │
+│  │  default: 'mongo'                       │                          │
+│  └──────────────┬──────────────────────────┘                          │
+│                 │                                                       │
+│                 ▼                                                       │
+│  ┌──────────────────────────────────────────────────┐                 │
+│  │  Interface (e.g., IVitalsRepository)             │                 │
+│  │  getVitals(patientId)                            │                 │
+│  │  addVital(patientId, vital)                      │                 │
+│  └──────────────┬───────────────────────────────────┘                 │
+│                 │                                                       │
+│        ┌────────┴─────────────┐                                        │
+│        ▼                      ▼  (future adapters)                    │
+│  MongoVitalsRepository   PostgresVitalsRepository  ...                │
+│  (Mongoose queries)      (pg queries)                                  │
+│                  │                                                     │
+│                  ▼                                                     │
+│              MongoDB :27017                                            │
+│                                                                        │
+│  Services using Repository Pattern:                                    │
+│  patient · vitals · labs · medications · visits · care-team · notes   │
+│                                                                        │
+│  To switch database: set DB_ADAPTER=postgres (when adapter exists)    │
+│  Zero changes needed in service route handlers.                       │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -230,8 +297,13 @@
 │                 [Medications] [Visits] [Care Team]    │
 │                 [Procedures]  (7/7)                   │
 │                                                         │
-│ NURSE sees: [Demographics] [Vitals] (2/7)            │
+│ NURSE sees: [Demographics] [Vitals] (2/7 by default) │
 │             (configurable via Admin Dashboard)         │
+│                                                         │
+│ Role derived from username at login:                   │
+│   "admin"      → admin role                            │
+│   starts "doc" → physician role                        │
+│   anything else → nurse role                           │
 │                                                         │
 │ Note: Module visibility is registry-driven and        │
 │ editable at runtime — no code changes required.       │
@@ -645,50 +717,53 @@ Every API Request:
 MODULE VISIBILITY FLOW:
 ───────────────────────
 
-User logs in as: Clinician
+User logs in as: physician
          ↓
-    Extract role: "clinician" (from JWT)
+    Extract role: "physician" (from JWT; username started with "doc")
          ↓
-    ModuleLoaderService.getVisibleModulesForRole("clinician")
+    GET /api/modules → Registry Service returns module list
          ↓
-    Look up in AVAILABLE_MODULES array:
+    Filter: modules where allowedRoles.includes("physician")
     
     {
-      name: "demographics",
-      requiredRoles: ["admin", "clinician", "nurse", "patient"]
-      ✓ clinician IN requiredRoles → VISIBLE
+      name: "demographics", allowedRoles: ["admin", "physician", "nurse"]
+      ✓ physician IN allowedRoles → VISIBLE
     },
     {
-      name: "vitals",
-      requiredRoles: ["admin", "clinician", "nurse"]
-      ✓ clinician IN requiredRoles → VISIBLE
+      name: "vitals", allowedRoles: ["admin", "physician", "nurse"]
+      ✓ physician IN allowedRoles → VISIBLE
     },
     {
-      name: "labs",
-      requiredRoles: ["admin", "clinician", "nurse", "patient"]
-      ✓ clinician IN requiredRoles → VISIBLE
+      name: "labs", allowedRoles: ["admin", "physician"]
+      ✓ physician IN allowedRoles → VISIBLE
     },
     {
-      name: "medications",
-      requiredRoles: ["admin", "clinician", "nurse", "pharmacist"]
-      ✓ clinician IN requiredRoles → VISIBLE
+      name: "medications", allowedRoles: ["admin", "physician"]
+      ✓ physician IN allowedRoles → VISIBLE
     },
     {
-      name: "visits",
-      requiredRoles: ["admin", "patient", "receptionist"]
-      ✗ clinician NOT IN requiredRoles → HIDDEN
+      name: "visits", allowedRoles: ["admin", "physician"]
+      ✓ physician IN allowedRoles → VISIBLE
+    },
+    {
+      name: "care-team", allowedRoles: ["admin", "physician"]
+      ✓ physician IN allowedRoles → VISIBLE
+    },
+    {
+      name: "procedures", allowedRoles: ["admin", "physician"]
+      ✓ physician IN allowedRoles → VISIBLE
     }
          ↓
     Return filtered array:
-    [demographics, vitals, labs, medications]
+    [demographics, vitals, labs, medications, visits, care-team, procedures]
          ↓
     Dashboard renders tabs:
     [👤 Demographics] [💓 Vitals] [🧬 Labs] [💊 Medications]
-    (Visits tab is not rendered)
+    [📅 Visits] [👥 Care Team] [🔬 Procedures]
+    (All 7 modules visible for physician)
 ```
 
 ---
 
 **Complete System Documentation**  
-*Generated: January 22, 2026*  
-*PatientRecords Micro-Frontend System - Phase 4*
+*PatientRecords Micro-Frontend + Microservices System*

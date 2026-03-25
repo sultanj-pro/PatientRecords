@@ -101,7 +101,9 @@ See **[LESSONS_LEARNED.md](./LESSONS_LEARNED.md)** for 20+ years of patterns and
 
 ### Current State (Implemented)
 
-- **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Registry (5100), all in separate containers
+- **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Clinical Notes (5012) + Registry (5100) + AI Orchestrator (5300), all in separate containers
+- **Redis Event Bus** — Pub/sub messaging between services via `eventPublisher.js`
+- **Repository Pattern** — Adapter-based data access layer; services depend on interfaces, not Mongoose directly; switchable via `DB_ADAPTER` env var
 - **Admin Dashboard** — Runtime module management: enable/disable modules, edit per-module role permissions, view service health grid
 - **7 Micro-frontends** — 6 Angular modules + 1 React module, all dynamically loaded via plugin registry
 
@@ -114,8 +116,10 @@ This foundation will evolve into:
 
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
-- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, and procedures
-- **Microservices backend** — API Gateway routing to 8 independent domain services
+- **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, procedures, and clinical notes
+- **Microservices backend** — API Gateway routing to 15+ independent domain services and AI agents
+- **Repository Pattern** — Adapter-based data access layer; `DB_ADAPTER` env var selects storage backend
+- **Redis event bus** — Async inter-service events via pub/sub (`eventPublisher.js`)
 - **Admin Dashboard** — Runtime module management with enable/disable toggles and per-module role editor
 - **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
 - **Real-time patient context sync** across all modules using Observable pattern
@@ -123,7 +127,7 @@ This foundation will evolve into:
 - **Role-based access control** (RBAC) for clinical workflows — roles: `admin`, `physician`, `nurse`
 - **Framework-agnostic module loading** — load Angular or React modules dynamically
 - **Responsive web design** for desktop and tablet use
-- **Containerized deployment** using Docker and Docker Compose (17 containers)
+- **Containerized deployment** using Docker and Docker Compose (~29 containers)
 - **Comprehensive API** with OpenAPI/Swagger documentation and structured JSON logging
 
 [⬆️ Back to Top](#table-of-contents)
@@ -148,9 +152,13 @@ This foundation will evolve into:
 - **Medications Service** (port 5005) — Medication management
 - **Visits Service** (port 5006) — Clinical encounter records
 - **Care Team Service** (port 5007) — Team member management
+- **Clinical Notes Service** (port 5012) — Free-text clinical notes CRUD
 - **Registry Service** (port 5100) — Plugin registry: module metadata, enable/disable, role management
+- **AI Orchestrator** (port 5300) — Multi-agent recommendation engine (Medication, Labs, LLM, Comms agents)
 - **Node.js 18+ / Express.js** — Runtime and framework for all services
-- **MongoDB with Mongoose** — Shared NoSQL data store
+- **MongoDB with Mongoose** — NoSQL data store (`patients` + `clinical_notes` collections)
+- **Repository Pattern** — `backend/shared/repositories/` — interfaces + adapters (Mongoose); adapter selected by `DB_ADAPTER` env var
+- **Redis** — Pub/sub event bus for inter-service async events
 - **JWT (jsonwebtoken)** — Stateless auth; role derived from username (`admin`→admin, `doc*`→physician, else→nurse)
 - **Swagger/OpenAPI** — API documentation at `/api-docs` on every service
 - **Jest** — Testing framework with coverage reporting
@@ -232,8 +240,7 @@ Two-tier approach for uninterrupted user experience:
 ```json
 {
   "sub": "user_id",
-  "email": "user@example.com",
-  "roles": ["doctor", "admin"],
+  "role": "physician",
   "iat": 1234567890,
   "exp": 1234571490
 }
@@ -269,7 +276,7 @@ Two-tier approach for uninterrupted user experience:
    docker compose ps
    ```
 
-   Expected output (17 containers):
+   Expected output (~29 containers, including clinical-notes 5012, AI orchestrator 5300, Redis):
    ```
    NAME                                STATUS    PORTS
    # Frontend micro-frontends
@@ -289,9 +296,12 @@ Two-tier approach for uninterrupted user experience:
    patientrecord-labs-service          Up        0.0.0.0:5004->5004/tcp
    patientrecord-medications-service   Up        0.0.0.0:5005->5005/tcp
    patientrecord-visits-service        Up        0.0.0.0:5006->5006/tcp
-   patientrecord-care-team-service     Up        0.0.0.0:5007->5007/tcp
-   patientrecord-registry-service      Up        0.0.0.0:5100->5100/tcp
-   patientrecord-mongo                 Up        0.0.0.0:27017->27017/tcp
+   patientrecord-care-team-service      Up        0.0.0.0:5007->5007/tcp
+   patientrecord-clinical-notes-service  Up        0.0.0.0:5012->5012/tcp
+   patientrecord-registry-service        Up        0.0.0.0:5100->5100/tcp
+   patientrecord-ai-orchestrator         Up        0.0.0.0:5300->5300/tcp
+   patientrecord-mongo                   Up        0.0.0.0:27017->27017/tcp
+   patientrecord-redis                   Up        0.0.0.0:6379->6379/tcp
    ```
 
 4. **Access the application**
@@ -693,11 +703,7 @@ Response:
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
   "expiresIn": 3600,
-  "user": {
-    "id": "user_id",
-    "email": "user@example.com",
-    "roles": ["doctor"]
-  }
+  "role": "physician"
 }
 ```
 

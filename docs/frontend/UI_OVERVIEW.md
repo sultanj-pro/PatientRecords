@@ -1,8 +1,8 @@
 # PatientRecords Micro-Frontend System - UI Overview
 
 **Date:** January 22, 2026  
-**Status:** Phase 4 Complete - Ready for Preview  
-**System Status:** ✅ 90% Complete
+**Status:** ✅ Production Running  
+**System Status:** ✅ All 7 modules available — admin, physician, nurse roles
 
 ---
 
@@ -21,29 +21,31 @@ FRONTEND LAYER (Angular 17)
 │  ├─ Patient Search Component
 │  └─ Modules Dashboard (NEW)
 │
-└─ Micro-Frontend Modules (Ports 4201-4205)
+└─ Micro-Frontend Modules (Ports 4201–4207)
    ├─ Demographics Module (Port 4201)
    ├─ Vitals Module (Port 4202)
    ├─ Labs Module (Port 4203)
    ├─ Medications Module (Port 4204)
-   └─ Visits Module (Port 4205)
+   ├─ Visits Module (Port 4205)
+   ├─ Care Team Module (Port 4206)
+   └─ Procedures Module (Port 4207 — React 18)
 
-BACKEND LAYER (Node.js/Express)
-├─ API Server (Port 5001)
-│  ├─ Patients Endpoints
-│  ├─ Vitals Endpoints
-│  ├─ Labs Endpoints
-│  ├─ Medications Endpoints
-│  └─ Visits Endpoints (Consolidated)
-│
-└─ Database (MongoDB)
-   └─ Patient Records Collection
+BACKEND LAYER (Microservices)
+├─ API Gateway (Port 5000) — single entry point
+├─ Auth Service (Port 5001)
+├─ Patient Service (Port 5002)
+├─ Vitals Service (Port 5003)
+├─ Labs Service (Port 5004)
+├─ Medications Service (Port 5005)
+├─ Visits Service (Port 5006)
+├─ Care Team Service (Port 5007)
+├─ Clinical Notes Service (Port 5012)
+├─ Registry Service (Port 5100)
+└─ AI Orchestrator (Port 5300)
 
-INFRASTRUCTURE
-├─ Docker Containers
-├─ Webpack Module Federation
-├─ npm Workspaces
-└─ Git Version Control
+DATABASE LAYER
+├─ MongoDB (Port 27017) — `patients` + `clinical_notes` collections
+└─ Redis (Port 6379) — pub/sub event bus
 ```
 
 ---
@@ -415,12 +417,13 @@ Access: 1/5 module
 - **Build Tool:** Angular CLI
 
 ### Backend
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Database:** MongoDB
-- **Authentication:** JWT
-- **API:** RESTful with OpenAPI docs
-- **Testing:** Jest with 71.88% coverage
+- **Runtime:** Node.js 18+
+- **Framework:** Express.js (microservices)
+- **Database:** MongoDB + Redis (event bus)
+- **Authentication:** JWT (role derived from username)
+- **API:** RESTful with OpenAPI docs at `/api-docs`
+- **Data Access:** Repository Pattern (`backend/shared/repositories/`)
+- **Smoke Tests:** 40/40 passing
 
 ### Infrastructure
 - **Containerization:** Docker
@@ -433,12 +436,11 @@ Access: 1/5 module
 
 ### Development Mode
 
-**Backend:**
+**Backend (via Docker Compose):**
 ```bash
-cd backend
-npm install
-npm start
-# Server running on http://localhost:5001
+docker compose up -d
+# API Gateway on http://localhost:5000
+# All microservices started automatically
 ```
 
 **Shell App (Port 4200):**
@@ -448,7 +450,7 @@ npm install
 ng serve --port 4200 --open
 ```
 
-**Modules (Ports 4201-4205):**
+**Modules (Ports 4201–4207):**
 ```bash
 # In separate terminals:
 cd frontend/modules/demographics && ng serve --port 4201
@@ -456,6 +458,8 @@ cd frontend/modules/vitals && ng serve --port 4202
 cd frontend/modules/labs && ng serve --port 4203
 cd frontend/modules/medications && ng serve --port 4204
 cd frontend/modules/visits && ng serve --port 4205
+cd frontend/modules/care-team && ng serve --port 4206
+cd frontend/modules/procedures && npm start  # React 18, port 4207
 ```
 
 ### Production Mode
@@ -506,7 +510,7 @@ docker compose up -d --build
 - Comprehensive UI components
 - Responsive design
 - 27 backend tests passing
-- 71.88% code coverage
+- 40/40 smoke tests passing
 
 ### Remaining Tasks ⏳
 1. Backend CORS configuration
@@ -552,7 +556,7 @@ docker compose up -d --build
 PatientRecords/
 ├── backend/
 │   ├── src/
-│   │   └── models/ (27 tests, 71.88% coverage)
+│   │   └── models/ (40 smoke tests passing)
 │   ├── Dockerfile
 │   └── package.json
 │
@@ -599,4 +603,4 @@ PatientRecords/
 ---
 
 *Generated: January 22, 2026*  
-*PatientRecords Micro-Frontend System - Phase 4*
+*PatientRecords Micro-Frontend + Microservices System*

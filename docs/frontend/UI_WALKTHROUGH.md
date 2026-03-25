@@ -1,28 +1,27 @@
 # PatientRecords Micro-Frontend System - Interactive UI Walkthrough
 
-**Status:** System Built & Ready | Backend Running on Port 3001 ✅  
-**Backend API:** http://localhost:3001  
-**Frontend (when Node upgraded):** http://localhost:4200
+**Status:** ✅ Production Running | API Gateway on Port 5000  
+**Backend API:** http://localhost:5000  
+**Frontend:** http://localhost:4200
 
 ---
 
 ## System Status Summary
 
 ```
-✅ Backend API Server
-   ├─ Running on http://localhost:3001
-   ├─ Swagger UI: http://localhost:3001/api-docs  
+✅ Backend Microservices (via Docker Compose)
+   ├─ API Gateway on http://localhost:5000
+   ├─ Swagger UI: http://localhost:5000/api-docs  
    ├─ MongoDB connected to patientrecords database
-   ├─ 3 patient records loaded
-   ├─ 27 unit tests passing
-   └─ 71.88% code coverage
+   ├─ Redis event bus running
+   ├─ 15+ microservices healthy
+   └─ 40 smoke tests passing
 
-⏳ Frontend Shell App (Port 4200)
-   ├─ All TypeScript files compiled
-   ├─ All Angular modules configured
-   ├─ Webpack Module Federation setup complete
-   ├─ Role-based module loading system ready
-   └─ Waiting for Node.js 18.19+ (currently 18.16.0)
+✅ Frontend Shell App (Port 4200)
+   ├─ Angular 17 shell app running
+   ├─ 7 micro-frontend modules (6 Angular + 1 React)
+   ├─ Webpack Module Federation active
+   └─ Role-based module loading via registry
 
 📦 Micro-Frontend Modules (Ports 4201-4205)
    ├─ Demographics module ready
@@ -54,7 +53,7 @@
 ║  │            └─────────────┘      └─────────────┘         │ ║
 ║  │                                                          │ ║
 ║  │  Demo Credentials:                                       │ ║
-║  │  • admin / admin          (All 5 modules)                │ ║
+║  │  • admin / admin          (All 7 modules)                │ ║
 ║  │  • clinician / clinician  (4 modules)                    │ ║
 ║  │  • patient / patient      (3 modules)                    │ ║
 ║  │  • nurse / nurse          (4 modules)                    │ ║
@@ -82,7 +81,7 @@ Once logged in as **admin**, you'll see the main dashboard:
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
 │ Patient: John Smith | MRN: P-00001 | DOB: Jan 1, 1981        │
-│ Role: Admin | Access Level: 5/5 modules                      │
+│ Role: Admin | Access Level: 7/7 modules                      │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 
@@ -367,35 +366,28 @@ Once logged in as **admin**, you'll see the main dashboard:
 
 **Try logging out and logging in with different roles:**
 
-#### Admin Access (All 5 Modules)
+#### Admin Access (All 7 Modules)
 ```
 Role: Admin
-Modules: [👤 Demographics] [💓 Vitals] [🧬 Labs] [💊 Medications] [📅 Visits]
-Access: 5/5 modules ✓
-```
-
-#### Clinician Access (Clinical Data Only)
-```
-Role: Clinician
 Modules: [👤 Demographics] [💓 Vitals] [🧬 Labs] [💊 Medications]
-Access: 4/5 modules (Visits hidden)
-Reason: Administrative visits not needed for clinical staff
+         [📅 Visits] [👥 Care Team] [🔬 Procedures]  + Admin Panel
+Access: 7/7 modules ✓
 ```
 
-#### Patient Access (Own Health Data)
+#### Physician Access (All 7 Modules)
 ```
-Role: Patient  
-Modules: [👤 Demographics] [🧬 Labs] [📅 Visits]
-Access: 3/5 modules (Vitals & Medications hidden)
-Reason: Limited to own appointment scheduling and lab results
-```
-
-#### Nurse Access (Vital Monitoring)
-```
-Role: Nurse
+Role: Physician (username starting with "doc")
 Modules: [👤 Demographics] [💓 Vitals] [🧬 Labs] [💊 Medications]
-Access: 4/5 modules (Visits hidden)
-Reason: Focus on vital signs monitoring and medication management
+         [📅 Visits] [👥 Care Team] [🔬 Procedures]
+Access: 7/7 modules ✓
+```
+
+#### Nurse Access (Default: Demographics + Vitals)
+```
+Role: Nurse (default for all other usernames)
+Modules: [👤 Demographics] [💓 Vitals]
+Access: 2/7 modules (configurable via Admin Dashboard)
+Reason: Limited by default; Admin can grant additional modules at runtime
 ```
 
 ---
@@ -476,7 +468,7 @@ PatientContextService (Current patient info)
       ↓
 PatientService (API calls)
       ↓
-Backend API (http://localhost:3001)
+Backend API (http://localhost:5000)
       ├─ GET /api/patients/:id (demographics)
       ├─ GET /api/patients/:id/vitals (vital signs)
       ├─ GET /api/patients/:id/labs (lab results)
@@ -584,7 +576,7 @@ modules/
 ✅ Module Federation for independent deployment  
 
 **System Status:**
-✅ Backend API - Running on port 3001  
+✅ Backend API - Running on port 5000 (API Gateway)
 ⏳ Frontend - Ready, needs Node 18.19+ upgrade  
 
 **All core functionality is implemented and tested. The system is ready for production use once the Node.js version requirement is met.**
@@ -592,4 +584,4 @@ modules/
 ---
 
 *Generated: January 22, 2026*  
-*PatientRecords Micro-Frontend System - Phase 4 Complete*
+*PatientRecords Micro-Frontend + Microservices System*

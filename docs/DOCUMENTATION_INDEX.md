@@ -1,465 +1,186 @@
-# 📚 PatientRecords Phase 4 - Complete Documentation Index
+﻿# 📚 PatientRecords - Complete Documentation Index
 
-**Session:** January 22, 2026 | 3 hours 15 minutes  
-**Status:** ✅ 95% Complete - Production Ready  
-**Output:** 44 files | ~2,858 lines of code | ~1,500 documentation lines
-
----
-
-## 📖 Documentation Files (Read These First)
-
-### Quick Start Guides
-
-1. **[BUILD_SUMMARY.md](./BUILD_SUMMARY.md)** - Start here! 
-   - High-level overview of what was built
-   - Session statistics and metrics
-   - What you'll see when you launch the system
-   - Next steps summary
-
-2. **[REALTIME_STATUS.md](./REALTIME_STATUS.md)** - Current system status
-   - Active systems status
-   - Deliverables checklist
-   - File statistics
-   - Production readiness checklist
-
-### Architecture & Design
-
-3. **[SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md)** - Visual architecture
-   - Overall system architecture diagram
-   - Module Federation setup
-   - Role-based access flow
-   - Data flow diagrams
-   - Performance metrics
-   - Lifecycle diagrams
-
-4. **[ROLE_BASED_LOADING.md](./ROLE_BASED_LOADING.md)** - Authorization system
-   - Role-based access matrix (6 roles × 5 modules)
-   - Architecture overview
-   - Data flow explanations
-   - Implementation details
-   - Configuration guide
-   - Testing scenarios
-
-### UI & User Experience
-
-5. **[UI_OVERVIEW.md](./UI_OVERVIEW.md)** - Complete UI documentation
-   - System architecture at a glance
-   - UI flow & components
-   - All 5 modules described
-   - Login screen layout
-   - Dashboard structure
-   - API endpoints reference
-   - Technology stack summary
-
-6. **[UI_WALKTHROUGH.md](./UI_WALKTHROUGH.md)** - Interactive step-by-step guide
-   - Login screen with demo credentials
-   - Dashboard after login
-   - Module-by-module walkthrough (with ASCII art)
-   - Role-based access demonstrations
-   - Module loading & performance
-   - Navigation flow
-   - Live API integration
-
-### Technical Summaries
-
-7. **[PHASE4_COMPLETE.md](./PHASE4_COMPLETE.md)** - Comprehensive technical summary
-   - Detailed breakdown of all 44 files
-   - Metrics and statistics
-   - Phase 4 completion status
-   - Technology stack
-   - Testing & validation
-   - File structure summary
+**Last Updated:** Current  
+**Status:** ✅ Production Running  
+**Architecture:** Micro-frontend + Microservices | ~29 Docker containers | 40/40 smoke tests passing
 
 ---
 
 ## 🎯 Where to Go for What
 
 ### "I want to understand the system architecture"
-→ Read [SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md)
+→ Read [SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md) or view [docs/diagrams/system-architecture-v2.svg](./diagrams/system-architecture-v2.svg)
 
 ### "I want to see what the UI looks like"
-→ Read [UI_WALKTHROUGH.md](./UI_WALKTHROUGH.md) (visual mockups)
+→ Read [frontend/UI_WALKTHROUGH.md](./frontend/UI_WALKTHROUGH.md)
 
 ### "I want to understand role-based access"
-→ Read [ROLE_BASED_LOADING.md](./ROLE_BASED_LOADING.md)
+→ Read [frontend/ROLE_BASED_LOADING.md](./frontend/ROLE_BASED_LOADING.md)
 
 ### "I want a high-level overview"
 → Read [BUILD_SUMMARY.md](./BUILD_SUMMARY.md)
 
-### "I want technical implementation details"
-→ Read [PHASE4_COMPLETE.md](./PHASE4_COMPLETE.md)
+### "I want to understand the backend microservices"
+→ Read [backend/README.md](./backend/README.md)
 
-### "I want to know current status"
-→ Read [REALTIME_STATUS.md](./REALTIME_STATUS.md)
+### "I want to understand the data access layer"
+→ Read [DATA_ACCESS_LAYER_PLAN.md](./DATA_ACCESS_LAYER_PLAN.md)
 
-### "I want comprehensive UI documentation"
-→ Read [UI_OVERVIEW.md](./UI_OVERVIEW.md)
-   - Includes shareable patient URL format and login redirect behavior
+### "I want to understand the plugin/module registry"
+→ Read [PLUGIN_ARCHITECTURE_V2.md](./PLUGIN_ARCHITECTURE_V2.md)
 
----
-
-## 📊 Quick Reference
-
-### System Status
-```
-Backend API:        ✅ Running on port 3001
-Frontend Shell App: ✅ Ready (need Node 18.19+)
-5 Micro-Modules:    ✅ Complete
-Shared Library:     ✅ Complete
-Documentation:      ✅ Comprehensive
-Tests:             ✅ 27/27 passing
-Overall:           ✅ 95% Complete
-```
-
-### Key Metrics
-```
-Files Created:      44
-Lines of Code:      ~2,858
-Documentation:      ~1,500 lines
-Components:         11
-Services:           7
-Test Coverage:      71.88%
-Tests Passing:      27/27 ✅
-```
-
-### Architecture Overview
-```
-Shell App (Port 4200)
-├─ 5 Components
-├─ 7 Services
-└─ Module Federation Host
-
-5 Micro-Modules (Ports 4201-4205)
-├─ Demographics Module
-├─ Vitals Module
-├─ Labs Module
-├─ Medications Module
-└─ Visits Module
-
-Backend API (Port 3001)
-└─ Express.js + MongoDB
-
-Shared Library
-├─ 8 TypeScript Interfaces
-└─ 3 Services
-```
-
-### Role-Based Access
-```
-Admin:        ✅✅✅✅✅ (5/5 modules)
-Clinician:    ✅✅✅✅✗ (4/5 modules)
-Nurse:        ✅✅✅✅✗ (4/5 modules)
-Patient:      ✅✗✅✗✅ (3/5 modules)
-Pharmacist:   ✗✗✗✅✗ (1/5 module)
-Receptionist: ✗✗✗✗✅ (1/5 module)
-```
+### "I want to deploy this system"
+→ Read the root [README.md](../README.md) or [DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md)
 
 ---
 
-## 🚀 How to Get Started
+## 📖 Documentation Files
 
-### Prerequisites
-- Node.js 18.19+ (currently 18.16.0, needs upgrade)
-- npm 9+
-- MongoDB running
-- Backend already started (http://localhost:3001)
+### Architecture & Design
 
-### Launch Steps
-```bash
-# 1. Upgrade Node.js to 18.19+ (if needed)
-# 2. Navigate to frontend
-cd C:\source\github\PatientRecords\frontend\shell-app
+1. **[SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md)** - Visual architecture
+   - Current system state table (all services + ports)
+   - Overall system architecture ASCII diagram
+   - Backend microservices diagram (all 15 services)
+   - Repository Pattern / Data Access Layer diagram
+   - Redis event bus topology
+   - AI Multi-Agent layer diagram
+   - Module Federation setup
+   - Role-based access flow
+   - Data flow diagrams
 
-# 3. Install dependencies (already done)
-npm install
+2. **[DATA_ACCESS_LAYER_PLAN.md](./DATA_ACCESS_LAYER_PLAN.md)** - Repository Pattern implementation
+   - Problem statement & rationale
+   - Interface definitions (7 repository interfaces)
+   - MongoDB adapter implementations
+   - Factory pattern / DB_ADAPTER env var
+   - Services refactored
+   - Extension guide (adding new adapters)
 
-# 4. Start development server
-ng serve --port 4200 --open
+3. **[PLUGIN_ARCHITECTURE_V2.md](./PLUGIN_ARCHITECTURE_V2.md)** - Registry-driven module system
+   - Registry service API
+   - Module enable/disable at runtime
+   - Per-role access configuration
+   - Admin dashboard integration
 
-# 5. Open browser automatically to http://localhost:4200
+4. **[MICRO_FRONTEND_ARCHITECTURE.md](./MICRO_FRONTEND_ARCHITECTURE.md)** - Webpack Module Federation
+   - Host (shell) + remote (module) configuration
+   - Shared singleton packages
+   - Dynamic remote loading
 
-# 6. Login with demo credentials
-Username: admin
-Password: admin
+5. **[MULTI_FRAMEWORK_ARCHITECTURE.md](./MULTI_FRAMEWORK_ARCHITECTURE.md)** - Angular + React coexistence
+   - Procedures module (React 18) in Angular shell
+   - Cross-framework patient context sharing
 
-# 7. Select a patient and browse modules
-```
+### Backend
 
-### Demo Login Credentials
-```
-Admin:      admin / admin        (5/5 modules)
-Clinician:  clinician / clinician (4/5 modules)
-Nurse:      nurse / nurse        (4/5 modules)
-Patient:    patient / patient    (3/5 modules)
-```
+6. **[backend/README.md](./backend/README.md)** - Backend microservices reference
+   - All 15 services with ports and responsibilities
+   - Shared library (`backend/shared/`)
+   - Repository Pattern usage
+   - Redis event bus
+   - Environment variables
+   - Running services locally
 
----
+### Frontend
 
-## 📝 File Structure
+7. **[frontend/README.md](./frontend/README.md)** - Frontend modules reference
+   - All 8 frontend apps (shell + 7 modules)
+   - Module Federation configuration
+   - Ports and start commands
 
-```
-PatientRecords/
-├── backend/
-│   ├── server.js             (Express API - RUNNING ✅)
-│   ├── package.json
-│   ├── tests/                (27 passing tests ✅)
-│   └── node_modules/         (Dependencies installed ✅)
-│
-├── frontend/
-│   ├── shell-app/            (Main app - Port 4200)
-│   │   ├── src/
-│   │   │   └── app/
-│   │   │       ├── components/ (Login, Nav, Dashboard, etc)
-│   │   │       ├── core/      (Services, Guards, Config)
-│   │   │       └── shared/    (ModulesDashboard component)
-│   │   ├── webpack.config.js
-│   │   └── package.json
-│   │
-│   ├── modules/
-│   │   ├── demographics/     (Port 4201)
-│   │   ├── vitals/          (Port 4202)
-│   │   ├── labs/            (Port 4203)
-│   │   ├── medications/     (Port 4204)
-│   │   └── visits/          (Port 4205)
-│   │
-│   ├── shared/lib/           (Shared library)
-│   │   ├── models/           (8 TypeScript interfaces)
-│   │   ├── auth/            (Auth service contracts)
-│   │   └── services/        (ConfigService)
-│   │
-│   ├── UI_OVERVIEW.md        (UI Documentation)
-│   ├── UI_WALKTHROUGH.md     (Interactive Guide)
-│   ├── ROLE_BASED_LOADING.md (Architecture Guide)
-│   └── PHASE4_COMPLETE.md    (Technical Summary)
-│
-├── PHASE4_COMPLETE.md        (Comprehensive Summary)
-├── BUILD_SUMMARY.md          (Session Overview)
-├── REALTIME_STATUS.md        (Current Status)
-├── SYSTEM_DIAGRAMS.md        (Visual Diagrams)
-└── README.md
-```
+8. **[frontend/ROLE_BASED_LOADING.md](./frontend/ROLE_BASED_LOADING.md)** - Authorization system
+   - Role-based access matrix (3 roles × 7 modules)
+   - Registry-driven configuration
+   - Role derivation from username prefix
+   - Admin dashboard runtime management
 
----
+9. **[frontend/UI_OVERVIEW.md](./frontend/UI_OVERVIEW.md)** - Complete UI documentation
+   - System architecture at a glance
+   - UI flow & components
+   - All 7 modules described
+   - Login screen layout
+   - Dashboard structure
 
-## 🔑 Key Features
+10. **[frontend/UI_WALKTHROUGH.md](./frontend/UI_WALKTHROUGH.md)** - Step-by-step guide
+    - Login screen with demo credentials
+    - Dashboard after login
+    - Module-by-module walkthrough
+    - Role-based access demonstrations
 
-### Architecture
-- ✅ Micro-frontend using Webpack Module Federation
-- ✅ Independent deployable modules
-- ✅ Shared library with type safety
-- ✅ Dynamic lazy loading
+### Operations & Status
 
-### Security
-- ✅ JWT authentication
-- ✅ Role-based access control (RBAC)
-- ✅ 6-role permission system
-- ✅ Secure token handling
+11. **[BUILD_SUMMARY.md](./BUILD_SUMMARY.md)** - System build overview
+    - What is running and where
+    - Container inventory
+    - Test results summary
+    - Technology stack
 
-### User Experience
-- ✅ Professional responsive UI
-- ✅ Smooth animations
-- ✅ Real-time data updates
-- ✅ Loading states & error handling
+12. **[REALTIME_STATUS.md](./REALTIME_STATUS.md)** - Current system status
+    - All service health endpoints
+    - Port reference
+    - Infrastructure components (MongoDB, Redis)
 
-### Code Quality
-- ✅ Full TypeScript type safety
-- ✅ Memory leak prevention
-- ✅ Proper lifecycle management
-- ✅ 71.88% test coverage
+### AI / Roadmap
+
+13. **[PHASE_8_AI_MULTIAGENT_ROADMAP.md](./PHASE_8_AI_MULTIAGENT_ROADMAP.md)** - AI layer design
+    - AI Orchestrator (port 5300)
+    - Specialized agents (Medication, Labs, LLM, Comms)
+    - Async event-driven notification pattern
+
+14. **[PHASE_8_IMPLEMENTATION_PLAN.md](./PHASE_8_IMPLEMENTATION_PLAN.md)** - AI implementation guide
 
 ---
 
-## 📋 What Each Module Does
+## 🏗️ System Quick Reference
 
-### Demographics Module (Port 4201)
-Displays personal & contact information
-- Name, MRN, DOB, Age, Gender
-- Phone, Email, Address
+### Frontend (Micro-Frontend Modules)
 
-### Vitals Module (Port 4202)
-Shows vital signs with trends
-- Temperature, BP, HR, O₂ Saturation, Resp Rate
-- Status indicators (Normal/Abnormal)
-- Trend indicators (↑↓→)
-- Historical table (last 10)
+| App | Port | Framework | Purpose |
+|-----|------|-----------|---------|
+| Shell App | 4200 | Angular 17 | Auth, routing, patient search, admin dashboard |
+| Demographics | 4201 | Angular 17 | Patient demographics, contact info |
+| Vitals | 4202 | Angular 17 | Vital signs + history |
+| Labs | 4203 | Angular 17 | Lab results with status |
+| Medications | 4204 | Angular 17 | Active & historical medications |
+| Visits | 4205 | Angular 17 | Clinical encounters |
+| Care Team | 4206 | Angular 17 | Care team member management |
+| Procedures | 4207 | React 18 | Procedures (multi-framework demo) |
 
-### Labs Module (Port 4203)
-Displays lab test results
-- Test results with status
-- Filtering by test type
-- Reference ranges
-- Status badges
+### Backend (Microservices)
 
-### Medications Module (Port 4204)
-Shows medication information
-- Active medications
-- Historical medications
-- Dosage, frequency, indication
-- Duration calculations
+| Service | Port | Responsibility |
+|---------|------|---------------|
+| API Gateway | 5000 | Single entry point, JWT validation, Swagger |
+| Auth Service | 5001 | Login, token refresh, logout |
+| Patient Service | 5002 | Patient CRUD, search |
+| Vitals Service | 5003 | Vital signs |
+| Labs Service | 5004 | Lab results |
+| Medications Service | 5005 | Medications |
+| Visits Service | 5006 | Clinical encounters |
+| Care Team Service | 5007 | Team management |
+| Clinical Notes Service | 5012 | Full-text clinical notes (CRUD) |
+| Registry Service | 5100 | Plugin metadata, admin API |
+| AI Orchestrator | 5300 | Multi-agent recommendations |
+| Medication Agent | — | Drug interaction analysis |
+| Labs Agent | — | Diagnostic recommendations |
+| LLM Agent | — | AI reasoning backbone |
+| Comms Agent | — | Async notification dispatch |
 
-### Visits Module (Port 4205)
-Displays appointments
-- Upcoming appointments
-- Past visit timeline
-- Visit filtering
-- Summary statistics
+### Infrastructure
 
----
+| Component | Port | Purpose |
+|-----------|------|---------|
+| MongoDB | 27017 | Primary data store (`patientrecords` DB) |
+| Redis | 6379 | Pub/sub event bus between services |
+| RedisInsight | 8001 | Redis GUI (dev/debug) |
 
-## 🔧 Technology Stack
+### Authentication
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Frontend | Angular | 17+ |
-| Language | TypeScript | 5.2+ |
-| Module System | Webpack MF | 5.x |
-| State | RxJS | 7.8+ |
-| Styling | Bootstrap 5 | Latest |
-| Backend | Express.js | Latest |
-| Database | MongoDB | 6.x |
-| Container | Docker | 24.x |
-
----
-
-## ✅ Completion Checklist
-
-### Phase 4 - Micro-Frontend System
-
-- [x] **Part A: Webpack Module Federation**
-  - [x] Shell app webpack config
-  - [x] 5 module webpack configs
-  - [x] Dynamic remote loading
-  - [x] Shared dependencies
-
-- [x] **Part B: Shared Library**
-  - [x] 8 TypeScript interfaces
-  - [x] ConfigService
-  - [x] Auth service contracts
-  - [x] Barrel exports
-
-- [x] **Part B: Micro-Frontend Modules**
-  - [x] Demographics module (6 files)
-  - [x] Vitals module (6 files)
-  - [x] Labs module (6 files)
-  - [x] Medications module (6 files)
-  - [x] Visits module (6 files)
-
-- [x] **Part C: Role-Based Loading**
-  - [x] module.config.ts
-  - [x] module-loader.service.ts
-  - [x] modules-dashboard.component
-  - [x] Dashboard integration
-  - [x] Documentation
-
-### Remaining (5% of Phase 4)
-- [ ] Backend CORS configuration
-- [ ] RBAC validation middleware
-- [ ] Dashboard config endpoint
-- [ ] Integration testing
+- JWT tokens; role derived from username prefix at login:
+  - `admin` → `admin` role (all 7 modules + admin panel)
+  - `doc*` → `physician` role (all 7 modules)
+  - anything else → `nurse` role (Demographics, Vitals only by default; configurable via registry)
+- Demo credentials: `admin / admin`, `doctor / doctor`, `nurse / nurse`
 
 ---
-
-## 📞 Support & Documentation
-
-### For Code Questions
-- See component comments in TypeScript files
-- Check service interfaces
-- Review webpack configurations
-
-### For Architecture Questions
-- See [SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md)
-- See [ROLE_BASED_LOADING.md](./ROLE_BASED_LOADING.md)
-
-### For Usage Questions
-- See [UI_WALKTHROUGH.md](./UI_WALKTHROUGH.md)
-- See [UI_OVERVIEW.md](./UI_OVERVIEW.md)
-
-### For Status Questions
-- See [REALTIME_STATUS.md](./REALTIME_STATUS.md)
-- See [BUILD_SUMMARY.md](./BUILD_SUMMARY.md)
-
----
-
-## 🎯 Next Steps
-
-1. **Upgrade Node.js** to v18.19+ (2 minutes)
-2. **Build frontend** with `ng build` (5 minutes)
-3. **Start shell app** with `ng serve` (5 minutes)
-4. **Open browser** to http://localhost:4200 (instant)
-5. **Login** with demo credentials (30 seconds)
-6. **Browse modules** and patient data (explore)
-7. **Add backend CORS** middleware (10 minutes)
-8. **Add RBAC validation** to API (20 minutes)
-9. **Run integration tests** (10 minutes)
-10. **Deploy** with Docker Compose (5 minutes)
-
-**Total Time to Production:** ~60 minutes
-
----
-
-## 📊 Session Summary
-
-**What Was Built:**
-- Complete micro-frontend healthcare platform
-- 6 independent Angular applications
-- Role-based access control system
-- Professional responsive UI
-- Real-time patient data display
-
-**Metrics:**
-- 44 files created
-- ~2,858 lines of code
-- ~1,500 lines of documentation
-- 27 backend tests passing
-- 71.88% code coverage
-
-**Status:**
-- 95% complete (remaining 5% is backend config)
-- Production ready for immediate launch
-- All code tested and validated
-
-**Impact:**
-- Scalable architecture for future modules
-- Enterprise-grade security
-- Professional user experience
-- Maintainable codebase
-
----
-
-## 📚 Documentation Reading Order
-
-For **Quick Understanding:**
-1. [BUILD_SUMMARY.md](./BUILD_SUMMARY.md) (5 min)
-2. [UI_WALKTHROUGH.md](./UI_WALKTHROUGH.md) (10 min)
-3. [REALTIME_STATUS.md](./REALTIME_STATUS.md) (5 min)
-
-For **Technical Deep Dive:**
-1. [SYSTEM_DIAGRAMS.md](./SYSTEM_DIAGRAMS.md) (15 min)
-2. [ROLE_BASED_LOADING.md](./ROLE_BASED_LOADING.md) (20 min)
-3. [PHASE4_COMPLETE.md](./PHASE4_COMPLETE.md) (30 min)
-
-For **Complete Understanding:**
-Read all 7 documents in order (1-2 hours total)
-
----
-
-## 🎉 Conclusion
-
-**PatientRecords Micro-Frontend System is READY FOR LAUNCH!**
-
-All code is written, tested, documented, and ready for production deployment. The system demonstrates:
-
-✅ Modern micro-frontend architecture  
-✅ Enterprise-grade security  
-✅ Professional UI/UX  
-✅ Scalable design  
-✅ Type-safe code  
-✅ Comprehensive documentation  
-
-**Next action:** Upgrade Node.js and launch! 🚀
-
----
-
-**Generated:** January 22, 2026  
-**Duration:** 3 hours 15 minutes  
-**Status:** ✅ 95% COMPLETE - PRODUCTION READY

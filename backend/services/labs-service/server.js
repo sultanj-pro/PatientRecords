@@ -21,15 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 5004;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
-const patientSchema = new mongoose.Schema({
-  patientid: { type: Number, unique: true, required: true },
-  labs: [{
-    date: String, test_name: String, test_code: String, result: String,
-    unit: String, reference_range: String, lab_name: String, deletedAt: { type: Date, default: null }
-  }]
-}, { strict: false, timestamps: true });
-
-const Patient = mongoose.model('Patient', patientSchema);
+const getRepository = require('../../shared/repositories/repositoryFactory');
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
@@ -55,9 +47,11 @@ app.get('/health', (req, res) => {
 // GET /api/patients/:id/labs
 app.get('/api/patients/:id/labs', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json((patient.labs || []).filter(l => !l.deletedAt).map(l => ({
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('labs');
+    const labs = await repo.getLabs(patientId);
+    if (labs === null) return res.status(404).json({ error: 'not found' });
+    res.json(labs.filter(l => !l.deletedAt).map(l => ({
       testName: l.test_name, testCode: l.test_code, value: l.result, unit: l.unit,
       referenceRange: l.reference_range, resultDate: l.date, labName: l.lab_name
     })));
@@ -69,12 +63,12 @@ app.get('/api/patients/:id/labs', authMiddleware, async (req, res) => {
 // POST /api/patients/:id/labs
 app.post('/api/patients/:id/labs', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    const patientId = parseInt(req.params.id);
     if (!req.body.date || !req.body.test_name)
       return res.status(400).json({ error: 'date and test_name are required' });
-    patient.labs.push(req.body);
-    await patient.save();
+    const repo = getRepository('labs');
+    const patient = await repo.addLab(patientId, req.body);
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
     publishEvent('labs-resulted', { patientId: req.params.id, testName: req.body.test_name, testCode: req.body.test_code });
     res.status(201).json(req.body);
   } catch (err) {

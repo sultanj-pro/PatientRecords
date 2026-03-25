@@ -247,7 +247,7 @@
     <text x="650" y="830"  text-anchor="middle" class="text-bold icon">🗄️</text>
     <text x="650" y="852"  text-anchor="middle" class="text-title">MongoDB</text>
     <text x="650" y="868"  text-anchor="middle" class="text-small">Port 27017</text>
-    <text x="650" y="884"  text-anchor="middle" class="text-tiny">patients · vitals · labs · medications · visits · care-team · modules</text>
+    <text x="650" y="884"  text-anchor="middle" class="text-tiny">patients · clinical_notes</text>
   </g>
 
   <!-- ══════════════════════════════════════════════════════ -->
@@ -282,6 +282,6 @@
     <text x="1162" y="969" class="text-tiny">Database</text>
 
     <text x="40" y="993" class="text-tiny">Frontend: Shell 4200 · Demographics 4201 · Vitals 4202 · Labs 4203 · Medications 4204 · Visits 4205 · Care Team 4206 · Procedures 4207</text>
-    <text x="40" y="1010" class="text-tiny">Backend: API Gateway 5000 · Auth 5001 · Patient 5002 · Vitals 5003 · Labs 5004 · Medications 5005 · Visits 5006 · Care Team 5007 · Registry 5100 · MongoDB 27017</text>
+    <text x="40" y="1010" class="text-tiny">Backend: API Gateway 5000 · Auth 5001 · Patient 5002 · Vitals 5003 · Labs 5004 · Medications 5005 · Visits 5006 · Care Team 5007 · Clinical Notes 5012 · Registry 5100 · AI Orchestrator 5300 · MongoDB 27017 · Redis 6379</text>
   </g>
 </svg>

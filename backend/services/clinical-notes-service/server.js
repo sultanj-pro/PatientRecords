@@ -25,23 +25,7 @@ const PORT        = process.env.PORT        || 5012;
 const MONGODB_URI = process.env.MONGODB_URI ||
   'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
-// ── Schema ────────────────────────────────────────────────────────────────────
-
-const noteSchema = new mongoose.Schema({
-  patientId:    { type: Number, required: true, index: true },
-  type:         {
-    type: String,
-    enum: ['observation', 'diagnostic', 'prognosis', 'plan', 'general'],
-    default: 'general'
-  },
-  content:      { type: String, required: true },
-  providerId:   { type: String, required: true },
-  providerName: { type: String, required: true },
-  providerRole: { type: String, default: '' },
-  deletedAt:    { type: Date, default: null },
-}, { timestamps: true });
-
-const Note = mongoose.model('ClinicalNote', noteSchema, 'clinical_notes');
+const getRepository = require('../../shared/repositories/repositoryFactory');
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('[clinical-notes] MongoDB connected'))
@@ -87,15 +71,9 @@ app.get('/api/patients/:patientId/notes', authMiddleware, async (req, res) => {
   try {
     const patientId = parseInt(req.params.patientId, 10);
     if (isNaN(patientId)) return res.status(400).json({ error: 'invalid patientId' });
-
     const { type, limit = 50 } = req.query;
-    const filter = { patientId, deletedAt: null };
-    if (type) filter.type = type;
-
-    const notes = await Note.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(Math.min(parseInt(limit, 10) || 50, 200));
-
+    const repo = getRepository('clinicalNotes');
+    const notes = await repo.getNotes(patientId, { type, limit: parseInt(limit, 10) || 50 });
     res.json({ notes: notes.map(mapNote), count: notes.length });
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch notes', detail: err.message });
@@ -107,11 +85,10 @@ app.post('/api/patients/:patientId/notes', authMiddleware, async (req, res) => {
   try {
     const patientId = parseInt(req.params.patientId, 10);
     if (isNaN(patientId)) return res.status(400).json({ error: 'invalid patientId' });
-
     const { type, content } = req.body;
     if (!content || !content.trim()) return res.status(400).json({ error: 'content is required' });
-
-    const note = await Note.create({
+    const repo = getRepository('clinicalNotes');
+    const note = await repo.createNote({
       patientId,
       type:         type || 'general',
       content:      content.trim(),
@@ -119,7 +96,6 @@ app.post('/api/patients/:patientId/notes', authMiddleware, async (req, res) => {
       providerName: req.user.name || req.user.username || 'Provider',
       providerRole: req.user.role || '',
     });
-
     res.status(201).json(mapNote(note));
   } catch (err) {
     res.status(500).json({ error: 'failed to create note', detail: err.message });
@@ -129,22 +105,20 @@ app.post('/api/patients/:patientId/notes', authMiddleware, async (req, res) => {
 // PUT /api/notes/:id
 app.put('/api/notes/:id', authMiddleware, async (req, res) => {
   try {
-    const note = await Note.findOne({ _id: req.params.id, deletedAt: null });
+    const repo = getRepository('clinicalNotes');
+    const note = await repo.getNoteById(req.params.id);
     if (!note) return res.status(404).json({ error: 'note not found' });
-
     const requesterId = req.user.id || req.user.sub || req.user.username;
     if (note.providerId !== requesterId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'you can only edit your own notes' });
     }
-
-    if (req.body.content !== undefined) {
-      if (!req.body.content.trim()) return res.status(400).json({ error: 'content cannot be empty' });
-      note.content = req.body.content.trim();
-    }
-    if (req.body.type !== undefined) note.type = req.body.type;
-
-    await note.save();
-    res.json(mapNote(note));
+    if (req.body.content !== undefined && !req.body.content.trim())
+      return res.status(400).json({ error: 'content cannot be empty' });
+    const updated = await repo.updateNote(req.params.id, {
+      content: req.body.content?.trim(),
+      type: req.body.type,
+    });
+    res.json(mapNote(updated));
   } catch (err) {
     res.status(500).json({ error: 'failed to update note', detail: err.message });
   }
@@ -153,16 +127,14 @@ app.put('/api/notes/:id', authMiddleware, async (req, res) => {
 // DELETE /api/notes/:id  (soft delete)
 app.delete('/api/notes/:id', authMiddleware, async (req, res) => {
   try {
-    const note = await Note.findOne({ _id: req.params.id, deletedAt: null });
+    const repo = getRepository('clinicalNotes');
+    const note = await repo.getNoteById(req.params.id);
     if (!note) return res.status(404).json({ error: 'note not found' });
-
     const requesterId = req.user.id || req.user.sub || req.user.username;
     if (note.providerId !== requesterId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'you can only delete your own notes' });
     }
-
-    note.deletedAt = new Date();
-    await note.save();
+    await repo.deleteNote(req.params.id);
     res.json({ success: true, message: 'note deleted' });
   } catch (err) {
     res.status(500).json({ error: 'failed to delete note', detail: err.message });

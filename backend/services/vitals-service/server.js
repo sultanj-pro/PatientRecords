@@ -21,16 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 5003;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
-const patientSchema = new mongoose.Schema({
-  patientid: { type: Number, unique: true, required: true },
-  vitals: [{
-    dateofobservation: String, observationcode: String, observationcodesystem: String,
-    organizationname: String, vital_description: String, unit: String, value: String,
-    percentile: String, deletedAt: { type: Date, default: null }
-  }]
-}, { strict: false, timestamps: true });
-
-const Patient = mongoose.model('Patient', patientSchema);
+const getRepository = require('../../shared/repositories/repositoryFactory');
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
@@ -61,9 +52,11 @@ app.get('/health', (req, res) => {
 // GET /api/patients/:id/vitals
 app.get('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    let vitals = (patient.vitals || []).filter(v => !v.deletedAt);
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('vitals');
+    let vitals = await repo.getVitals(patientId);
+    if (vitals === null) return res.status(404).json({ error: 'not found' });
+    vitals = vitals.filter(v => !v.deletedAt);
     const from = req.query.from ? parseDate(req.query.from) : null;
     const to = req.query.to ? parseDate(req.query.to) : null;
     const type = req.query.type ? req.query.type.toLowerCase() : null;
@@ -79,15 +72,13 @@ app.get('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
 // POST /api/patients/:id/vitals
 app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    const patientId = parseInt(req.params.id);
     const newVital = req.body;
     if (!newVital.dateofobservation || !newVital.vital_description)
       return res.status(400).json({ error: 'dateofobservation and vital_description are required' });
-    patient.vitals.forEach(v => { if (v.vital_description === newVital.vital_description && !v.deletedAt) v.deletedAt = new Date(); });
-    patient.vitals.push(newVital);
-    patient.markModified('vitals');
-    await patient.save();
+    const repo = getRepository('vitals');
+    const patient = await repo.addVital(patientId, newVital);
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
     publishEvent('vitals-recorded', { patientId: req.params.id, vitalType: newVital.vital_description });
     res.status(201).json(newVital);
   } catch (err) {

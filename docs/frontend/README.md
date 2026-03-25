@@ -8,11 +8,13 @@ This is a monorepo containing the Angular micro-frontend architecture for Patien
 frontend/
 ├── shell-app/                 # Host/Shell Application (Port 4200)
 ├── modules/
-│   ├── demographics/          # Demographics Module (Port 4201)
-│   ├── vitals/               # Vitals Module (Port 4202)
-│   ├── labs/                 # Labs Module (Port 4203)
-│   ├── medications/          # Medications Module (Port 4204)
-│   └── visits/               # Visits Module (Port 4205)
+│   ├── demographics/          # Demographics Module (Port 4201) - Angular 17
+│   ├── vitals/               # Vitals Module (Port 4202) - Angular 17
+│   ├── labs/                 # Labs Module (Port 4203) - Angular 17
+│   ├── medications/          # Medications Module (Port 4204) - Angular 17
+│   ├── visits/               # Visits Module (Port 4205) - Angular 17
+│   ├── care-team/            # Care Team Module (Port 4206) - Angular 17
+│   └── procedures/           # Procedures Module (Port 4207) - React 18 ⭐
 ├── shared/                   # Shared Library (services, models, auth)
 ├── package.json              # Root monorepo config
 └── tsconfig.base.json        # Base TypeScript config
@@ -55,6 +57,8 @@ npm run start:vitals         # Port 4202
 npm run start:labs           # Port 4203
 npm run start:medications    # Port 4204
 npm run start:visits         # Port 4205
+npm run start:care-team      # Port 4206
+npm run start:procedures     # Port 4207 (React 18)
 
 # Start all modules (no shell)
 npm run start:modules
@@ -134,11 +138,13 @@ npm run lint:demographics
 
 ### Micro-Frontend Modules
 Each module is independently developed, tested, and deployed:
-- **Demographics**: Patient information display
-- **Vitals**: Vital signs and health metrics
-- **Labs**: Laboratory results
-- **Medications**: Medication records
-- **Visits**: Visit/appointment records
+- **Demographics** (4201, Angular 17): Patient information display
+- **Vitals** (4202, Angular 17): Vital signs and health metrics
+- **Labs** (4203, Angular 17): Laboratory results
+- **Medications** (4204, Angular 17): Medication records
+- **Visits** (4205, Angular 17): Visit/appointment records
+- **Care Team** (4206, Angular 17): Care team member management
+- **Procedures** (4207, React 18 ⭐): Procedures — demonstrates multi-framework Module Federation
 
 ### Shared Library
 Common code used across all modules:
@@ -150,7 +156,8 @@ Common code used across all modules:
 
 ## Key Technologies
 
-- **Angular 17**: Frontend framework
+- **Angular 17**: Frontend framework (shell + 6 modules)
+- **React 18**: Procedures module (multi-framework MFE)
 - **TypeScript 5**: Programming language
 - **Webpack 5 Module Federation**: Micro-frontend integration
 - **RxJS**: Reactive programming

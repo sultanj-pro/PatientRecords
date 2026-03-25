@@ -21,15 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 5005;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
-const patientSchema = new mongoose.Schema({
-  patientid: { type: Number, unique: true, required: true },
-  medications: [{
-    startDate: String, name: String, dose: String, frequency: String,
-    indication: String, route: String, deletedAt: { type: Date, default: null }
-  }]
-}, { strict: false, timestamps: true });
-
-const Patient = mongoose.model('Patient', patientSchema);
+const getRepository = require('../../shared/repositories/repositoryFactory');
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
@@ -55,9 +47,11 @@ app.get('/health', (req, res) => {
 // GET /api/patients/:id/medications
 app.get('/api/patients/:id/medications', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json((patient.medications || []).filter(m => !m.deletedAt));
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('medications');
+    const meds = await repo.getMedications(patientId);
+    if (meds === null) return res.status(404).json({ error: 'not found' });
+    res.json(meds.filter(m => !m.deletedAt));
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch medications', detail: err.message });
   }
@@ -66,9 +60,11 @@ app.get('/api/patients/:id/medications', authMiddleware, async (req, res) => {
 // GET /api/patients/:id/meds (alias)
 app.get('/api/patients/:id/meds', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json((patient.medications || []).filter(m => !m.deletedAt));
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('medications');
+    const meds = await repo.getMedications(patientId);
+    if (meds === null) return res.status(404).json({ error: 'not found' });
+    res.json(meds.filter(m => !m.deletedAt));
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch medications', detail: err.message });
   }
@@ -77,11 +73,11 @@ app.get('/api/patients/:id/meds', authMiddleware, async (req, res) => {
 // POST /api/patients/:id/medications
 app.post('/api/patients/:id/medications', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    const patientId = parseInt(req.params.id);
     if (!req.body.name) return res.status(400).json({ error: 'name is required' });
-    patient.medications.push(req.body);
-    await patient.save();
+    const repo = getRepository('medications');
+    const patient = await repo.addMedication(patientId, req.body);
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
     publishEvent('medication-changed', { patientId: req.params.id, action: 'added', medicationName: req.body.name });
     res.status(201).json(req.body);
   } catch (err) {

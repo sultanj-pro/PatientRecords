@@ -21,19 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const PORT = process.env.PORT || 5007;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
-const patientSchema = new mongoose.Schema({
-  patientid: { type: Number, unique: true, required: true },
-  careTeam: [{
-    name: { type: String, required: true },
-    role: { type: String, required: true },
-    specialty: String, phone: String, email: String, organization: String,
-    startDate: Date, endDate: { type: Date, default: null },
-    isPrimary: { type: Boolean, default: false },
-    deletedAt: { type: Date, default: null }
-  }]
-}, { strict: false, timestamps: true });
-
-const Patient = mongoose.model('Patient', patientSchema);
+const getRepository = require('../../shared/repositories/repositoryFactory');
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
@@ -65,9 +53,11 @@ app.get('/health', (req, res) => {
 // GET /api/patients/:id/care-team
 app.get('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'not found' });
-    res.json((patient.careTeam || []).filter(m => !m.deletedAt).map(mapMember));
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('careTeam');
+    const members = await repo.getCareTeam(patientId);
+    if (members === null) return res.status(404).json({ error: 'not found' });
+    res.json(members.map(mapMember));
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch care team', detail: err.message });
   }
@@ -76,14 +66,12 @@ app.get('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
 // POST /api/patients/:id/care-team
 app.post('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    const patientId = parseInt(req.params.id);
     if (!req.body.name || !req.body.role)
       return res.status(400).json({ error: 'name and role are required' });
-    if (req.body.isPrimary) patient.careTeam.forEach(m => { if (!m.deletedAt) m.isPrimary = false; });
-    patient.careTeam.push(req.body);
-    patient.markModified('careTeam');
-    await patient.save();
+    const repo = getRepository('careTeam');
+    const patient = await repo.addMember(patientId, req.body);
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
     publishEvent('care-team-updated', { patientId: req.params.id, action: 'added' });
     res.status(201).json(mapMember(patient.careTeam[patient.careTeam.length - 1]));
   } catch (err) {
@@ -94,22 +82,17 @@ app.post('/api/patients/:id/care-team', authMiddleware, async (req, res) => {
 // PUT /api/patients/:id/care-team/:memberId
 app.put('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
-    const member = patient.careTeam.find(m => m._id?.toString() === req.params.memberId && !m.deletedAt);
-    if (!member) return res.status(404).json({ error: 'care team member not found' });
+    const patientId = parseInt(req.params.id);
+    const { memberId } = req.params;
+    const updates = {};
     ['name', 'role', 'specialty', 'phone', 'email', 'organization', 'startDate', 'endDate'].forEach(f => {
-      if (req.body[f] !== undefined) member[f] = req.body[f];
+      if (req.body[f] !== undefined) updates[f] = req.body[f];
     });
-    if (req.body.isPrimary === true) {
-      patient.careTeam.forEach(m => { if (m._id?.toString() !== req.params.memberId && !m.deletedAt) m.isPrimary = false; });
-      member.isPrimary = true;
-    } else if (req.body.isPrimary === false) {
-      member.isPrimary = false;
-    }
-    patient.markModified('careTeam');
-    await patient.save();
-    publishEvent('care-team-updated', { patientId: req.params.id, action: 'updated', memberId: req.params.memberId });
+    if (req.body.isPrimary !== undefined) updates.isPrimary = req.body.isPrimary;
+    const repo = getRepository('careTeam');
+    const member = await repo.updateMember(patientId, memberId, updates);
+    if (member === null) return res.status(404).json({ error: 'care team member not found' });
+    publishEvent('care-team-updated', { patientId: req.params.id, action: 'updated', memberId });
     res.json(mapMember(member));
   } catch (err) {
     res.status(500).json({ error: 'failed to update care team member', detail: err.message });
@@ -119,13 +102,11 @@ app.put('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res
 // DELETE /api/patients/:id/care-team/:memberId
 app.delete('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findOne({ patientid: parseInt(req.params.id) });
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
-    const member = patient.careTeam.find(m => m._id?.toString() === req.params.memberId && !m.deletedAt);
-    if (!member) return res.status(404).json({ error: 'care team member not found' });
-    member.deletedAt = new Date();
-    patient.markModified('careTeam');
-    await patient.save();
+    const patientId = parseInt(req.params.id);
+    const { memberId } = req.params;
+    const repo = getRepository('careTeam');
+    const deleted = await repo.removeMember(patientId, memberId);
+    if (!deleted) return res.status(404).json({ error: 'care team member not found' });
     res.json({ success: true, message: 'care team member removed' });
   } catch (err) {
     res.status(500).json({ error: 'failed to delete care team member', detail: err.message });
