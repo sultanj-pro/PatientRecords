@@ -614,8 +614,8 @@ services:
 
   patientrecord-redis:
     build:
-      context: ./redis
-      dockerfile: Dockerfile
+      dockerfile_inline: |
+        FROM redis:7-alpine
     image: patientrecord-redis
     container_name: patientrecord-redis
     command: redis-server --appendonly yes --appendfsync everysec
@@ -636,8 +636,8 @@ services:
   # RedisInsight — browser UI for Redis (dev only) → http://localhost:5540
   patientrecord-redisinsight:
     build:
-      context: ./redisinsight
-      dockerfile: Dockerfile
+      dockerfile_inline: |
+        FROM redis/redisinsight:latest
     image: patientrecord-redisinsight
     container_name: patientrecord-redisinsight
     ports:
@@ -651,8 +651,8 @@ services:
 
   patientrecord-mongodb:
     build:
-      context: ./mongo
-      dockerfile: Dockerfile
+      dockerfile_inline: |
+        FROM mongo:7
     image: patientrecord-mongodb
     container_name: patientrecord-mongo
     environment:
