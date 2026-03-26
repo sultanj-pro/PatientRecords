@@ -58,16 +58,16 @@
 
 ---
 
-## Milestone 8.4 — Labs Agent (~3–4 days)
+## Milestone 8.4 — Labs Agent (~3–4 days) ✅
 
-- [ ] **8.4.1** Scaffold `backend/labs-agent/` — `server.js`, `analyzer.js`, `rules/diagnosticGaps.js`, `rules/criticalValues.js`, `package.json`, `Dockerfile`
-- [ ] **8.4.2** Implement missing baseline labs check (condition → expected lab mapping)
-- [ ] **8.4.3** Implement stale labs check (age threshold per test type)
-- [ ] **8.4.4** Implement progressive lab deterioration trending (last 3 values delta)
-- [ ] **8.4.5** Implement vital-triggered lab recommendations
-- [ ] **8.4.6** Wire Labs Agent into Orchestrator (`POST /analyze` internal call)
-- [ ] **8.4.7** Add `patientrecord-labs-agent` to `docker-compose.yml` (internal only)
-- [ ] **8.4.8** Manual test: verify Orchestrator includes lab gap findings
+- [x] **8.4.1** Scaffold `backend/labs-agent/` — `server.js`, `analyzer.js`, `rules/diagnosticGaps.js`, `rules/criticalValues.js`, `package.json`, `Dockerfile`
+- [x] **8.4.2** Implement missing baseline labs check (condition → expected lab mapping)
+- [x] **8.4.3** Implement stale labs check (age threshold per test type)
+- [x] **8.4.4** Implement progressive lab deterioration trending (last 3 values delta)
+- [x] **8.4.5** Implement vital-triggered lab recommendations
+- [x] **8.4.6** Wire Labs Agent into Orchestrator (`POST /analyze` internal call)
+- [x] **8.4.7** Add `patientrecord-labs-agent` to `docker-compose.yml` (internal only)
+- [x] **8.4.8** Manual test: verify Orchestrator includes lab gap findings — 10/10 unit tests pass
 
 ---
 
