@@ -2,7 +2,7 @@
 
 const Redis = require('ioredis');
 const { EVENT_ESCALATION_RULES } = require('./rules/escalationRules');
-const { createNotification } = require('./notificationStore');
+const { createNotification, createAuditEntry } = require('./notificationStore');
 
 const STREAM_NAME   = 'patientrecord-events';
 const GROUP_NAME    = 'comms-agent-group';
@@ -54,11 +54,15 @@ async function processMessage(msgId, fields) {
     return;
   }
 
+  // ── Audit log: record every event unconditionally ────────────────────────
+  const patientId = payload.patientId || payload.patient_id;
+  await createAuditEntry({ streamMsgId: msgId, eventType, patientId: patientId ? String(patientId) : null, payload });
+
+  // ── Escalation rules: create notifications for matched rules ─────────────
   const applicable = EVENT_ESCALATION_RULES.filter(r => r.eventType === eventType);
   for (const rule of applicable) {
     try {
       if (!rule.match(payload)) continue;
-      const patientId = payload.patientId || payload.patient_id;
       if (!patientId) continue;
 
       await createNotification({

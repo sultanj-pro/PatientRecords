@@ -63,9 +63,48 @@ async function acknowledgeNotification(id) {
   return Notification.findByIdAndUpdate(id, { status: 'acknowledged' }, { new: true });
 }
 
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+
+const auditLogSchema = new mongoose.Schema({
+  streamMsgId: { type: String, required: true },
+  eventType:   { type: String, required: true, index: true },
+  patientId:   { type: String, index: true },
+  payload:     { type: mongoose.Schema.Types.Mixed },
+  processedAt: { type: Date, default: Date.now },
+}, { timestamps: false, collection: 'ai_audit_log' });
+
+// Unique per stream message — prevents double-writes on consumer retry
+auditLogSchema.index({ streamMsgId: 1 }, { unique: true });
+
+const AuditLog = mongoose.model('AuditLog', auditLogSchema, 'ai_audit_log');
+
+/**
+ * Append one event to the immutable audit log.
+ * Silently ignores duplicate msgId (idempotent on consumer retry).
+ */
+async function createAuditEntry({ streamMsgId, eventType, patientId, payload }) {
+  try {
+    await AuditLog.create({ streamMsgId, eventType, patientId, payload });
+  } catch (err) {
+    // E11000 duplicate key — already audited; ignore
+    if (!err.message.includes('E11000')) {
+      throw err;
+    }
+  }
+}
+
+/**
+ * Return audit log entries for a patient (newest first, capped at 100).
+ */
+async function getAuditLog(patientId) {
+  return AuditLog.find({ patientId }).sort({ processedAt: -1 }).limit(100).lean();
+}
+
 module.exports = {
   createNotification,
   getPendingNotifications,
   getAllNotifications,
   acknowledgeNotification,
+  createAuditEntry,
+  getAuditLog,
 };

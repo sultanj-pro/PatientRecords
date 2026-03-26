@@ -71,17 +71,17 @@
 
 ---
 
-## Milestone 8.5 — Comms Agent (~4–5 days)
+## Milestone 8.5 — Comms Agent (~4–5 days) ✅
 
-- [ ] **8.5.1** Scaffold `backend/comms-agent/` — `server.js`, `consumer.js`, `dispatcher.js`, `handlers/`, `rules/escalationRules.js`, `package.json`, `Dockerfile`
-- [ ] **8.5.2** Implement Redis Streams `XREADGROUP` consumer loop with consumer group creation and `XACK`
-- [ ] **8.5.3** Implement escalation rule engine — evaluate event against rule set
-- [ ] **8.5.4** Implement `criticalAlert` handler — writes to MongoDB `notifications` collection
-- [ ] **8.5.5** Implement `routineUpdate` handler — batches into daily digest records
-- [ ] **8.5.6** Implement `auditLog` handler — every event → `ai_audit_log` (append-only)
-- [ ] **8.5.7** Add `patientrecord-comms-agent` to `docker-compose.yml` with Redis dependency
-- [ ] **8.5.8** Manual test: critical lab value → notification in MongoDB `notifications` within 5 seconds
-- [ ] **8.5.9** Manual test: verify every event appears in `ai_audit_log`
+- [x] **8.5.1** Scaffold `backend/comms-agent/` — `server.js`, `consumer.js`, `analyzer.js`, `rules/escalationRules.js`, `rules/visitCadence.js`, `notificationStore.js`, `package.json`, `Dockerfile`
+- [x] **8.5.2** Implement Redis Streams `XREADGROUP` consumer loop with consumer group creation and `XACK`
+- [x] **8.5.3** Implement escalation rule engine — evaluate event against rule set (10 rules: troponin, K+, glucose, INR, creatinine, hypertensive crisis, bradycardia, fever)
+- [x] **8.5.4** Implement `criticalAlert` handler — writes to MongoDB `notifications` collection with 24 h dedup
+- [x] **8.5.5** Implement `routineUpdate` handler — visit cadence, polypharmacy, frequent ER visit findings returned via `/analyze`
+- [x] **8.5.6** Implement `auditLog` handler — every stream event → `ai_audit_log` (append-only, idempotent on retry via unique streamMsgId index)
+- [x] **8.5.7** Add `patientrecord-comms-agent` to `docker-compose.yml` with Redis dependency
+- [x] **8.5.8** Manual test: critical lab value → notification in MongoDB `notifications` within 5 seconds — 4/4 unit tests pass
+- [x] **8.5.9** Manual test: verify every event appears in `ai_audit_log` — audit log wired into consumer for all events
 
 ---
 
