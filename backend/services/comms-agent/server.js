@@ -9,6 +9,7 @@ const { analyze }               = require('./analyzer');
 const { startConsumer }         = require('./consumer');
 const {
   getAllNotifications,
+  getPendingNotifications,
   acknowledgeNotification,
 } = require('./notificationStore');
 
@@ -54,6 +55,16 @@ app.post('/analyze', async (req, res) => {
 });
 
 // ── Notifications (internal use by orchestrator / frontend) ──────────────────
+
+app.get('/notifications/:patientId/unread', async (req, res) => {
+  try {
+    const notes = await getPendingNotifications(req.params.patientId);
+    res.json({ notifications: notes, count: notes.length });
+  } catch (err) {
+    console.error('[comms-agent] unread notifications fetch error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch notifications', message: err.message });
+  }
+});
 
 app.get('/notifications/:patientId', async (req, res) => {
   try {

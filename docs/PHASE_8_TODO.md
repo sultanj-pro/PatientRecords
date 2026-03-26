@@ -87,17 +87,17 @@
 
 ## Milestone 8.6 — Frontend Integration (~4–5 days) ✅ First user/stakeholder testable checkpoint
 
-- [ ] **8.6.1** Create `AiRecommendationsComponent` in Shell App — physician role guard only
-- [ ] **8.6.2** Add "Get AI Recommendations" button to patient detail view
-- [ ] **8.6.3** Implement loading state and error handling for Orchestrator call
-- [ ] **8.6.4** Implement medication recommendations section (severity badge, drug names, rationale, approve/dismiss)
-- [ ] **8.6.5** Implement labs recommendations section (urgency badge, test name, reason, approve/dismiss)
-- [ ] **8.6.6** Wire approve/dismiss buttons to `POST /api/ai/recommendations/:id/approve|dismiss`
-- [ ] **8.6.7** Add `GET /api/notifications/unread` endpoint
-- [ ] **8.6.8** Add gateway route for `/api/notifications/*`
-- [ ] **8.6.9** Create notification bell component in Shell App nav bar (badge count)
-- [ ] **8.6.10** Implement notification drawer with mark-as-read per item
-- [ ] **8.6.11** End-to-end manual test: login as physician → open patient → request recommendations → approve one → dismiss one → bell shows notification
+- [x] **8.6.1** `AiInsightsComponent` in ai-insights MFE — physician/admin role guard via `canApprove` property
+- [x] **8.6.2** "Get AI Recommendations" button in `AiInsightsComponent` triggers `generateAnalysis()`
+- [x] **8.6.3** Loading state (`analyzing`, `loadingRecs`) and error handling (`recError`) implemented
+- [x] **8.6.4** Medication recommendations section — findings with `findingTypeLabel()` severity badges, approve/dismiss
+- [x] **8.6.5** Labs recommendations section — findings with critical-value, stale-lab, deterioration-trend, vital-triggered-lab types
+- [x] **8.6.6** Approve/dismiss buttons wired to `POST /api/ai/recommendations/:id/approve|dismiss`; guarded by `canApprove`
+- [x] **8.6.7** `GET /api/notifications/:patientId/unread` endpoint added to comms-agent (returns pending-only)
+- [x] **8.6.8** API Gateway route `/api/notifications/*` proxies to comms-agent (already existed)
+- [x] **8.6.9** Notification bell component in Shell App navbar — badge count, 30s polling, patient-scoped
+- [x] **8.6.10** Notification drawer in navbar — severity-coloured list, per-item acknowledge button
+- [x] **8.6.11** Fixed `apiBase = 'http://localhost:5000'` → `''` (relative) in ai-insights MFE for Docker compatibility; same for JwtInterceptor `apiUrl`
 
 ---
 

@@ -71,7 +71,7 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
   acknowledgingId: string | null = null;
 
   private destroy$ = new Subject<void>();
-  private readonly apiBase = 'http://localhost:5000';
+  private readonly apiBase = '';
 
   /** Role decoded from the JWT payload — no verification needed client-side. */
   readonly userRole: string = (() => {

@@ -1,4 +1,4 @@
-<nav class="navbar">
+<nav class="navbar" (click)="closeBell()">
   <div class="navbar-container">
     <div class="navbar-brand">
       <h1>Patient Records</h1>
@@ -13,6 +13,37 @@
     </div>
 
     <div class="navbar-right">
+      <!-- Notification bell (visible when a patient is selected) -->
+      <div class="notif-bell-wrapper" *ngIf="selectedPatient">
+        <button class="notif-bell-btn" (click)="toggleBell($event)" [class.has-notifs]="unreadCount > 0" aria-label="Notifications">
+          🔔
+          <span class="notif-badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+        </button>
+
+        <!-- Notification drawer -->
+        <div class="notif-drawer" *ngIf="bellOpen" (click)="$event.stopPropagation()">
+          <div class="notif-drawer-header">
+            <span>Alerts</span>
+            <span class="notif-count-label">{{ unreadCount }} pending</span>
+          </div>
+          <div class="notif-empty" *ngIf="notifications.length === 0">No pending alerts</div>
+          <ul class="notif-list">
+            <li class="notif-item" *ngFor="let n of notifications" [class]="'sev-' + n.severity">
+              <span class="notif-icon">{{ severityIcon(n.severity) }}</span>
+              <div class="notif-body">
+                <div class="notif-title">{{ n.title }}</div>
+                <div class="notif-msg">{{ n.message }}</div>
+              </div>
+              <button class="notif-ack-btn"
+                      (click)="acknowledgeNotif(n, $event)"
+                      [disabled]="acknowledgingId === n._id">
+                {{ acknowledgingId === n._id ? '…' : '✓' }}
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="user-info">
         <span class="username">{{ currentUsername }}</span>
         <span class="role" [ngClass]="'role-' + (currentRole || 'unknown')">
