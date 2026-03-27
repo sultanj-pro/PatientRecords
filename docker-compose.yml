@@ -236,8 +236,8 @@ services:
 
   patientrecord-patient-service:
     build:
-      context: ./backend/services/patient-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: services/patient-service/Dockerfile
     image: patientrecord-patient-service
     container_name: patientrecord-patient-service
     environment:

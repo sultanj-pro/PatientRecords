@@ -3,6 +3,7 @@ WORKDIR /app
 COPY services/medications-service/package.json .
 RUN npm install --production
 COPY shared/ ./shared/
+RUN ln -s /app/shared /shared
 COPY services/medications-service/server.js .
 ENV PORT=5005
 EXPOSE 5005
