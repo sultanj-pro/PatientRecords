@@ -1,12 +1,12 @@
 param(
-  [string]$Container = 'clonet-postgresql',
+  [string]$Container = 'patientrecord-postgres',
   [string]$Db = 'patientrecords',
-  [string]$User = 'pr_user'
+  [string]$User = 'admin'
 )
 
 Write-Host "Applying migrations to container=$Container db=$Db user=$User"
 
-$migrationsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\migrations' | Resolve-Path
+$migrationsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\backend\shared\db\migrations' | Resolve-Path
 $files = Get-ChildItem -Path $migrationsPath -Filter '*.sql' | Sort-Object Name
 if ($files.Count -eq 0) {
   Write-Error "No migration files found in $migrationsPath"

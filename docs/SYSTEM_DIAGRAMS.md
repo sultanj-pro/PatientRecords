@@ -1,6 +1,6 @@
 # PatientRecords - Visual System Diagrams
 
-> **Last Updated:** March 18, 2026
+> **Last Updated:** March 30, 2026
 
 ## Current System State
 
@@ -14,11 +14,12 @@
 | Clinical Services | Ports 5003–5007 | Vitals, Labs, Medications, Visits, Care Team |
 | Clinical Notes Service | Port 5012 | Free-text clinical notes (CRUD, separate `clinical_notes` collection) |
 | Registry Service | Port 5100 | Plugin metadata + admin API (enable/disable modules, role management) |
-| AI Orchestrator | Port 5300 | Multi-agent recommendation engine; delegates to specialized agents |
-| AI Agents | — | Medication Agent, Labs Agent, LLM Agent, Comms Agent |
-| MongoDB | Port 27017 | Primary data store — `patients` + `clinical_notes` collections |
-| Redis | Port 6379 | Pub/sub event bus for inter-service events (`eventPublisher.js`) |
-| Repository Pattern | `backend/shared/repositories/` | Adapter-based DAL; `DB_ADAPTER` env var selects backend |
+| AI Orchestrator | Port 5008 | Multi-agent recommendation engine; delegates to specialized agents |
+| AI Agents | Ports 5009–5011, 5013 | Medication Agent (5009), Labs Agent (5010), Comms Agent (5011), LLM Agent (5013) |
+| PostgreSQL | Port 5432 | Primary data store — active when `DB_ADAPTER=knex` |
+| MongoDB | Port 27017 | Optional data store — active when `DB_ADAPTER=mongo` (default) |
+| Redis | Port 6379 | Redis Streams event bus (`patientrecord-events`) + Comms Agent consumer group |
+| Repository Pattern | `backend/shared/repositories/` | Adapter-based DAL; `DB_ADAPTER=knex` (PostgreSQL) or `DB_ADAPTER=mongo` (Mongoose); covers all 7 domain services + registry + AI stores |
 
 ---
 

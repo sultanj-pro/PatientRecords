@@ -23,8 +23,18 @@ const adapters = {
     visits:        () => new (require('./adapters/mongo/MongoVisitsRepository'))(),
     careTeam:      () => new (require('./adapters/mongo/MongoCareTeamRepository'))(),
     clinicalNotes: () => new (require('./adapters/mongo/MongoClinicalNotesRepository'))(),
+    registry:      () => new (require('./adapters/mongo/MongoRegistryRepository'))(),
   },
-  // knex: { ... }  — Phase 7: add knex adapters here
+  knex: {
+    patient:       () => new (require('./adapters/knex/KnexPatientRepository'))(),
+    vitals:        () => new (require('./adapters/knex/KnexVitalsRepository'))(),
+    labs:          () => new (require('./adapters/knex/KnexLabsRepository'))(),
+    medications:   () => new (require('./adapters/knex/KnexMedicationsRepository'))(),
+    visits:        () => new (require('./adapters/knex/KnexVisitsRepository'))(),
+    careTeam:      () => new (require('./adapters/knex/KnexCareTeamRepository'))(),
+    clinicalNotes: () => new (require('./adapters/knex/KnexClinicalNotesRepository'))(),
+    registry:      () => new (require('./adapters/knex/KnexRegistryRepository'))(),
+  },
 };
 
 const adapterMap = adapters[adapter];

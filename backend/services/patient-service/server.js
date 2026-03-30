@@ -22,9 +22,11 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:
 
 const getRepository = require('../../shared/repositories/repositoryFactory');
 
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => { console.error('MongoDB connection error:', err.message); process.exit(1); });
+if ((process.env.DB_ADAPTER || 'mongo').toLowerCase() !== 'knex') {
+  mongoose.connect(MONGODB_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => { console.error('MongoDB connection error:', err.message); process.exit(1); });
+}
 
 function parseDate(d) {
   const dt = Date.parse(d);

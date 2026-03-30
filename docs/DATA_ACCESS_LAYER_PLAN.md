@@ -71,7 +71,7 @@ Each interface exports a class whose every method throws:
 throw new Error(`${this.constructor.name} must implement methodName()`);
 ```
 
-### Phase 2 — MongoDB Adapters (move Mongoose code out of services)
+### Phase 2 — MongoDB Adapters ✅ (move Mongoose code out of services)
 
 Create `backend/shared/repositories/adapters/mongo/` with one adapter per interface.
 
@@ -80,7 +80,7 @@ Each adapter:
 - Implements every method from the corresponding interface
 - Adds `markModified()` before every `save()` (fixing the labs/meds bug)
 
-### Phase 3 — Repository Factory
+### Phase 3 — Repository Factory ✅
 
 `backend/shared/repositories/repositoryFactory.js`
 
@@ -96,14 +96,24 @@ const factories = {
     visits:        () => new MongoVisitsRepository(),
     careTeam:      () => new MongoCareTeamRepository(),
     clinicalNotes: () => new MongoClinicalNotesRepository(),
-  }
-  // knex: { ... }  — Phase 7
+    registry:      () => new MongoRegistryRepository(),
+  },
+  knex: {
+    patient:       () => new KnexPatientRepository(),
+    vitals:        () => new KnexVitalsRepository(),
+    labs:          () => new KnexLabsRepository(),
+    medications:   () => new KnexMedicationsRepository(),
+    visits:        () => new KnexVisitsRepository(),
+    careTeam:      () => new KnexCareTeamRepository(),
+    clinicalNotes: () => new KnexClinicalNotesRepository(),
+    registry:      () => new KnexRegistryRepository(),
+  },
 };
 
 module.exports = (domain) => factories[adapter][domain]();
 ```
 
-### Phase 4 — Refactor Services (one at a time, test after each)
+### Phase 4 — Refactor Services ✅ (one at a time, test after each)
 
 Replace all Mongoose imports and inline queries with:
 ```js
@@ -117,9 +127,55 @@ const patient = await Patient.findOne({ patientid: parseInt(id) });
 const patient = await repo.getByPatientId(parseInt(id));
 ```
 
-Refactor order: vitals → labs → medications → visits → care-team → patient → clinical-notes
+Refactor order: vitals → labs → medications → visits → care-team → patient → clinical-notes → registry
 
-### Phase 5 — Update Tests
+Services now require **zero Mongoose code** — all persistence lives in the relevant adapter file.
+
+---
+
+### Phase 5 — Knex / PostgreSQL Adapters ✅
+
+Created `backend/shared/repositories/adapters/knex/` with one adapter per domain:
+
+| File | Table(s) |
+|---|---|
+| `KnexPatientRepository.js` | `patients` (JSONB demographics + allergies) |
+| `KnexVitalsRepository.js` | `vitals` |
+| `KnexLabsRepository.js` | `labs` |
+| `KnexMedicationsRepository.js` | `medications` |
+| `KnexVisitsRepository.js` | `visits` |
+| `KnexCareTeamRepository.js` | `care_team_members` |
+| `KnexClinicalNotesRepository.js` | `clinical_notes` |
+| `KnexRegistryRepository.js` | `registry` (modules stored as JSONB) |
+
+PostgreSQL schema: `backend/shared/db/migrations/001_initial_schema.sql`
+
+Switch adapters with a single env var — no code changes required:
+```sh
+DB_ADAPTER=knex   # PostgreSQL via Knex
+DB_ADAPTER=mongo  # MongoDB via Mongoose (default)
+```
+
+---
+
+### Phase 6 — AI Service Stores ✅
+
+`ai-orchestrator` and `comms-agent` have their own embedded data stores (not part of the shared factory). Both were migrated to honour `DB_ADAPTER`:
+
+| Service | File | Tables (knex) | Collections (mongo) |
+|---|---|---|---|
+| `ai-orchestrator` | `approvalStore.js` | `ai_recommendations` | `ai_recommendations` |
+| `comms-agent` | `notificationStore.js` | `notifications`, `ai_audit_log` | `notifications`, `ai_audit_log` |
+
+Key behaviours preserved across both adapters:
+- **Immutable status** — `approved`/`dismissed` recommendations cannot be changed again
+- **Dedup window** — notifications with the same `ruleId` within 24 h are not duplicated
+- **Idempotent audit log** — duplicate `streamMsgId` is silently ignored (PostgreSQL `23505`, MongoDB `E11000`)
+- **Redis Streams consumer** — `comms-agent` consumer starts immediately in both modes; writes go to whichever store is active
+
+---
+
+### Phase 7 — Update Tests
 
 Mock repository interfaces instead of Mongoose models.
 

@@ -21,19 +21,27 @@ const MONGODB_URI = process.env.MONGODB_URI ||
 app.use(cors());
 app.use(bodyParser.json({ limit: '2mb' }));
 
-// MongoDB connection
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('[comms-agent] MongoDB connected');
-    // Start Redis stream consumer after DB is ready
-    startConsumer().catch(err =>
-      console.error('[comms-agent] Consumer start error:', err.message)
-    );
-  })
-  .catch(err => {
-    console.error('[comms-agent] MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+// MongoDB connection (only when not using knex/PostgreSQL)
+const DB_ADAPTER = (process.env.DB_ADAPTER || 'mongo').toLowerCase();
+if (DB_ADAPTER !== 'knex') {
+  mongoose.connect(MONGODB_URI)
+    .then(() => {
+      console.log('[comms-agent] MongoDB connected');
+      startConsumer().catch(err =>
+        console.error('[comms-agent] Consumer start error:', err.message)
+      );
+    })
+    .catch(err => {
+      console.error('[comms-agent] MongoDB connection error:', err.message);
+      process.exit(1);
+    });
+} else {
+  console.log('[comms-agent] Using PostgreSQL (DB_ADAPTER=knex)');
+  // Start Redis stream consumer immediately — notificationStore is already PG-aware
+  startConsumer().catch(err =>
+    console.error('[comms-agent] Consumer start error:', err.message)
+  );
+}
 
 // ── Health ─────────────────────────────────────────────────────────────────
 

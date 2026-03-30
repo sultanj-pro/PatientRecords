@@ -45,39 +45,60 @@ GET http://localhost:5000/api-docs     Swagger UI
 | Care Team Service | 5007 | `/health` |
 | Clinical Notes Service | 5012 | `/health` |
 | Registry Service | 5100 | `/health` |
-| AI Orchestrator | 5300 | `/health` |
+| AI Orchestrator | 5008 | `/health` |
+| Medication Agent | 5009 | `/health` |
+| Labs Agent | 5010 | `/health` |
+| Comms Agent | 5011 | `/health` |
+| LLM Agent | 5013 | `/health` |
 
 ### Infrastructure
 
 | Component | Port | Purpose |
 |-----------|------|---------|
-| MongoDB | 27017 | Primary data store (`patientrecords` DB) |
-| Redis | 6379 | Pub/sub event bus |
+| PostgreSQL | 5432 | Primary data store (`patientrecords` DB) — active when `DB_ADAPTER=knex` |
+| MongoDB | 27017 | Optional data store — active when `DB_ADAPTER=mongo` (default) |
+| Redis | 6379 | Event stream bus (`patientrecord-events` stream) |
 | RedisInsight | 8001 | Redis GUI |
 
 ---
 
 ## Active Systems
 
-### MongoDB
+### PostgreSQL (primary when DB_ADAPTER=knex)
+```
+Database:  patientrecords
+Tables:    patients, vitals, labs, medications, visits,
+           care_team_members, clinical_notes, registry,
+           ai_recommendations, notifications, ai_audit_log
+Port:      5432
+User:      admin / admin
+```
+
+### MongoDB (active when DB_ADAPTER=mongo)
 ```
 Database:     patientrecords
-Collections:  patients, clinical_notes
 Port:         27017
+Note:         Optional — all services fall back to Mongoose when DB_ADAPTER=mongo
 ```
 
 ### Redis
 ```
-Role:    Pub/sub event bus (not persistent storage)
+Role:    Redis Streams event bus (XADD / XREADGROUP)
 Port:    6379
-Usage:   Inter-service event broadcasting via eventPublisher.js
+Stream:  patientrecord-events
+Usage:   Domain services publish events; Comms Agent consumer processes them
 ```
 
 ### Repository Pattern
 ```
-Location: backend/shared/repositories/
-Adapter:  Controlled by DB_ADAPTER env var (default: mongo)
-Services: patient, vitals, labs, medications, visits, care-team, clinical-notes
+Location:  backend/shared/repositories/
+Adapter:   Controlled by DB_ADAPTER env var
+           DB_ADAPTER=knex  → PostgreSQL via Knex (production default)
+           DB_ADAPTER=mongo → MongoDB via Mongoose
+Services:  patient, vitals, labs, medications, visits,
+           care-team, clinical-notes, registry
+AI stores: ai-orchestrator (approvalStore.js), comms-agent (notificationStore.js)
+           — both honour DB_ADAPTER and switch between PG and Mongoose accordingly
 ```
 
 ---

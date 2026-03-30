@@ -137,10 +137,10 @@
 
 - [ ] All 5 new services pass health check in `/health/deep`
 - [ ] `POST /api/ai/recommend/:patientId` returns structured recommendations in < 10 seconds (rule-based)
-- [ ] Every recommendation has `requiresApproval: true`; approval/dismiss recorded in MongoDB
+- [ ] Every recommendation has `requiresApproval: true`; approve/dismiss recorded in PostgreSQL (`ai_recommendations`) or MongoDB depending on `DB_ADAPTER`
 - [ ] Every domain service write publishes an event visible in Redis stream
 - [ ] Critical lab value triggers care team in-app notification within 5 seconds
-- [ ] Every AI event logged in `ai_audit_log` (HIPAA)
+- [ ] Every AI event logged in `ai_audit_log` (HIPAA) — stored in PostgreSQL or MongoDB per `DB_ADAPTER`
 - [ ] No patient data logged in console/debug output
 - [ ] Load test: 20 concurrent recommendation requests complete without error
 - [ ] All new services included in docker-compose with health checks
@@ -156,9 +156,9 @@
 | 8.1 Infrastructure | 11 | ✅ Complete |
 | 8.2 Orchestrator | 7 | ✅ Complete |
 | 8.3 Medication Agent | 8 | ✅ Complete |
-| 8.4 Labs Agent | 8 | 🔲 Not started |
-| 8.5 Comms Agent | 9 | 🔲 Not started |
-| 8.6 Frontend | 11 | 🔲 Not started |
-| 8.7 LLM | 9 | 🔲 Not started |
-| 8.8 Hardening | 13 | 🔲 Not started |
-| **Total** | **76 + 6 decisions** | **26 / 82 complete** |
+| 8.4 Labs Agent | 8 | ✅ Complete |
+| 8.5 Comms Agent | 9 | ✅ Complete |
+| 8.6 Frontend | 11 | ✅ Complete |
+| 8.7 LLM | 9 | 📲 Not started |
+| 8.8 Hardening | 13 | 📲 Not started |
+| **Total** | **76 + 6 decisions** | **54 / 82 complete** |

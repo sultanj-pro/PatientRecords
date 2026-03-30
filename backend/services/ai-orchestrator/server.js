@@ -38,10 +38,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// MongoDB connection
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => { console.error('MongoDB connection error:', err.message); process.exit(1); });
+// MongoDB connection (only when not using knex/PostgreSQL)
+const DB_ADAPTER = (process.env.DB_ADAPTER || 'mongo').toLowerCase();
+if (DB_ADAPTER !== 'knex') {
+  mongoose.connect(MONGODB_URI)
+    .then(() => console.log('[ai-orchestrator] MongoDB connected'))
+    .catch(err => { console.error('[ai-orchestrator] MongoDB connection error:', err.message); process.exit(1); });
+} else {
+  console.log('[ai-orchestrator] Using PostgreSQL (DB_ADAPTER=knex)');
+}
 
 // Auth middleware — enforces valid JWT on all /api/* routes
 function authMiddleware(req, res, next) {

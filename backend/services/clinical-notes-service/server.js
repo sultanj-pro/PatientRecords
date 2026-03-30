@@ -27,9 +27,11 @@ const MONGODB_URI = process.env.MONGODB_URI ||
 
 const getRepository = require('../../shared/repositories/repositoryFactory');
 
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('[clinical-notes] MongoDB connected'))
-  .catch(err => { console.error('[clinical-notes] MongoDB error:', err.message); process.exit(1); });
+if ((process.env.DB_ADAPTER || 'mongo').toLowerCase() !== 'knex') {
+  mongoose.connect(MONGODB_URI)
+    .then(() => console.log('[clinical-notes] MongoDB connected'))
+    .catch(err => { console.error('[clinical-notes] MongoDB error:', err.message); process.exit(1); });
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
