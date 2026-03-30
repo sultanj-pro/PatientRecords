@@ -71,7 +71,7 @@ app.post('/api/patients/:id/labs', authMiddleware, async (req, res) => {
     const repo = getRepository('labs');
     const patient = await repo.addLab(patientId, req.body);
     if (!patient) return res.status(404).json({ error: 'patient not found' });
-    publishEvent('labs-resulted', { patientId: req.params.id, testName: req.body.test_name, testCode: req.body.test_code });
+    publishEvent('labs-resulted', { patientId: req.params.id, testName: req.body.test_name, testCode: req.body.test_code, value: req.body.result, unit: req.body.unit });
     res.status(201).json(req.body);
   } catch (err) {
     res.status(500).json({ error: 'failed to create lab', detail: err.message });

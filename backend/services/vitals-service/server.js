@@ -81,7 +81,7 @@ app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
     const repo = getRepository('vitals');
     const patient = await repo.addVital(patientId, newVital);
     if (!patient) return res.status(404).json({ error: 'patient not found' });
-    publishEvent('vitals-recorded', { patientId: req.params.id, vitalType: newVital.vital_description });
+    publishEvent('vitals-recorded', { patientId: req.params.id, vitalType: newVital.vital_description, value: newVital.value, unit: newVital.unit });
     res.status(201).json(newVital);
   } catch (err) {
     res.status(500).json({ error: 'failed to create vital', detail: err.message });
