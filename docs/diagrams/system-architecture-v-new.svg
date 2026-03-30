@@ -262,12 +262,12 @@
   <text x="200" y="778" text-anchor="middle" class="text-tiny">repositoryFactory.js</text>
   <text x="200" y="791" text-anchor="middle" class="text-tiny">getRepository('vitals') per service</text>
   <!-- Middle panel: adapter selection -->
-  <text x="725" y="746" text-anchor="middle" class="text-dal">DB_ADAPTER env var &#8594; selects adapter at startup (default: mongo)</text>
+  <text x="725" y="746" text-anchor="middle" class="text-dal">DB_ADAPTER env var &#8594; selects adapter at startup · both fully implemented &#9989;</text>
   <rect x="470" y="754" width="210" height="20" class="dal-adapt" rx="4"/>
-  <text x="575" y="768" text-anchor="middle" class="text-tiny">&#9989; MongoRepository  (active)</text>
-  <rect x="695" y="754" width="210" height="20" class="dal-fut" rx="4"/>
-  <text x="800" y="768" text-anchor="middle" class="text-tiny">&#9711; PostgresRepository  (future)</text>
-  <text x="725" y="791" text-anchor="middle" class="text-tiny">patient · vitals · labs · medications · visits · care-team · clinical-notes · registry  — zero handler changes to swap DB</text>
+  <text x="575" y="768" text-anchor="middle" class="text-tiny">&#9989; KnexRepository  (PostgreSQL 16)</text>
+  <rect x="695" y="754" width="210" height="20" class="dal-adapt" rx="4"/>
+  <text x="800" y="768" text-anchor="middle" class="text-tiny">&#9989; MongoRepository  (MongoDB 7)</text>
+  <text x="725" y="791" text-anchor="middle" class="text-tiny">patient · vitals · labs · medications · visits · care-team · clinical-notes · registry · ai-recommendations · notifications · ai-audit-log</text>
   <!-- Right panel: interface shape -->
   <text x="1230" y="750" text-anchor="middle" class="text-dal">Interface</text>
   <text x="1230" y="765" text-anchor="middle" class="text-tiny">getVitals(patientId)</text>
@@ -275,23 +275,33 @@
   <text x="1230" y="791" text-anchor="middle" class="text-tiny">&#8942; per collection</text>
 
   <!-- DAL → Data Stores -->
-  <path d="M 560 802 L 600 870" class="arrow"/>
+  <path d="M 400 802 L 220 870" class="arrow"/>
+  <path d="M 600 802 L 640 870" class="arrow"/>
   <path d="M 890 802 L 960 870" class="arrow"/>
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <!-- ROW 5 — Data Stores                                                     -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- PostgreSQL (DB_ADAPTER=knex) -->
+  <rect x="20" y="870" width="400" height="90" style="fill:#E8EAF6;stroke:#283593;stroke-width:2;" rx="8"/>
+  <text x="220" y="896"  text-anchor="middle" class="text-bold">&#128024;</text>
+  <text x="220" y="916"  text-anchor="middle" class="text-title">PostgreSQL 16  (DB_ADAPTER=knex)</text>
+  <text x="220" y="932"  text-anchor="middle" class="text-small">Port 5432</text>
+  <text x="220" y="948"  text-anchor="middle" class="text-tiny">patients · vitals · labs · meds · visits · care_team · clinical_notes · registry · ai_recommendations · notifications · ai_audit_log</text>
+
+  <!-- MongoDB (DB_ADAPTER=mongo) -->
   <rect x="440" y="870" width="380" height="90" class="database" rx="8"/>
   <text x="630" y="896"  text-anchor="middle" class="text-bold">&#128374;&#65039;</text>
-  <text x="630" y="916"  text-anchor="middle" class="text-title">MongoDB</text>
+  <text x="630" y="916"  text-anchor="middle" class="text-title">MongoDB 7  (DB_ADAPTER=mongo)</text>
   <text x="630" y="932"  text-anchor="middle" class="text-small">Port 27017</text>
-  <text x="630" y="948"  text-anchor="middle" class="text-tiny">patients · vitals · labs · medications · visits · care-team · clinical-notes</text>
+  <text x="630" y="948"  text-anchor="middle" class="text-tiny">patients · vitals · labs · meds · visits · care-team · clinical-notes · ai_recommendations · notifications</text>
 
   <rect x="840" y="870" width="280" height="90" class="cache" rx="8"/>
   <text x="980" y="896"  text-anchor="middle" class="text-bold">&#9889;</text>
   <text x="980" y="916"  text-anchor="middle" class="text-title">Redis</text>
   <text x="980" y="932"  text-anchor="middle" class="text-small">Port 6379</text>
-  <text x="980" y="948"  text-anchor="middle" class="text-tiny">Event Streams · Session cache</text>
+  <text x="980" y="948"  text-anchor="middle" class="text-tiny">Stream: patientrecord-events · Group: comms-agent-group</text>
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <!-- Section divider — AI Layer                                              -->
@@ -314,9 +324,10 @@
   <text x="700" y="1093" text-anchor="middle" class="text-tiny">Assembles full patient context · Calls domain services · LLM tool-calling loop · Delegates to specialist agents</text>
   <text x="700" y="1108" text-anchor="middle" class="text-tiny">Aggregates recommendations · All results require physician review before any action (Human-in-the-Loop)</text>
 
-  <!-- Arrows Orchestrator -> Specialist Agents -->
-  <path d="M 480 1134 L 200 1180" class="arrow-ai"/>
-  <path d="M 700 1134 L 700 1180" class="arrow-ai"/>
+  <!-- Arrows Orchestrator -> Specialist Agents (fan-out to all 4) -->
+  <path d="M 430 1134 L 190 1180" class="arrow-ai"/>
+  <path d="M 560 1134 L 545 1180" class="arrow-ai"/>
+  <path d="M 840 1134 L 900 1180" class="arrow-ai"/>
 
   <!-- Redis -> Comms Agent (event stream) -->
   <path d="M 980 960 L 980 1180" class="arrow-ev"/>
@@ -352,10 +363,10 @@
   <!-- Comms Agent -->
   <rect x="1080" y="1180" width="300" height="96" class="ai-async" rx="8"/>
   <text x="1230" y="1204" text-anchor="middle" class="text-title">&#128226; Comms Agent · Port 5011</text>
-  <text x="1230" y="1220" text-anchor="middle" class="text-tiny">Subscribes to Redis event streams</text>
-  <text x="1230" y="1234" text-anchor="middle" class="text-tiny">vitals-recorded · labs-resulted</text>
-  <text x="1230" y="1248" text-anchor="middle" class="text-tiny">medication-changed · visit-completed</text>
-  <text x="1230" y="1262" text-anchor="middle" class="text-tiny">Generates care-team &amp; patient notifications</text>
+  <text x="1230" y="1220" text-anchor="middle" class="text-tiny">XREADGROUP consumer · patientrecord-events</text>
+  <text x="1230" y="1234" text-anchor="middle" class="text-tiny">comms-agent-group · BLOCK 5000ms</text>
+  <text x="1230" y="1248" text-anchor="middle" class="text-tiny">Rule engine &#8594; create notification record</text>
+  <text x="1230" y="1262" text-anchor="middle" class="text-tiny">XACK after processing &#8594; notifications table</text>
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <!-- Legend                                                                  -->
@@ -396,6 +407,8 @@
   <text x="755"  y="1365" class="text-tiny">AI call (sync)</text>
   <line x1="848" y1="1359" x2="878" y2="1359" stroke="#7B1FA2" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-purple)"/>
   <text x="885"  y="1365" class="text-tiny">Event stream (async)</text>
+  <rect x="990"  y="1354" width="14" height="14" style="fill:#E8EAF6;stroke:#283593;stroke-width:1.5;" rx="3"/>
+  <text x="1008" y="1365" class="text-tiny">PostgreSQL 16 (DB_ADAPTER=knex)</text>
 
   <text x="38" y="1380" class="text-tiny">Frontend ports: Shell 4200 · Demographics 4201 · Vitals 4202 · Labs 4203 · Medications 4204 · Visits 4205 · Care Team 4206 · Procedures 4207 · AI Insights 4208 · Clinical Notes 4209</text>
   <text x="38" y="1392" class="text-tiny">Backend ports: Gateway 5000 · Auth 5001 · Patient 5002 · Vitals 5003 · Labs 5004 · Medications 5005 · Visits 5006 · Care Team 5007 · AI Orchestrator 5008 · Medication Agent 5009 · Labs Agent 5010 · Comms Agent 5011 · Clinical Notes 5012 · LLM Agent 5013 · Registry 5100 · MongoDB 27017 · Redis 6379</text>

@@ -111,8 +111,11 @@
 ┃  ├─ Care Team Service    (5007) ─ /api/patients/:id/care-team          ┃
 ┃  ├─ Clinical Notes Svc   (5012) ─ /api/clinical-notes                  ┃
 ┃  ├─ Registry Service     (5100) ─ /api/modules, /api/admin/registry    ┃
-┃  └─ AI Orchestrator      (5300) ─ /api/ai/recommend/:patientId         ┃
-┃       └─ Agents: Medication · Labs · LLM · Comms                       ┃
+┃  └─ AI Orchestrator      (5008) ─ /api/ai/recommend/:patientId         ┃
+┃       ├─ Medication Agent (5009) ─ drug interactions + dosage analysis ┃
+┃       ├─ Labs Agent       (5010) ─ trending + out-of-range flagging    ┃
+┃       ├─ Comms Agent      (5011) ─ Redis Streams consumer + notify     ┃
+┃       └─ LLM Agent        (5013) ─ narrative synthesis + summary       ┃
 ┃                                                                          ┃
 ┃  All services: structured JSON logging + /health endpoint              ┃
 ┃  Gateway: /health/deep aggregates health across all services           ┃
@@ -120,40 +123,63 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                     ↓
                      Repository Pattern (shared/repositories/)
-                     DB_ADAPTER=mongo → MongoXxxRepository adapters
+               DB_ADAPTER=knex → KnexXxxRepository (PostgreSQL 16)
+               DB_ADAPTER=mongo → MongoXxxRepository (Mongoose / MongoDB 7)
                                     ↓
-                            MongoDB Queries
+                     Database Queries (routed by adapter)
                                     ↓
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                        DATABASE (MongoDB :27017)                         ┃
+┃              DATABASE LAYER  (DB_ADAPTER selects adapter)               ┃
 ┃                                                                          ┃
-┃  patientrecords                                                        ┃
-┃  ├─ patients collection                                                ┃
-┃  │  ├─ _id: ObjectId                                                  ┃
-┃  │  ├─ patientid: Number                                              ┃
-┃  │  ├─ firstname / lastname: String                                   ┃
-┃  │  ├─ demographics: Array                                            ┃
-┃  │  ├─ vitals: Array        (soft-delete on new vital)                ┃
-┃  │  ├─ labs: Array                                                    ┃
-┃  │  ├─ medications: Array                                             ┃
-┃  │  ├─ visits: Array        (visitType: hospital/clinic/office)       ┃
-┃  │  └─ careTeam: Array                                                ┃
-┃  └─ clinical_notes collection                                          ┃
-┃     ├─ _id: ObjectId                                                  ┃
-┃     ├─ patientId: Number                                              ┃
-┃     ├─ authorId / authorName: String                                  ┃
-┃     ├─ noteType: String                                               ┃
-┃     ├─ content: String                                                ┃
-┃     └─ createdAt / updatedAt: Date                                    ┃
+┃  ┌─────────────────────────────────────────────────────────────────┐  ┃
+┃  │  DB_ADAPTER=knex  →  PostgreSQL 16 (:5432)  [PRIMARY]          │  ┃
+┃  ├─────────────────────────────────────────────────────────────────┤  ┃
+┃  │  patientrecords DB                                              │  ┃
+┃  │  ├─ patients          (id, patientid, firstname, lastname, dob) │  ┃
+┃  │  ├─ vitals            (id, patient_id, type, value, unit, ts)   │  ┃
+┃  │  ├─ labs              (id, patient_id, test_name, value, ts)    │  ┃
+┃  │  ├─ medications       (id, patient_id, name, dose, route, ts)   │  ┃
+┃  │  ├─ visits            (id, patient_id, visit_type, date, notes) │  ┃
+┃  │  ├─ care_team_members (id, patient_id, name, role, specialty)   │  ┃
+┃  │  ├─ clinical_notes    (id, patient_id, author, note_type, body) │  ┃
+┃  │  ├─ registry          (id, name, port, enabled, roles)          │  ┃
+┃  │  ├─ ai_recommendations(id, patient_id, agent, text, status, ts) │  ┃
+┃  │  ├─ notifications     (id, patient_id, type, message, read, ts) │  ┃
+┃  │  └─ ai_audit_log      (id, patient_id, request, response, ts)   │  ┃
+┃  └─────────────────────────────────────────────────────────────────┘  ┃
+┃                                                                          ┃
+┃  ┌─────────────────────────────────────────────────────────────────┐  ┃
+┃  │  DB_ADAPTER=mongo  →  MongoDB 7 (:27017)  [OPTIONAL]           │  ┃
+┃  ├─────────────────────────────────────────────────────────────────┤  ┃
+┃  │  patientrecords                                                  │  ┃
+┃  │  ├─ patients collection (embedded vitals, labs, meds, visits)   │  ┃
+┃  │  ├─ clinical_notes collection                                    │  ┃
+┃  │  ├─ ai_recommendations collection                                │  ┃
+┃  │  ├─ notifications collection                                     │  ┃
+┃  │  ├─ ai_audit_log collection                                      │  ┃
+┃  │  └─ registry collection                                          │  ┃
+┃  └─────────────────────────────────────────────────────────────────┘  ┃
 ┃                                                                          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-                Redis Pub/Sub Event Bus (:6379)
+                Redis Streams Event Bus (:6379)
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  eventPublisher.js (backend/shared/)                                    ┃
-┃  publish(channel, payload) ─ any service can fire an event             ┃
-┃  subscribe(channel, handler) ─ any service can react                   ┃
-┃  Typical events: patient.updated · vital.added · lab.added             ┃
+┃  Stream: patientrecord-events  (append-only log, persisted)             ┃
+┃  Consumer Group: comms-agent-group  (Comms Agent :5011)                 ┃
+┃                                                                          ┃
+┃  Producers (domain services on significant writes):                      ┃
+┃    XADD patientrecord-events * eventType vital.added patientId 123 ...  ┃
+┃    XADD patientrecord-events * eventType lab.added   patientId 123 ...  ┃
+┃                                                                          ┃
+┃  Consumer (Comms Agent — sole consumer via group):                       ┃
+┃    XREADGROUP GROUP comms-agent-group consumer1 BLOCK 5000              ┃
+┃    STREAMS patientrecord-events >                                        ┃
+┃    → evaluate rule engine (critical thresholds)                          ┃
+┃    → create notification record in DB via notificationStore             ┃
+┃    → XACK patientrecord-events comms-agent-group <id>                   ┃
+┃                                                                          ┃
+┃  Typical events: vital.added · lab.added · medication.added             ┃
+┃  Escalation: critical values → notification in DB → bell icon in UI     ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
@@ -184,20 +210,137 @@
 │  │  addVital(patientId, vital)                      │                 │
 │  └──────────────┬───────────────────────────────────┘                 │
 │                 │                                                       │
-│        ┌────────┴─────────────┐                                        │
-│        ▼                      ▼  (future adapters)                    │
-│  MongoVitalsRepository   PostgresVitalsRepository  ...                │
-│  (Mongoose queries)      (pg queries)                                  │
-│                  │                                                     │
-│                  ▼                                                     │
-│              MongoDB :27017                                            │
+│        ┌────────┴──────────────────┐                                    │
+│        ▼                           ▼                                   │
+│  MongoXxxRepository           KnexXxxRepository                        │
+│  (Mongoose / MongoDB 7)       (Knex / PostgreSQL 16)                   │
+│  DB_ADAPTER=mongo  ✅         DB_ADAPTER=knex  ✅                      │
 │                                                                        │
-│  Services using Repository Pattern:                                    │
+│  Both adapters fully implemented for all layers:                       │
 │  patient · vitals · labs · medications · visits · care-team · notes   │
+│  registry · ai_recommendations · notifications · ai_audit_log         │
 │                                                                        │
-│  To switch database: set DB_ADAPTER=postgres (when adapter exists)    │
-│  Zero changes needed in service route handlers.                       │
+│  To switch database: change DB_ADAPTER env var — zero code changes    │
+│  DB_ADAPTER=knex  → all queries routed to PostgreSQL 16 (:5432)       │
+│  DB_ADAPTER=mongo → all queries routed to MongoDB 7    (:27017)       │
 └──────────────────────────────────────────────────────────────────────┘
+
+---
+
+## AI Multi-Agent System Topology
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│               AI ORCHESTRATOR  (port 5008)                            │
+│         POST /api/ai/recommend/:patientId                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  1. Receive recommendation request from API Gateway                   │
+│  2. Fan-out: call all 4 specialist agents in parallel                 │
+│  3. Collect results with Promise.allSettled()                         │
+│  4. Aggregate into unified recommendation payload                     │
+│  5. Persist to ai_recommendations (via approvalStore)                 │
+│  6. Persist audit entry to ai_audit_log                               │
+│  7. Return aggregated recommendations to caller                       │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │  Fan-out → Specialist Agents (parallel HTTP calls)           │    │
+│  ├──────────────────────────────────────────────────────────────┤    │
+│  │                                                               │    │
+│  │  ┌─────────────────────┐   ┌─────────────────────────────┐  │    │
+│  │  │ Medication Agent    │   │ Labs Agent                  │  │    │
+│  │  │ Port 5009           │   │ Port 5010                   │  │    │
+│  │  │─────────────────────│   │─────────────────────────────│  │    │
+│  │  │ • Active med list   │   │ • Flag out-of-range values  │  │    │
+│  │  │ • Drug interactions │   │ • Trending analysis         │  │    │
+│  │  │ • Dosage review     │   │ • Critical value detection  │  │    │
+│  │  │ • Returns: text[]   │   │ • Returns: text[]           │  │    │
+│  │  └─────────────────────┘   └─────────────────────────────┘  │    │
+│  │                                                               │    │
+│  │  ┌─────────────────────┐   ┌─────────────────────────────┐  │    │
+│  │  │ Comms Agent         │   │ LLM Agent                   │  │    │
+│  │  │ Port 5011           │   │ Port 5013                   │  │    │
+│  │  │─────────────────────│   │─────────────────────────────│  │    │
+│  │  │ • Redis Streams     │   │ • Narrative synthesis       │  │    │
+│  │  │   consumer group    │   │ • Plain-English summary     │  │    │
+│  │  │ • Rule-based alerts │   │ • Stub: real LLM-ready      │  │    │
+│  │  │ • Notification store│   │ • Returns: narrative string │  │    │
+│  │  │ • Returns: alerts[] │   │                             │  │    │
+│  │  └─────────────────────┘   └─────────────────────────────┘  │    │
+│  │                                                               │    │
+│  └──────────────────────────────────────────────────────────────┘    │
+│                                                                        │
+│  Human-in-the-Loop Design:                                            │
+│  • All recommendations stored as status='pending' in DB               │
+│  • Clinician reviews in Care Intelligence UI tab                      │
+│  • PATCH /api/ai/recommendations/:id → approve / reject               │
+│  • Approved recs become part of patient record                        │
+│  • All decisions logged in ai_audit_log                               │
+│                                                                        │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Escalation & Notification Pipeline
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  REAL-TIME ESCALATION FLOW                                             │
+└───────────────────────────────────────────────────────────────────────┘
+
+Domain Service (e.g., vitals-service)
+  │  writes vital record via KnexVitalsRepository / MongoVitalsRepository
+  │
+  ▼
+XADD patientrecord-events * eventType vital.added patientId 123
+       value 38.9 unit °C threshold_critical true
+  │
+  │  (Redis Streams — append-only, retained)
+  ▼
+┌──────────────────────────────────────────────────────────────┐
+│  STREAM: patientrecord-events                               │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  1743000001-0  vital.added  patientId=123 value=38.9   │  │
+│  │  1743000002-0  lab.added    patientId=456 value=140    │  │
+│  │  1743000003-0  vital.added  patientId=123 value=39.2   │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+  │
+  │  XREADGROUP GROUP comms-agent-group consumer1 BLOCK 5000
+  ▼
+┌──────────────────────────────────────────────────────────────┐
+│  COMMS AGENT (port 5011) — sole consumer in group            │
+│                                                              │
+│  for each event:                                             │
+│    1. Parse event fields                                     │
+│    2. Evaluate rule engine:                                  │
+│       - Temp > 38.5°C  → fever alert                        │
+│       - Temp > 40°C    → critical alert                     │
+│       - HR  < 40 bpm   → critical bradycardia alert         │
+│       - O₂  < 90%      → hypoxia alert                      │
+│       - Lab out of range → lab alert                        │
+│    3. Create notification via notificationStore:            │
+│       INSERT INTO notifications (patient_id, type,          │
+│         message, read, created_at)                          │
+│    4. XACK — acknowledge processed event                    │
+└──────────────────────────────────────────────────────────────┘
+  │
+  └─→ Notification stored in DB (PostgreSQL or MongoDB)
+        │
+        ▼
+  GET /api/ai/notifications → fetched by frontend
+        │
+        ▼
+┌───────────────────────────────────────────────────────────┐
+│  CARE INTELLIGENCE UI (Angular frontend)                  │
+│  ├─ 🔔 Bell icon badge: unread notification count         │
+│  ├─ Notification panel: list of alerts with timestamps    │
+│  ├─ Recommendations tab: pending AI recommendations       │
+│  │   [Approve ✓]  [Reject ✗]  per recommendation          │
+│  └─ PATCH /api/ai/recommendations/:id updates status      │
+└───────────────────────────────────────────────────────────┘
+```
 ```
 
 ---
@@ -389,9 +532,9 @@
 │ ├─ Receive GET /api/patients/:id/vitals                     │
 │ ├─ Verify JWT token valid                                   │
 │ ├─ Extract patientId from URL                               │
-│ ├─ Query MongoDB: db.patients.findOne({patientid: id})      │
-│ ├─ Extract vitals array from document                       │
-│ ├─ Filter out soft-deleted (deletedAt != null)              │
+│ ├─ Call repository: repo.getVitals(patientId)              │
+│ │  (DB_ADAPTER=knex → PostgreSQL, =mongo → MongoDB)        │
+│ ├─ Filter out soft-deleted records                          │
 │ ├─ Sort by dateofobservation DESC                           │
 │ └─ Return JSON response with vitals array                   │
 └────────┬────────────────────────────────────────────────────┘

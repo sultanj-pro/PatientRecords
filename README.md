@@ -1,13 +1,18 @@
-# PatientRecords - Micro-Frontend Medical Records System
+# PatientRecords — Production-Grade Clinical Reference Architecture
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sultanj-pro/PatientRecords/blob/main/LICENSE)
+[![Architecture: Micro-Frontend](https://img.shields.io/badge/Architecture-Micro--Frontend-blue.svg)](./docs/MICRO_FRONTEND_ARCHITECTURE.md)
+[![AI: Multi-Agent](https://img.shields.io/badge/AI-Multi--Agent-purple.svg)](./docs/PHASE_8_IMPLEMENTATION_PLAN.md)
+[![DB: Dual-Adapter](https://img.shields.io/badge/DB-PostgreSQL%20%7C%20MongoDB-green.svg)](./docs/DATA_ACCESS_LAYER_PLAN.md)
 
-A modern, scalable healthcare information system built with Angular 17, Module Federation micro-frontend architecture, and a fully decomposed microservices backend.
+A battle-tested, full-stack reference architecture demonstrating how to build and scale a complex clinical information system — from micro-frontend team autonomy to production AI multi-agent clinical decision support, all switchable between PostgreSQL and MongoDB with a single environment variable.
 
 ## Table of Contents
 
 - 📋 [Overview](#overview)
   - 🔬 [Module Federation Case Study](#module-federation-case-study)
+  - 🤖 [AI Multi-Agent System](#ai-multi-agent-system)
+  - 🗄️ [Dual-Adapter Data Layer](#dual-adapter-data-layer)
   - 🚀 [Future Vision](#future-vision)
   - ✨ [Key Capabilities](#key-capabilities)
 - 🛠️ [Technology Stack](#technology-stack)
@@ -99,27 +104,132 @@ See **[ARCHITECTURE_LEADERSHIP.md](./ARCHITECTURE_LEADERSHIP.md)** for strategic
 
 See **[LESSONS_LEARNED.md](./LESSONS_LEARNED.md)** for 20+ years of patterns and anti-patterns from building systems at scale.
 
+---
+
+### AI Multi-Agent System
+
+> **This is where the architecture gets genuinely interesting.**
+
+PatientRecords implements a production-pattern **AI Multi-Agent clinical decision support system** — not a toy demo, but a properly engineered multi-agent pipeline with human-in-the-loop approval, immutable audit trail, real-time event-driven escalation, and a full physician-facing UI.
+
+**The Agent Topology**
+
+```
+POST /api/ai/recommend/:patientId
+         │
+         ▼
+  AI Orchestrator (5008)
+  ├── builds full patient context (patient + vitals + labs + meds + visits)
+  ├── fans out in parallel to:
+  │     ├── Medication Agent (5009) — drug interactions, contraindications,
+  │     │                             renal dose flags, duplicate therapy
+  │     ├── Labs Agent (5010)      — critical values, stale labs, deterioration
+  │     │                           trends, vital-triggered lab gaps
+  │     └── Comms Agent (5011)     — visit cadence, polypharmacy, ER pattern
+  ├── aggregates findings from all agents (fail-soft per agent)
+  ├── calls LLM Agent (5013) for narrative summary (optional, non-blocking)
+  └── stores recommendation as pending — requires physician approval
+```
+
+**Real-Time Escalation Pipeline**
+
+Domain services write clinical events to a **Redis Stream** (`patientrecord-events`). The Comms Agent runs a persistent **consumer group** that processes every event against 10 clinical escalation rules (troponin, K⁺, glucose, INR, creatinine, hypertensive crisis, bradycardia, fever, and more). Matched rules create in-app notifications with 24-hour deduplication.
+
+```
+labs-service POST /labs
+      │  XADD patientrecord-events
+      ▼
+ Redis Stream
+      │  XREADGROUP (Comms Agent consumer)
+      ▼
+ Escalation Rule Engine
+      │  rule matched → createNotification() → notifications table
+      ▼
+ Notification Bell (30s poll) → unread badge → drawable list → acknowledge
+```
+
+**Human-in-the-Loop by Design**
+
+- Every recommendation starts as `pending` — status is **immutable once resolved**
+- Physicians approve or dismiss findings from the Care Intelligence module
+- Every stream event is written to an append-only `ai_audit_log` — idempotent on consumer retry
+- No patient data leaks to console or debug output
+
+**Care Intelligence UI**
+
+- "Get AI Recommendations" button triggers full orchestration pipeline
+- Findings rendered with severity badges (critical / high / medium / low)
+- Approve / Dismiss buttons guarded by `canApprove` (physician + admin roles only)
+- Notification bell in the shell navbar — live unread count, per-item acknowledge
+
+See **[docs/PHASE_8_IMPLEMENTATION_PLAN.md](./docs/PHASE_8_IMPLEMENTATION_PLAN.md)** for the full specification.
+
+---
+
+### Dual-Adapter Data Layer
+
+PatientRecords implements a **Repository Pattern** that makes the underlying database a deployment-time decision rather than a code-time decision.
+
+```
+Route Handler
+     │
+     ▼
+Repository Interface  (abstract contract)
+     │
+     ▼
+Repository Factory    (reads DB_ADAPTER env var)
+     │
+     ├── KnexAdapter   → PostgreSQL  (DB_ADAPTER=knex)
+     └── MongoAdapter  → MongoDB     (DB_ADAPTER=mongo, default)
+```
+
+**Coverage**
+
+| Layer | Knex (PostgreSQL) | Mongo (Mongoose) |
+|---|---|---|
+| 7 domain services | ✅ `KnexPatientRepository`, `KnexVitalsRepository`, … | ✅ `MongoPatientRepository`, … |
+| Registry service | ✅ `KnexRegistryRepository` | ✅ `MongoRegistryRepository` |
+| AI recommendations | ✅ `approvalStore.js` (Knex path) | ✅ `approvalStore.js` (Mongoose path) |
+| Notifications + audit log | ✅ `notificationStore.js` (Knex path) | ✅ `notificationStore.js` (Mongoose path) |
+
+**Switch with one variable — zero code changes:**
+```bash
+# PostgreSQL
+DB_ADAPTER=knex docker compose up -d
+
+# MongoDB
+DB_ADAPTER=mongo docker compose up -d
+```
+
+All adapter nuances are preserved: immutable AI recommendation status, 24h notification deduplication, idempotent audit log (PostgreSQL `23505` unique violation handled identically to MongoDB `E11000`).
+
+See **[docs/DATA_ACCESS_LAYER_PLAN.md](./docs/DATA_ACCESS_LAYER_PLAN.md)** for the full design.
+
 ### Current State (Implemented)
 
-- **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Clinical Notes (5012) + Registry (5100) + AI Orchestrator (5300), all in separate containers
-- **Redis Event Bus** — Pub/sub messaging between services via `eventPublisher.js`
-- **Repository Pattern** — Adapter-based data access layer; services depend on interfaces, not Mongoose directly; switchable via `DB_ADAPTER` env var
+- **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Clinical Notes (5012) + Registry (5100), all in separate containers
+- **AI Multi-Agent System** — AI Orchestrator (5008) fans out to Medication Agent (5009), Labs Agent (5010), Comms Agent (5011), and LLM Agent (5013); physician approval workflow with immutable audit trail
+- **Redis Streams Event Bus** — Domain services publish clinical events; Comms Agent consumer group processes them in real time for escalation detection and notification creation
+- **Dual-Adapter Data Layer** — Repository pattern with full PostgreSQL (Knex) and MongoDB (Mongoose) support; switch with `DB_ADAPTER=knex|mongo`; zero code changes required
+- **AI Clinical Intelligence UI** — Care Intelligence module with recommendation generation, finding severity badges, physician approve/dismiss workflow, notification bell with live unread count, and an acknowledgeable notification drawer
 - **Admin Dashboard** — Runtime module management: enable/disable modules, edit per-module role permissions, view service health grid
-- **7 Micro-frontends** — 6 Angular modules + 1 React module, all dynamically loaded via plugin registry
 
 ### Future Vision
 
 This foundation will evolve into:
-- **Agentic AI Integration** — Autonomous agents for clinical decision support, schedule optimization, and real-time alerts
+- **LLM Integration** — Replace rule-based agent engines with LLM tool-calling loops (Ollama / Azure OpenAI), once PHI de-identification and regulatory pathway are confirmed
+- **WebSocket Push** — Replace notification bell polling with real-time push (Phase 8.8)
+- **SMS / Email Alerts** — Twilio + SendGrid stubs for critical escalations and daily digests
 - **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
 - **Advanced Module Orchestration** — Dynamic module loading based on user roles, device capabilities, and network conditions
 
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
 - **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, procedures, and clinical notes
+- **AI Multi-Agent clinical decision support** — Orchestrator fans out to 4 specialized agents; findings displayed in Care Intelligence module with physician approval workflow
+- **Real-time escalation notifications** — Redis Streams consumer evaluates 10 clinical escalation rules; in-app notification bell with live unread count and acknowledge workflow
+- **Dual-adapter data layer** — PostgreSQL via Knex or MongoDB via Mongoose; one env var, zero code changes; all stores (domain + AI) honour `DB_ADAPTER`
 - **Microservices backend** — API Gateway routing to 15+ independent domain services and AI agents
-- **Repository Pattern** — Adapter-based data access layer; `DB_ADAPTER` env var selects storage backend
-- **Redis event bus** — Async inter-service events via pub/sub (`eventPublisher.js`)
 - **Admin Dashboard** — Runtime module management with enable/disable toggles and per-module role editor
 - **Shareable patient URLs** with deep-linkable module views (`/dashboard/:module/:patientId`)
 - **Real-time patient context sync** across all modules using Observable pattern
@@ -127,7 +237,7 @@ This foundation will evolve into:
 - **Role-based access control** (RBAC) for clinical workflows — roles: `admin`, `physician`, `nurse`
 - **Framework-agnostic module loading** — load Angular or React modules dynamically
 - **Responsive web design** for desktop and tablet use
-- **Containerized deployment** using Docker and Docker Compose (~29 containers)
+- **Containerized deployment** using Docker and Docker Compose (~31 containers)
 - **Comprehensive API** with OpenAPI/Swagger documentation and structured JSON logging
 
 [⬆️ Back to Top](#table-of-contents)
@@ -154,11 +264,17 @@ This foundation will evolve into:
 - **Care Team Service** (port 5007) — Team member management
 - **Clinical Notes Service** (port 5012) — Free-text clinical notes CRUD
 - **Registry Service** (port 5100) — Plugin registry: module metadata, enable/disable, role management
-- **AI Orchestrator** (port 5300) — Multi-agent recommendation engine (Medication, Labs, LLM, Comms agents)
+- **AI Orchestrator** (port 5008) — Multi-agent fan-out: context builder + agent dispatcher + approval store
+- **Medication Agent** (port 5009) — Drug interactions, contraindications, renal dose flags, duplicate therapy
+- **Labs Agent** (port 5010) — Critical values, stale labs, deterioration trends, vital-triggered gaps
+- **Comms Agent** (port 5011) — Redis Streams consumer + escalation rule engine + notification store
+- **LLM Agent** (port 5013) — Narrative summary generation (Ollama / Azure OpenAI)
 - **Node.js 18+ / Express.js** — Runtime and framework for all services
-- **MongoDB with Mongoose** — NoSQL data store (`patients` + `clinical_notes` collections)
-- **Repository Pattern** — `backend/shared/repositories/` — interfaces + adapters (Mongoose); adapter selected by `DB_ADAPTER` env var
-- **Redis** — Pub/sub event bus for inter-service async events
+- **PostgreSQL 16** — Relational data store; active when `DB_ADAPTER=knex`; schema in `backend/shared/db/migrations/`
+- **MongoDB 7** — Document data store; active when `DB_ADAPTER=mongo` (default)
+- **Repository Pattern** — `backend/shared/repositories/` — interfaces + dual adapters (Knex + Mongoose); factory selects adapter via `DB_ADAPTER` env var
+- **Knex.js** — SQL query builder for PostgreSQL adapter
+- **Redis 7 Streams** — `XADD` / `XREADGROUP` event bus; Comms Agent consumer group processes clinical events
 - **JWT (jsonwebtoken)** — Stateless auth; role derived from username (`admin`→admin, `doc*`→physician, else→nurse)
 - **Swagger/OpenAPI** — API documentation at `/api-docs` on every service
 - **Jest** — Testing framework with coverage reporting
@@ -276,7 +392,7 @@ Two-tier approach for uninterrupted user experience:
    docker compose ps
    ```
 
-   Expected output (~29 containers, including clinical-notes 5012, AI orchestrator 5300, Redis):
+   Expected output (~31 containers, including AI agents, Comms Agent, Redis):
    ```
    NAME                                STATUS    PORTS
    # Frontend micro-frontends
@@ -296,12 +412,19 @@ Two-tier approach for uninterrupted user experience:
    patientrecord-labs-service          Up        0.0.0.0:5004->5004/tcp
    patientrecord-medications-service   Up        0.0.0.0:5005->5005/tcp
    patientrecord-visits-service        Up        0.0.0.0:5006->5006/tcp
-   patientrecord-care-team-service      Up        0.0.0.0:5007->5007/tcp
-   patientrecord-clinical-notes-service  Up        0.0.0.0:5012->5012/tcp
-   patientrecord-registry-service        Up        0.0.0.0:5100->5100/tcp
-   patientrecord-ai-orchestrator         Up        0.0.0.0:5300->5300/tcp
-   patientrecord-mongo                   Up        0.0.0.0:27017->27017/tcp
-   patientrecord-redis                   Up        0.0.0.0:6379->6379/tcp
+   patientrecord-care-team-service     Up        0.0.0.0:5007->5007/tcp
+   patientrecord-clinical-notes-service  Up      0.0.0.0:5012->5012/tcp
+   patientrecord-registry-service        Up      0.0.0.0:5100->5100/tcp
+   # AI agents
+   patientrecord-ai-orchestrator         Up      0.0.0.0:5008->5008/tcp
+   patientrecord-medication-agent        Up      (internal)
+   patientrecord-labs-agent              Up      (internal)
+   patientrecord-comms-agent             Up      (internal)
+   patientrecord-llm-agent               Up      (internal)
+   # Infrastructure
+   patientrecord-postgres                Up      0.0.0.0:5432->5432/tcp
+   patientrecord-mongo                   Up      0.0.0.0:27017->27017/tcp
+   patientrecord-redis                   Up      0.0.0.0:6379->6379/tcp
    ```
 
 4. **Access the application**
@@ -486,7 +609,29 @@ PatientRecords
 - **Service health grid** — real-time status of all backend microservices via `/health/deep`
 - **Module management table** — enable or disable any clinical module at runtime without redeployment
 - **Inline role editor** — per-module role permissions (admin / physician / nurse) with save/cancel
-- Changes persist to MongoDB via Registry Service admin API
+- Changes persist to PostgreSQL or MongoDB via Registry Service admin API (honours `DB_ADAPTER`)
+
+**AI Multi-Agent Clinical Decision Support** 🤖
+- **AI Orchestrator** — builds full patient context, fans out to 4 specialized agents in parallel, aggregates findings, optionally generates LLM narrative summary, persists recommendation as `pending`
+- **Medication Agent** — checks 20+ high-risk drug-drug interaction pairs, allergy contraindications, renal dose adjustment flags (creatinine-based), duplicate pharmacological class detection
+- **Labs Agent** — detects missing baseline labs per patient condition, stale results beyond threshold, progressive deterioration trends across last 3 values, vital-triggered lab order gaps
+- **Comms Agent** — evaluates visit cadence, polypharmacy thresholds, and frequent ER pattern; also runs persistent Redis Streams consumer for real-time event escalation
+- **Fail-soft architecture** — one agent going offline never breaks the recommendation pipeline; findings from available agents still reach the physician
+- **Human-in-the-loop** — every recommendation is `pending` until a physician approves or dismisses it; status transitions are one-way and immutable
+- **Physician UI** — Care Intelligence module with severity-badged findings, approve/dismiss per recommendation, guarded by role (`physician` / `admin` only can act)
+
+**Real-Time Escalation & Notifications** 🔔
+- Domain services publish clinical events to a **Redis Stream** (`patientrecord-events`) on every write (labs, vitals, medications, visits, care-team)
+- Comms Agent consumer group evaluates **10 escalation rules**: troponin elevation, critical potassium, severe hypoglycemia, elevated INR, acute kidney injury, hypertensive crisis, bradycardia, fever, and more
+- Matched rules create in-app notifications with **24-hour deduplication** (same patient + rule within 24h produces one notification, not many)
+- Every stream event written to an **append-only audit log** — idempotent on consumer retry via unique `streamMsgId`
+- **Notification bell** in the shell navbar: live unread badge (30s poll), expandable drawer, per-item acknowledge button
+
+**Dual-Adapter Data Layer** 🗄️
+- **Repository Pattern** decouples all services from the storage engine; services call `getRepository('vitals')`, not Mongoose directly
+- Interfaces → Factory → KnexAdapter (PostgreSQL) or MongoAdapter (Mongoose) — selected by `DB_ADAPTER` env var
+- Covers all 7 domain services, registry, AI recommendation store, notification store, and audit log
+- `DB_ADAPTER=knex` → PostgreSQL 16; `DB_ADAPTER=mongo` → MongoDB 7; one variable, zero code changes
 
 **Microservices Backend** 🏗️
 - **API Gateway** (port 5000) — single entry point; routes all `/api/*` traffic to the correct service
@@ -785,6 +930,61 @@ Content-Type: application/json
 **Service Health (deep)**
 ```http
 GET /health/deep
+Authorization: Bearer <token>
+```
+
+### AI Multi-Agent Endpoints
+
+**Generate Recommendation** (triggers full agent pipeline)
+```http
+POST /api/ai/recommend/:patientId
+Authorization: Bearer <token>
+
+Response: {
+  "_id": "uuid",
+  "patientId": "20003",
+  "status": "pending",
+  "findings": [
+    { "type": "drug-interaction", "severity": "high", "detail": "..." },
+    { "type": "critical-value",  "severity": "critical", "detail": "..." }
+  ],
+  "llmSummary": "Narrative generated by LLM agent (or null)",
+  "createdAt": "..."
+}
+```
+
+**List Recommendations for Patient**
+```http
+GET /api/ai/recommendations/:patientId
+Authorization: Bearer <token>
+```
+
+**Approve / Dismiss Recommendation** (physician + admin only)
+```http
+POST /api/ai/recommendations/:id/approve
+POST /api/ai/recommendations/:id/dismiss
+Authorization: Bearer <physician_token>
+```
+
+### Notification Endpoints
+
+**Unread Notifications (pending only)**
+```http
+GET /api/notifications/:patientId/unread
+Authorization: Bearer <token>
+
+Response: { "notifications": [...], "count": 3 }
+```
+
+**All Notifications**
+```http
+GET /api/notifications/:patientId
+Authorization: Bearer <token>
+```
+
+**Acknowledge Notification**
+```http
+POST /api/notifications/:id/acknowledge
 Authorization: Bearer <token>
 ```
 
