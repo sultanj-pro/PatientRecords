@@ -15,3 +15,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+build-output.txt
+build-registry.txt
