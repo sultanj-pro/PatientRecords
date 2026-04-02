@@ -4,6 +4,7 @@ COPY package.json .
 RUN npm install --production
 COPY rules/ ./rules/
 COPY rxnav.js .
+COPY llmAnalyzer.js .
 COPY analyzer.js .
 COPY server.js .
 ENV PORT=5009

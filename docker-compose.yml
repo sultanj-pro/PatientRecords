@@ -484,7 +484,7 @@ services:
       - PORT=5013
       - JWT_SECRET=${JWT_SECRET:-dev-secret}
       - OLLAMA_URL=http://patientrecord-ollama:11434
-      - OLLAMA_MODEL=llama3
+      - OLLAMA_MODEL=llama3.2:1b
       - CLINICAL_NOTES_URL=http://patientrecord-clinical-notes-service:5012
     ports:
       - "5013:5013"
@@ -563,6 +563,8 @@ services:
     container_name: patientrecord-medication-agent
     environment:
       - PORT=5009
+      - OLLAMA_URL=http://patientrecord-ollama:11434
+      - OLLAMA_MODEL=llama3.2:1b
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5009/health"]
@@ -582,7 +584,7 @@ services:
     environment:
       - PORT=5010
       - OLLAMA_URL=http://patientrecord-ollama:11434
-      - OLLAMA_MODEL=llama3
+      - OLLAMA_MODEL=llama3.2:1b
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5010/health"]

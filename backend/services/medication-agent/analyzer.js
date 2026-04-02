@@ -1,8 +1,9 @@
 'use strict';
 
-const { checkInteractions }     = require('./rules/interactions');
-const { checkContraindications } = require('./rules/contraindications');
-const { normalizedrugNames }     = require('./rxnav');
+const { checkInteractions }          = require('./rules/interactions');
+const { checkContraindications }      = require('./rules/contraindications');
+const { normalizedrugNames }          = require('./rxnav');
+const { getLlmMedicationFindings }    = require('./llmAnalyzer');
 
 // ── Pharmacological class groups for duplicate-therapy detection ────────────
 
@@ -154,14 +155,22 @@ async function analyze(payload) {
 
   const allergies = (patient && Array.isArray(patient.allergies)) ? patient.allergies : [];
 
-  const findings = [
+  const ruleFindings = [
     ...checkInteractions(medNames),
     ...checkContraindications(medNames, allergies),
     ...runRenalCheck(medNames, labs, patient),
     ...runDuplicateTherapyCheck(medNames),
   ];
 
-  return findings;
+  // LLM supplementary analysis — catches concerns not covered by static rules (fail-soft)
+  const llmFindings = await getLlmMedicationFindings({
+    medications,
+    labs,
+    patient,
+    existingFindings: ruleFindings,
+  });
+
+  return [...ruleFindings, ...llmFindings];
 }
 
 module.exports = { analyze };

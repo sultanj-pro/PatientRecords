@@ -313,51 +313,113 @@ function checkVitalTriggeredLabs(vitals, labs) {
   return findings;
 }
 
-// ─── LLM interpretation (Ollama, fail-soft) ──────────────────────────────────
+// ─── LLM structured lab analysis (Ollama, fail-soft) ─────────────────────────
 
-async function callLlmInterpretation(findings, labs, patient, ollamaUrl, ollamaModel) {
-  if (!ollamaUrl || findings.length === 0) return null;
+const LABS_AGENT_SYSTEM_PROMPT = `You are a clinical laboratory specialist AI embedded in an EHR system.
+You will be given a patient's recent lab results, vitals, and the findings already flagged by the automated rule engine.
+Your task is to identify ADDITIONAL clinical concerns NOT already flagged, then provide a brief synthesis.
+
+Return ONLY a valid JSON object with this exact shape:
+{
+  "findings": [
+    {
+      "type": "llm-lab-finding",
+      "severity": "critical" | "high" | "moderate" | "low" | "info",
+      "title": "<short title under 80 chars>",
+      "description": "<clinical explanation 1-2 sentences>",
+      "recommendation": "<action for the care team>"
+    }
+  ],
+  "interpretation": "<2-3 sentence narrative synthesis of the overall lab picture for the physician>"
+}
+
+Rules:
+- "findings" may be empty array [] if nothing additional to flag
+- Do NOT repeat findings already flagged by the rule engine
+- Do NOT invent findings — only flag genuinely clinically significant concerns
+- Maximum 3 additional findings
+- No markdown, no explanation text — JSON object ONLY`;
+
+function isValidLabFinding(f) {
+  return f &&
+    typeof f.type === 'string' &&
+    ['critical', 'high', 'moderate', 'low', 'info'].includes(f.severity) &&
+    typeof f.title === 'string' && f.title.length > 0 &&
+    typeof f.description === 'string' && f.description.length > 0 &&
+    typeof f.recommendation === 'string' && f.recommendation.length > 0;
+}
+
+function parseLlmLabResponse(raw) {
   try {
-    const patientDesc = (patient?.firstName && patient?.lastName)
-      ? `${patient.firstName} ${patient.lastName}`
-      : 'patient';
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const start = cleaned.indexOf('{');
+    const end   = cleaned.lastIndexOf('}');
+    if (start === -1 || end === -1) return { findings: [], interpretation: null };
+    const obj = JSON.parse(cleaned.slice(start, end + 1));
+    return {
+      findings:       (Array.isArray(obj.findings) ? obj.findings : []).filter(isValidLabFinding).slice(0, 3),
+      interpretation: typeof obj.interpretation === 'string' ? obj.interpretation.trim() : null,
+    };
+  } catch {
+    return { findings: [], interpretation: null };
+  }
+}
 
-    const findingsSummary = findings
-      .map(f => `- [${(f.severity || 'info').toUpperCase()}] ${f.title}: ${f.description}`)
-      .join('\n');
+async function callLlmLabAnalysis(ruleFindings, labs, vitals, patient, ollamaUrl, ollamaModel) {
+  if (!ollamaUrl || labs.length === 0) return { findings: [], interpretation: null };
 
-    const recentLabsSummary = labs.slice(0, 8)
-      .map(l => `${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}${l.flag ? ` (${l.flag})` : ''}`)
-      .join(', ');
+  try {
+    await axios.get(`${ollamaUrl}/api/tags`, { timeout: 3000 });
+  } catch {
+    console.warn('[labs-agent] Ollama unavailable — skipping LLM analysis');
+    return { findings: [], interpretation: null };
+  }
 
-    const prompt = `You are a clinical laboratory specialist embedded in an EHR.
-Patient: ${patientDesc}
-Recent Labs: ${recentLabsSummary || 'none'}
+  const labList = labs.slice(0, 10)
+    .map(l => `${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}${l.referenceRange || l.reference_range ? ` (ref: ${l.referenceRange || l.reference_range})` : ''}${l.flag ? ` [${l.flag}]` : ''}`)
+    .join('\n');
 
-Automated Findings:
-${findingsSummary}
+  const vitalList = vitals.slice(0, 5)
+    .map(v => `${v.vital_description}: ${v.value} ${v.unit || ''}`)
+    .join(', ') || 'None';
 
-In 2-3 sentences, provide a clinical interpretation of these lab findings for the attending physician. Focus on the most urgent actionable concerns. Do not repeat findings verbatim — synthesize the clinical picture.`;
+  const patientDesc = `Age: ${patient?.age || patient?.demographics?.age || 'unknown'}, Gender: ${patient?.demographics?.gender || 'unknown'}`;
 
+  const alreadyFlagged = ruleFindings.length > 0
+    ? ruleFindings.map(f => f.title).join('; ')
+    : 'None';
+
+  const userPrompt = `Patient: ${patientDesc}
+
+Lab Results:
+${labList}
+
+Recent Vitals: ${vitalList}
+
+Already flagged by rule engine (do NOT repeat): ${alreadyFlagged}
+
+Analyze the lab results and provide additional findings and interpretation:`;
+
+  try {
+    console.log(`[labs-agent] Calling Ollama (${ollamaModel || 'llama3.2:1b'}) for LLM lab analysis…`);
     const { data } = await axios.post(
       `${ollamaUrl}/api/generate`,
-      { model: ollamaModel || 'llama3', prompt, stream: false },
-      { timeout: 60000 }
+      {
+        model:  ollamaModel || 'llama3.2:1b',
+        system: LABS_AGENT_SYSTEM_PROMPT,
+        prompt: userPrompt,
+        stream: false,
+      },
+      { timeout: 90000 }
     );
 
-    const text = (data?.response || '').trim();
-    if (!text) return null;
-
-    return {
-      type:           'llm-interpretation',
-      severity:       'info',
-      title:          'AI Lab Interpretation',
-      description:    text,
-      recommendation: 'AI-generated clinical interpretation — for informational purposes only.',
-    };
+    const raw    = (data?.response || '').trim();
+    const result = parseLlmLabResponse(raw);
+    console.log(`[labs-agent] LLM returned ${result.findings.length} finding(s) + interpretation`);
+    return result;
   } catch (err) {
-    console.warn('[labs-agent] LLM interpretation failed (non-critical):', err.message);
-    return null;
+    console.warn('[labs-agent] LLM analysis failed (non-critical):', err.message);
+    return { findings: [], interpretation: null };
   }
 }
 
@@ -368,7 +430,7 @@ async function analyze({ labs: rawLabs, vitals: rawVitals, patient, medications:
   const vitals      = extractVitals(rawVitals);
   const medications = extractMeds(rawMeds);
 
-  const findings = [
+  const ruleFindings = [
     ...checkCriticalValues(labs),
     ...checkMissingBaselineLabs(labs, medications),
     ...checkStaleLabs(labs),
@@ -376,10 +438,23 @@ async function analyze({ labs: rawLabs, vitals: rawVitals, patient, medications:
     ...checkVitalTriggeredLabs(vitals, labs),
   ];
 
-  const llmFinding = await callLlmInterpretation(findings, labs, patient, ollamaUrl, ollamaModel);
-  if (llmFinding) findings.push(llmFinding);
+  // LLM structured analysis — additional findings + narrative interpretation
+  const llmResult = await callLlmLabAnalysis(ruleFindings, labs, vitals, patient, ollamaUrl, ollamaModel);
 
-  return findings;
+  const allFindings = [...ruleFindings, ...llmResult.findings];
+
+  // Append the narrative interpretation as an info finding if present
+  if (llmResult.interpretation) {
+    allFindings.push({
+      type:           'llm-interpretation',
+      severity:       'info',
+      title:          'AI Lab Interpretation',
+      description:    llmResult.interpretation,
+      recommendation: 'AI-generated clinical interpretation — for informational purposes only.',
+    });
+  }
+
+  return allFindings;
 }
 
 module.exports = { analyze };
