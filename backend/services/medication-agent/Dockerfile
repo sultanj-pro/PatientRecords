@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json .
 RUN npm install --production
 COPY rules/ ./rules/
+COPY rxnav.js .
 COPY analyzer.js .
 COPY server.js .
 ENV PORT=5009

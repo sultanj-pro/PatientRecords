@@ -42,7 +42,7 @@ app.get('/health', (req, res) => {
  * This is an internal-only endpoint called by the AI Orchestrator.
  * No authentication required (network-isolated service).
  */
-app.post('/analyze', (req, res) => {
+app.post('/analyze', async (req, res) => {
   try {
     const { medications, labs, patient } = req.body;
 
@@ -50,7 +50,7 @@ app.post('/analyze', (req, res) => {
       return res.status(400).json({ error: 'medications field is required' });
     }
 
-    const findings = analyze({ medications, labs: labs || [], patient: patient || {} });
+    const findings = await analyze({ medications, labs: labs || [], patient: patient || {} });
     res.json({ findings });
   } catch (err) {
     console.error('[medication-agent] Analyze error:', err.message);

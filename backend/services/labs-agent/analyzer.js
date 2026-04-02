@@ -1,5 +1,7 @@
 'use strict';
 
+const axios = require('axios');
+
 const { CONDITION_LAB_MAP, STALE_LAB_THRESHOLDS } = require('./rules/diagnosticGaps');
 const { checkCriticalValue } = require('./rules/criticalValues');
 
@@ -311,11 +313,59 @@ function checkVitalTriggeredLabs(vitals, labs) {
   return findings;
 }
 
+// ─── LLM interpretation (Ollama, fail-soft) ──────────────────────────────────
+
+async function callLlmInterpretation(findings, labs, patient, ollamaUrl, ollamaModel) {
+  if (!ollamaUrl || findings.length === 0) return null;
+  try {
+    const patientDesc = (patient?.firstName && patient?.lastName)
+      ? `${patient.firstName} ${patient.lastName}`
+      : 'patient';
+
+    const findingsSummary = findings
+      .map(f => `- [${(f.severity || 'info').toUpperCase()}] ${f.title}: ${f.description}`)
+      .join('\n');
+
+    const recentLabsSummary = labs.slice(0, 8)
+      .map(l => `${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}${l.flag ? ` (${l.flag})` : ''}`)
+      .join(', ');
+
+    const prompt = `You are a clinical laboratory specialist embedded in an EHR.
+Patient: ${patientDesc}
+Recent Labs: ${recentLabsSummary || 'none'}
+
+Automated Findings:
+${findingsSummary}
+
+In 2-3 sentences, provide a clinical interpretation of these lab findings for the attending physician. Focus on the most urgent actionable concerns. Do not repeat findings verbatim — synthesize the clinical picture.`;
+
+    const { data } = await axios.post(
+      `${ollamaUrl}/api/generate`,
+      { model: ollamaModel || 'llama3', prompt, stream: false },
+      { timeout: 60000 }
+    );
+
+    const text = (data?.response || '').trim();
+    if (!text) return null;
+
+    return {
+      type:           'llm-interpretation',
+      severity:       'info',
+      title:          'AI Lab Interpretation',
+      description:    text,
+      recommendation: 'AI-generated clinical interpretation — for informational purposes only.',
+    };
+  } catch (err) {
+    console.warn('[labs-agent] LLM interpretation failed (non-critical):', err.message);
+    return null;
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-function analyze({ labs: rawLabs, vitals: rawVitals, patient, medications: rawMeds }) {
-  const labs       = extractLabs(rawLabs);
-  const vitals     = extractVitals(rawVitals);
+async function analyze({ labs: rawLabs, vitals: rawVitals, patient, medications: rawMeds, ollamaUrl, ollamaModel }) {
+  const labs        = extractLabs(rawLabs);
+  const vitals      = extractVitals(rawVitals);
   const medications = extractMeds(rawMeds);
 
   const findings = [
@@ -325,6 +375,9 @@ function analyze({ labs: rawLabs, vitals: rawVitals, patient, medications: rawMe
     ...checkDeteriorationTrend(labs),
     ...checkVitalTriggeredLabs(vitals, labs),
   ];
+
+  const llmFinding = await callLlmInterpretation(findings, labs, patient, ollamaUrl, ollamaModel);
+  if (llmFinding) findings.push(llmFinding);
 
   return findings;
 }

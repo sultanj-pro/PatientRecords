@@ -2,6 +2,7 @@
 
 const { checkInteractions }     = require('./rules/interactions');
 const { checkContraindications } = require('./rules/contraindications');
+const { normalizedrugNames }     = require('./rxnav');
 
 // ── Pharmacological class groups for duplicate-therapy detection ────────────
 
@@ -140,12 +141,17 @@ function runDuplicateTherapyCheck(medNames) {
  *   medications: array or {value: array} from medications-service
  *   labs:        array or {value: array} from labs-service
  *   patient:     full patient object (includes allergies, demographics)
- * @returns {object[]} findings
+ * @returns {Promise<object[]>} findings
  */
-function analyze(payload) {
+async function analyze(payload) {
   const { medications, labs, patient } = payload;
 
-  const medNames  = getActiveMedNames(medications);
+  // Use RxNav to normalize brand names → generic ingredient names before rule matching.
+  // Falls back to original names if RxNav is unreachable (fail-soft).
+  const rawMedNames = getActiveMedNames(medications);
+  const normalizedNames = await normalizedrugNames(rawMedNames);
+  const medNames = normalizedNames !== null ? normalizedNames : rawMedNames;
+
   const allergies = (patient && Array.isArray(patient.allergies)) ? patient.allergies : [];
 
   const findings = [

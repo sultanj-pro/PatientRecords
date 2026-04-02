@@ -5,8 +5,10 @@ const bodyParser = require('body-parser');
 const cors       = require('cors');
 const { analyze } = require('./analyzer');
 
-const app  = express();
-const PORT = process.env.PORT || 5010;
+const app         = express();
+const PORT        = process.env.PORT         || 5010;
+const OLLAMA_URL  = process.env.OLLAMA_URL   || '';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '2mb' }));
@@ -17,10 +19,10 @@ app.get('/health', (_req, res) => {
 });
 
 // ── Analyze endpoint (internal only — no auth) ────────────────────────────────
-app.post('/analyze', (req, res) => {
+app.post('/analyze', async (req, res) => {
   try {
     const { labs, vitals, patient, medications } = req.body;
-    const findings = analyze({ labs, vitals, patient, medications });
+    const findings = await analyze({ labs, vitals, patient, medications, ollamaUrl: OLLAMA_URL, ollamaModel: OLLAMA_MODEL });
     res.json({ findings });
   } catch (err) {
     console.error('[labs-agent] analyze error:', err.message);
