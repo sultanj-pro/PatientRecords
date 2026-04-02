@@ -16,7 +16,10 @@
       [disabled]="analyzing || !patientId"
       (click)="generateAnalysis()">
       <span *ngIf="!analyzing">⚡ Run New Analysis</span>
-      <span *ngIf="analyzing">🔄 Analyzing…</span>
+      <span *ngIf="analyzing" class="btn-analyzing">
+        <span class="btn-spinner"></span>
+        Analyzing…
+      </span>
     </button>
     <span *ngIf="!canApprove" class="role-badge nurse-badge">👩‍⚕️ Nurse View</span>
   </div>
@@ -25,6 +28,15 @@
   <div *ngIf="recError" class="error-banner">
     <span>⚠️ {{ recError }}</span>
     <button class="btn-close" (click)="recError = null">✕</button>
+  </div>
+
+  <!-- ── Analyzing progress banner ─────────────────────────────────── -->
+  <div *ngIf="analyzing" class="analyzing-banner">
+    <div class="spinner analyzing-spinner"></div>
+    <div class="analyzing-text">
+      <strong>Running multi-agent analysis…</strong>
+      <span>Medication Agent &nbsp;·&nbsp; Labs Agent &nbsp;·&nbsp; Care Coordination &nbsp;·&nbsp; LLM Analysis</span>
+    </div>
   </div>
 
   <!-- ── Pending Notifications panel ──────────────────────────────── -->

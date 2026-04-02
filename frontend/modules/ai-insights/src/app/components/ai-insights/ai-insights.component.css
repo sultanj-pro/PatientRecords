@@ -64,6 +64,10 @@
   padding: 12px 28px;
   font-size: 15px;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+  min-width: 190px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-generate:hover:not(:disabled) {
@@ -73,6 +77,60 @@
 
 .btn-generate.loading {
   background: linear-gradient(135deg, #999 0%, #777 100%);
+}
+
+/* Inline spinner inside the button */
+.btn-analyzing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Analyzing progress banner ───────────────────────────────────────────── */
+.analyzing-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f3e8ff 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 8px;
+}
+
+.analyzing-spinner {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+  border-color: #c7d2fe;
+  border-top-color: #667eea;
+  flex-shrink: 0;
+}
+
+.analyzing-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.analyzing-text strong {
+  color: #4338ca;
+  font-size: 15px;
+}
+
+.analyzing-text span {
+  color: #6366f1;
+  font-size: 13px;
 }
 
 .btn-approve {
