@@ -168,12 +168,20 @@ if (DB_ADAPTER === 'knex') {
 
   auditLogSchema.index({ streamMsgId: 1 }, { unique: true });
 
+  // 8.8.7 — append-only: reject any attempt to update or delete audit records
+  auditLogSchema.pre('findOneAndUpdate', function() { throw new Error('ai_audit_log is append-only'); });
+  auditLogSchema.pre('updateOne',        function() { throw new Error('ai_audit_log is append-only'); });
+  auditLogSchema.pre('updateMany',       function() { throw new Error('ai_audit_log is append-only'); });
+  auditLogSchema.pre('deleteOne',        function() { throw new Error('ai_audit_log is append-only'); });
+  auditLogSchema.pre('deleteMany',       function() { throw new Error('ai_audit_log is append-only'); });
+
   const AuditLog = mongoose.models.AuditLog ||
     mongoose.model('AuditLog', auditLogSchema, 'ai_audit_log');
 
   async function createAuditEntry({ streamMsgId, eventType, patientId, payload }) {
     try {
-      await AuditLog.create({ streamMsgId, eventType, patientId, payload });
+      // 8.8.7 — write concern majority ensures durability for HIPAA audit trail
+      await new AuditLog({ streamMsgId, eventType, patientId, payload }).save({ writeConcern: { w: 'majority' } });
     } catch (err) {
       if (!err.message.includes('E11000')) throw err;
     }

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const net = require('net');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const swaggerUi = require('swagger-ui-express');
 const openapiSpec = require('./openapi.json');
@@ -19,6 +20,10 @@ const AI_ORCHESTRATOR_URL        = process.env.AI_ORCHESTRATOR_URL        || 'ht
 const COMMS_AGENT_URL            = process.env.COMMS_AGENT_URL            || 'http://localhost:5011';
 const CLINICAL_NOTES_URL         = process.env.CLINICAL_NOTES_URL         || 'http://localhost:5012';
 const LLM_AGENT_URL              = process.env.LLM_AGENT_URL              || 'http://localhost:5013';
+const MEDICATION_AGENT_URL       = process.env.MEDICATION_AGENT_URL       || 'http://localhost:5009';
+const LABS_AGENT_URL             = process.env.LABS_AGENT_URL             || 'http://localhost:5010';
+const REDIS_HOST                 = process.env.REDIS_HOST                 || 'localhost';
+const REDIS_PORT                 = parseInt(process.env.REDIS_PORT || '6379', 10);
 
 app.use(cors());
 
@@ -59,7 +64,17 @@ app.get('/health/deep', async (req, res) => {
     { name: 'comms-agent',          url: COMMS_AGENT_URL },
     { name: 'clinical-notes',       url: CLINICAL_NOTES_URL },
     { name: 'llm-agent',            url: LLM_AGENT_URL },
+    { name: 'medication-agent',     url: MEDICATION_AGENT_URL },
+    { name: 'labs-agent',           url: LABS_AGENT_URL },
   ];
+
+  // TCP ping for Redis (no HTTP endpoint)
+  const checkRedis = () => new Promise((resolve) => {
+    const socket = net.createConnection({ host: REDIS_HOST, port: REDIS_PORT, timeout: 2000 });
+    socket.on('connect', () => { socket.destroy(); resolve('ok'); });
+    socket.on('error',   () => resolve('unreachable'));
+    socket.on('timeout', () => { socket.destroy(); resolve('timeout'); });
+  });
 
   const checkService = (url) => new Promise((resolve) => {
     const req = http.get(`${url}/health`, { timeout: 3000 }, (r) => {
@@ -72,12 +87,16 @@ app.get('/health/deep', async (req, res) => {
   const results = await Promise.all(
     services.map(async (s) => ({ name: s.name, status: await checkService(s.url) }))
   );
+  const redisStatus = await checkRedis();
 
-  const allOk = results.every((r) => r.status === 'ok');
+  const allOk = results.every((r) => r.status === 'ok') && redisStatus === 'ok';
   res.status(allOk ? 200 : 207).json({
     status: allOk ? 'ok' : 'degraded',
     gateway: 'ok',
-    services: Object.fromEntries(results.map((r) => [r.name, r.status])),
+    services: {
+      ...Object.fromEntries(results.map((r) => [r.name, r.status])),
+      redis: redisStatus,
+    },
   });
 });
 
@@ -115,7 +134,48 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not Found', message: `No service handles ${req.method} ${req.path}` });
 });
 
-app.listen(PORT, () => {
+// ── HTTP server (required for WebSocket upgrade proxying) ─────────────────────────
+
+const server = http.createServer(app);
+
+// 8.8.2 — Proxy WebSocket upgrade requests for /ws/notifications to comms-agent
+server.on('upgrade', (req, clientSocket, head) => {
+  if (!req.url.startsWith('/ws/notifications')) {
+    clientSocket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+    clientSocket.destroy();
+    return;
+  }
+
+  const commsUrl = new URL(COMMS_AGENT_URL);
+  const targetPort = parseInt(commsUrl.port, 10) || 80;
+  const targetHost = commsUrl.hostname;
+
+  const serverSocket = net.createConnection({ host: targetHost, port: targetPort }, () => {
+    // Reconstruct and forward the raw HTTP upgrade request
+    const reqLines = [
+      `${req.method} ${req.url} HTTP/${req.httpVersion}`,
+      `Host: ${commsUrl.host}`,
+    ];
+    for (const [key, val] of Object.entries(req.headers)) {
+      if (key.toLowerCase() !== 'host') {
+        reqLines.push(`${key}: ${Array.isArray(val) ? val.join(', ') : val}`);
+      }
+    }
+    reqLines.push('', '');
+    serverSocket.write(reqLines.join('\r\n'));
+    if (head && head.length) serverSocket.write(head);
+    serverSocket.pipe(clientSocket);
+    clientSocket.pipe(serverSocket);
+  });
+
+  serverSocket.on('error', (err) => {
+    console.error('[Gateway] WS tunnel error:', err.message);
+    clientSocket.end();
+  });
+  clientSocket.on('error', () => serverSocket.destroy());
+});
+
+server.listen(PORT, () => {
   console.log(`API Gateway listening on port ${PORT}`);
   console.log(`  /api/auth      -> ${AUTH_SERVICE_URL}`);
   console.log(`  /api/registry  -> ${REGISTRY_SERVICE_URL}`);

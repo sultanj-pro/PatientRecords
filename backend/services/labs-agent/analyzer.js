@@ -315,6 +315,19 @@ function checkVitalTriggeredLabs(vitals, labs) {
 
 // ─── LLM structured lab analysis (Ollama, fail-soft) ─────────────────────────
 
+/**
+ * 8.8.5 — Strip control characters and enforce length limit to prevent
+ * prompt injection via user-controlled strings (lab names, values, etc.).
+ */
+function sanitizeForPrompt(str, maxLen = 200) {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .slice(0, maxLen)
+    .trim();
+}
+
 const LABS_AGENT_SYSTEM_PROMPT = `You are a clinical laboratory specialist AI embedded in an EHR system.
 You will be given a patient's recent lab results, vitals, and the findings already flagged by the automated rule engine.
 Your task is to identify ADDITIONAL clinical concerns NOT already flagged, then provide a brief synthesis.
@@ -376,14 +389,14 @@ async function callLlmLabAnalysis(ruleFindings, labs, vitals, patient, ollamaUrl
   }
 
   const labList = labs.slice(0, 10)
-    .map(l => `${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}${l.referenceRange || l.reference_range ? ` (ref: ${l.referenceRange || l.reference_range})` : ''}${l.flag ? ` [${l.flag}]` : ''}`)
+    .map(l => sanitizeForPrompt(`${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}${l.referenceRange || l.reference_range ? ` (ref: ${l.referenceRange || l.reference_range})` : ''}${l.flag ? ` [${l.flag}]` : ''}`))
     .join('\n');
 
   const vitalList = vitals.slice(0, 5)
-    .map(v => `${v.vital_description}: ${v.value} ${v.unit || ''}`)
+    .map(v => sanitizeForPrompt(`${v.vital_description}: ${v.value} ${v.unit || ''}`))
     .join(', ') || 'None';
 
-  const patientDesc = `Age: ${patient?.age || patient?.demographics?.age || 'unknown'}, Gender: ${patient?.demographics?.gender || 'unknown'}`;
+  const patientDesc = `Age: ${sanitizeForPrompt(String(patient?.age || patient?.demographics?.age || 'unknown'), 20)}, Gender: ${sanitizeForPrompt(String(patient?.demographics?.gender || 'unknown'), 20)}`;
 
   const alreadyFlagged = ruleFindings.length > 0
     ? ruleFindings.map(f => f.title).join('; ')

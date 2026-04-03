@@ -1,9 +1,12 @@
 'use strict';
 
+const http = require('http');
 const express    = require('express');
 const bodyParser = require('body-parser');
 const cors       = require('cors');
 const mongoose   = require('mongoose');
+const { WebSocketServer } = require('ws');
+const hub = require('./wsHub');
 
 const { analyze }               = require('./analyzer');
 const { startConsumer }         = require('./consumer');
@@ -95,6 +98,48 @@ app.post('/notifications/:id/acknowledge', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+// ── HTTP + WebSocket server (8.8.1) ─────────────────────────────────────────────────────
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: '/ws/notifications' });
+
+// patientId → Set<WebSocket> — track per-patient subscriptions
+const subscriptions = new Map();
+
+function broadcastNotification(patientId, notification) {
+  const subs = subscriptions.get(String(patientId));
+  if (!subs || subs.size === 0) return;
+  const msg = JSON.stringify({ type: 'notification', data: notification });
+  for (const ws of subs) {
+    if (ws.readyState === 1 /* OPEN */) ws.send(msg);
+  }
+}
+
+wss.on('connection', (ws) => {
+  let subscribedPatientId = null;
+
+  ws.on('message', (raw) => {
+    try {
+      const msg = JSON.parse(raw.toString());
+      if (msg.type === 'subscribe' && msg.patientId) {
+        subscribedPatientId = String(msg.patientId);
+        if (!subscriptions.has(subscribedPatientId)) subscriptions.set(subscribedPatientId, new Set());
+        subscriptions.get(subscribedPatientId).add(ws);
+        ws.send(JSON.stringify({ type: 'subscribed', patientId: subscribedPatientId }));
+      }
+    } catch { /* ignore malformed messages */ }
+  });
+
+  ws.on('close', () => {
+    if (subscribedPatientId) subscriptions.get(subscribedPatientId)?.delete(ws);
+  });
+});
+
+// Relay hub events → WebSocket broadcast
+hub.on('notification', ({ patientId, notification }) => {
+  broadcastNotification(patientId, notification);
+});
+
+server.listen(PORT, () => {
   console.log(`[comms-agent] Listening on port ${PORT}`);
 });

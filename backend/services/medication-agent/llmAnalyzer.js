@@ -39,6 +39,19 @@ Rules:
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/**
+ * 8.8.5 — Strip control characters and limit length to prevent prompt injection
+ * via any user-controlled string (drug name, allergy name, lab value, etc.).
+ */
+function sanitizeForPrompt(str, maxLen = 200) {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '') // strip control chars
+    .replace(/\n{3,}/g, '\n\n')                         // collapse excess newlines
+    .slice(0, maxLen)
+    .trim();
+}
+
 function isValidFinding(f) {
   return f &&
     typeof f.type === 'string' &&
@@ -90,17 +103,17 @@ async function getLlmMedicationFindings({ medications, labs, patient, existingFi
 
   const medList = (Array.isArray(medications) ? medications : (medications?.value || []))
     .filter(m => !m.deletedAt)
-    .map(m => `${m.name || ''}${m.dose ? ' ' + m.dose : ''}${m.frequency ? ' ' + m.frequency : ''}`.trim())
+    .map(m => sanitizeForPrompt(`${m.name || ''}${m.dose ? ' ' + m.dose : ''}${m.frequency ? ' ' + m.frequency : ''}`.trim()))
     .join(', ') || 'None';
 
   const labList = (Array.isArray(labs) ? labs : (labs?.value || []))
     .slice(0, 8)
-    .map(l => `${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}`.trim())
+    .map(l => sanitizeForPrompt(`${l.testName || l.test_name}: ${l.value || l.result} ${l.unit || ''}`.trim()))
     .join(', ') || 'None';
 
-  const allergies = (patient?.allergies || []).map(a => a.substance || a).join(', ') || 'None known';
-  const age       = patient?.age || patient?.demographics?.age || 'unknown';
-  const gender    = patient?.demographics?.gender || patient?.gender || 'unknown';
+  const allergies = (patient?.allergies || []).map(a => sanitizeForPrompt(a.substance || a, 60)).join(', ') || 'None known';
+  const age       = sanitizeForPrompt(String(patient?.age || patient?.demographics?.age || 'unknown'), 20);
+  const gender    = sanitizeForPrompt(String(patient?.demographics?.gender || patient?.gender || 'unknown'), 20);
 
   const existingSummary = existingFindings.length > 0
     ? existingFindings.map(f => f.title).join('; ')

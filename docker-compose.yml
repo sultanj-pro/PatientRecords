@@ -177,6 +177,10 @@ services:
       - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
       - CLINICAL_NOTES_URL=http://patientrecord-clinical-notes-service:5012
       - LLM_AGENT_URL=http://patientrecord-llm-agent:5013
+      - MEDICATION_AGENT_URL=http://patientrecord-medication-agent:5009
+      - LABS_AGENT_URL=http://patientrecord-labs-agent:5010
+      - REDIS_HOST=patientrecord-redis
+      - REDIS_PORT=6379
     ports:
       - "5000:5000"
     restart: unless-stopped
@@ -486,8 +490,6 @@ services:
       - OLLAMA_URL=http://patientrecord-ollama:11434
       - OLLAMA_MODEL=llama3.2:1b
       - CLINICAL_NOTES_URL=http://patientrecord-clinical-notes-service:5012
-    ports:
-      - "5013:5013"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5013/health"]
@@ -524,8 +526,6 @@ services:
       - LABS_AGENT_URL=http://patientrecord-labs-agent:5010
       - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
       - LLM_AGENT_URL=http://patientrecord-llm-agent:5013
-    ports:
-      - "5008:5008"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5008/health"]

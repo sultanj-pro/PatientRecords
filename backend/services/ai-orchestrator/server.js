@@ -72,7 +72,7 @@ function authMiddleware(req, res, next) {
  */
 async function callAgent(url, payload) {
   try {
-    const { data } = await axios.post(`${url}/analyze`, payload, { timeout: 8000 });
+    const { data } = await axios.post(`${url}/analyze`, payload, { timeout: 120000 });
     return Array.isArray(data.findings) ? data.findings : [];
   } catch (err) {
     const status = err.response ? err.response.status : null;
@@ -117,6 +117,7 @@ app.get('/health', (req, res) => {
  */
 app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
   const { patientId } = req.params;
+  const t0 = Date.now();
 
   try {
     const context = await buildContext(patientId, req.authHeader);
@@ -149,6 +150,10 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
 
     // Call LLM agent for narrative summary (fail-soft — null if Ollama unavailable)
     const llmSummary = await callLlmAgent(patientId, context, findings, req.authHeader);
+
+    // 8.8.12 — recommendation latency metric
+    const latencyMs = Date.now() - t0;
+    console.log(JSON.stringify({ event: 'recommendation-generated', latencyMs, findingsCount: findings.length }));
 
     const recommendation = await createRecommendation(patientId, context, findings, llmSummary);
     res.status(201).json(recommendation);

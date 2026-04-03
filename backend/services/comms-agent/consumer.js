@@ -3,6 +3,8 @@
 const Redis = require('ioredis');
 const { EVENT_ESCALATION_RULES } = require('./rules/escalationRules');
 const { createNotification, createAuditEntry } = require('./notificationStore');
+const hub = require('./wsHub');
+const { sendCriticalSms } = require('./notifier');
 
 const STREAM_NAME   = 'patientrecord-events';
 const GROUP_NAME    = 'comms-agent-group';
@@ -43,6 +45,7 @@ function parseFields(fields) {
  * Creates a notification in MongoDB for each matched rule.
  */
 async function processMessage(msgId, fields) {
+  const t0 = Date.now();
   const { eventType, payload: payloadStr } = fields;
   if (!eventType || !payloadStr) return;
 
@@ -65,7 +68,7 @@ async function processMessage(msgId, fields) {
       if (!rule.match(payload)) continue;
       if (!patientId) continue;
 
-      await createNotification({
+      const notif = await createNotification({
         patientId: String(patientId),
         type:      'event-escalation',
         severity:  rule.severity,
@@ -75,11 +78,23 @@ async function processMessage(msgId, fields) {
         ruleId:    rule.id,
         eventData: payload,
       });
-      console.log(`[comms-agent:consumer] Notification created — rule ${rule.id} for patient ${patientId}`);
+      console.log(`[comms-agent:consumer] Notification created — rule ${rule.id}`);
+
+      // 8.8.1 — push to WebSocket subscribers in real time
+      hub.emit('notification', { patientId: String(patientId), notification: notif });
+
+      // 8.8.3 — SMS stub for critical escalations
+      if (rule.severity === 'critical') {
+        sendCriticalSms(rule.title(payload), rule.message(payload))
+          .catch(err => console.warn('[comms-agent:consumer] SMS stub error:', err.message));
+      }
     } catch (err) {
       console.error(`[comms-agent:consumer] Error evaluating rule ${rule.id}:`, err.message);
     }
   }
+
+  // 8.8.13 — event processing latency metric
+  console.log(JSON.stringify({ event: 'stream-event-processed', eventType, latencyMs: Date.now() - t0 }));
 }
 
 /**

@@ -2,8 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Subscription, interval } from 'rxjs';
-import { switchMap, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { PatientContextService } from '../../core/services/patient-context.service';
@@ -36,7 +35,8 @@ export class NavigationComponent implements OnInit, OnDestroy {
   notifications: NavNotification[] = [];
   bellOpen = false;
   acknowledgingId: string | null = null;
-  private pollSub: Subscription | null = null;
+  private ws: WebSocket | null = null;
+  private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroy$ = new Subject<void>();
 
   @ViewChild(PatientSearchComponent) patientSearch!: PatientSearchComponent;
@@ -56,9 +56,10 @@ export class NavigationComponent implements OnInit, OnDestroy {
       this.selectedPatient = patient;
       if (patient) {
         this.searchVisible = false;
-        this.startPolling(((patient as any).patientid || (patient as any).id || '').toString());
+        const patientId = ((patient as any).patientid || (patient as any).id || '').toString();
+        this.connectWs(patientId);
       } else {
-        this.stopPolling();
+        this.disconnectWs();
         this.notifications = [];
       }
     });
@@ -67,19 +68,55 @@ export class NavigationComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    this.stopPolling();
+    this.disconnectWs();
   }
 
-  // ── Notification polling ──────────────────────────────────────────────────
+  // ── WebSocket real-time notifications (8.8.1) ─────────────────────────────
 
-  private startPolling(patientId: string): void {
-    this.stopPolling();
+  private connectWs(patientId: string): void {
+    this.disconnectWs();
+
+    // Fetch current unread immediately via HTTP so the bell is up-to-date on load
     this.fetchUnread(patientId);
-    this.pollSub = interval(30000).subscribe(() => this.fetchUnread(patientId));
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/notifications`;
+
+    const connect = () => {
+      const socket = new WebSocket(wsUrl);
+      this.ws = socket;
+
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ type: 'subscribe', patientId }));
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'notification' && msg.data) {
+            // Prepend new notification — dedup by _id
+            if (!this.notifications.some(n => n._id === msg.data._id)) {
+              this.notifications = [msg.data, ...this.notifications];
+            }
+          }
+        } catch { /* ignore malformed messages */ }
+      };
+
+      socket.onclose = () => {
+        this.ws = null;
+        // Reconnect with 10 s back-off
+        this.wsReconnectTimer = setTimeout(() => connect(), 10000);
+      };
+
+      socket.onerror = () => socket.close();
+    };
+
+    connect();
   }
 
-  private stopPolling(): void {
-    if (this.pollSub) { this.pollSub.unsubscribe(); this.pollSub = null; }
+  private disconnectWs(): void {
+    if (this.wsReconnectTimer) { clearTimeout(this.wsReconnectTimer); this.wsReconnectTimer = null; }
+    if (this.ws) { this.ws.close(); this.ws = null; }
   }
 
   private fetchUnread(patientId: string): void {
