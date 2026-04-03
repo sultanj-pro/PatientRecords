@@ -145,7 +145,7 @@ labs-service POST /labs
  Escalation Rule Engine
       │  rule matched → createNotification() → notifications table
       ▼
- Notification Bell (30s poll) → unread badge → drawable list → acknowledge
+ Notification Bell (WebSocket push) → unread badge → drawable list → acknowledge
 ```
 
 **Human-in-the-Loop by Design**
@@ -208,26 +208,26 @@ See **[docs/DATA_ACCESS_LAYER_PLAN.md](./docs/DATA_ACCESS_LAYER_PLAN.md)** for t
 ### Current State (Implemented)
 
 - **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Clinical Notes (5012) + Registry (5100), all in separate containers
-- **AI Multi-Agent System** — AI Orchestrator (5008) fans out to Medication Agent (5009), Labs Agent (5010), Comms Agent (5011), and LLM Agent (5013); physician approval workflow with immutable audit trail
+- **AI Multi-Agent System** — AI Orchestrator (5008) fans out to Medication Agent (5009), Labs Agent (5010), Comms Agent (5011), and LLM Agent (5013); rule-based findings augmented by Ollama LLM narrative; physician approval workflow with immutable audit trail
 - **Redis Streams Event Bus** — Domain services publish clinical events; Comms Agent consumer group processes them in real time for escalation detection and notification creation
 - **Dual-Adapter Data Layer** — Repository pattern with full PostgreSQL (Knex) and MongoDB (Mongoose) support; switch with `DB_ADAPTER=knex|mongo`; zero code changes required
-- **AI Clinical Intelligence UI** — Care Intelligence module with recommendation generation, finding severity badges, physician approve/dismiss workflow, notification bell with live unread count, and an acknowledgeable notification drawer
+- **AI Clinical Intelligence UI** — Care Intelligence module with recommendation generation, finding severity badges, physician approve/dismiss workflow, real-time WebSocket notification bell, and an acknowledgeable notification drawer
 - **Admin Dashboard** — Runtime module management: enable/disable modules, edit per-module role permissions, view service health grid
+- **Phase 8.8 Hardening** — WebSocket push notifications, prompt injection sanitization, append-only audit log (write concern majority), AI services network-isolated, load-tested at 20 concurrent requests, structured latency metrics
 
 ### Future Vision
 
 This foundation will evolve into:
-- **LLM Integration** — Replace rule-based agent engines with LLM tool-calling loops (Ollama / Azure OpenAI), once PHI de-identification and regulatory pathway are confirmed
-- **WebSocket Push** — Replace notification bell polling with real-time push (Phase 8.8)
-- **SMS / Email Alerts** — Twilio + SendGrid stubs for critical escalations and daily digests
 - **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
 - **Advanced Module Orchestration** — Dynamic module loading based on user roles, device capabilities, and network conditions
+- **Cloud LLM** — Swap Ollama for Azure OpenAI or Anthropic once PHI regulatory pathway is confirmed; only the `llm-agent` inference layer changes
+- **Production SMS / Email** — Activate Twilio and SendGrid integrations by supplying credentials via env vars (stubs already wired)
 
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
 - **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, procedures, and clinical notes
 - **AI Multi-Agent clinical decision support** — Orchestrator fans out to 4 specialized agents; findings displayed in Care Intelligence module with physician approval workflow
-- **Real-time escalation notifications** — Redis Streams consumer evaluates 10 clinical escalation rules; in-app notification bell with live unread count and acknowledge workflow
+- **Real-time escalation notifications** — Redis Streams consumer evaluates 10 clinical escalation rules; real-time WebSocket push notification bell with unread badge and per-item acknowledge workflow
 - **Dual-adapter data layer** — PostgreSQL via Knex or MongoDB via Mongoose; one env var, zero code changes; all stores (domain + AI) honour `DB_ADAPTER`
 - **Microservices backend** — API Gateway routing to 15+ independent domain services and AI agents
 - **Admin Dashboard** — Runtime module management with enable/disable toggles and per-module role editor
@@ -625,7 +625,7 @@ PatientRecords
 - Comms Agent consumer group evaluates **10 escalation rules**: troponin elevation, critical potassium, severe hypoglycemia, elevated INR, acute kidney injury, hypertensive crisis, bradycardia, fever, and more
 - Matched rules create in-app notifications with **24-hour deduplication** (same patient + rule within 24h produces one notification, not many)
 - Every stream event written to an **append-only audit log** — idempotent on consumer retry via unique `streamMsgId`
-- **Notification bell** in the shell navbar: live unread badge (30s poll), expandable drawer, per-item acknowledge button
+- **Notification bell** in the shell navbar: real-time WebSocket push, unread badge, expandable drawer, per-item acknowledge button; 10s reconnect back-off on disconnect
 
 **Dual-Adapter Data Layer** 🗄️
 - **Repository Pattern** decouples all services from the storage engine; services call `getRepository('vitals')`, not Mongoose directly

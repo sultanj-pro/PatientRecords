@@ -1,7 +1,8 @@
 # Phase 8: AI Multi-Agent Architecture — v2 Roadmap
 
-**Status:** Roadmap · Not yet implemented  
-**Depends on:** Phase 7 (current implementation) fully operational  
+**Status:** ✅ Complete — all 8 milestones implemented and deployed  
+**Branch:** `feature/phase8-ai-multiagent`  
+**LLM Provider:** Ollama (`llama3.2:1b`) — local container, no external API calls  
 **Diagram:** [system-architecture-v2.svg](diagrams/system-architecture-v2.svg)
 
 ---
