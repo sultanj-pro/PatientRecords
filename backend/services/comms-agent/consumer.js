@@ -59,7 +59,7 @@ async function processMessage(msgId, fields) {
 
   // ── Audit log: record every event unconditionally ────────────────────────
   const patientId = payload.patientId || payload.patient_id;
-  await createAuditEntry({ streamMsgId: msgId, eventType, patientId: patientId ? String(patientId) : null, payload });
+  await createAuditEntry({ streamMsgId: msgId, eventType, patientId: patientId ? String(patientId) : null, performedBy: payload?.performedBy || null, payload });
 
   // ── Escalation rules: create notifications for matched rules ─────────────
   const applicable = EVENT_ESCALATION_RULES.filter(r => r.eventType === eventType);

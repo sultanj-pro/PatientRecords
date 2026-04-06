@@ -14,22 +14,32 @@
   </div>
 
   <!-- Content State -->
-  <div *ngIf="!loading && medications && medications.length > 0 && !error" class="content-container">
-    <!-- Summary Stats -->
-    <div class="stats-section">
-      <div class="stat-card">
-        <div class="stat-label">Total Medications</div>
-        <div class="stat-value">{{ medications.length }}</div>
+  <div *ngIf="!loading && !error" class="content-container">
+    <!-- Summary Stats + Add button -->
+    <div class="stats-header">
+      <div class="stats-section">
+        <div class="stat-card">
+          <div class="stat-label">Total Medications</div>
+          <div class="stat-value">{{ medications.length }}</div>
+        </div>
       </div>
+      <button *ngIf="canEdit" class="btn btn-primary btn-add" (click)="openAddForm()">
+        + Add Medication
+      </button>
     </div>
 
-    <!-- Medications List -->
+    <!-- Active Medications -->
     <section class="medications-section">
       <h2 class="section-title">💊 Active Medications</h2>
-      <div class="medications-grid">
+
+      <div *ngIf="medications.length > 0" class="medications-grid">
         <div *ngFor="let med of medications" class="medication-card">
           <div class="med-header">
             <h3 class="med-name">{{ med['name'] || 'Unknown Medication' }}</h3>
+            <div *ngIf="canEdit" class="med-actions">
+              <button class="btn-icon btn-edit" title="Edit" (click)="openEditForm(med)">✏️</button>
+              <button class="btn-icon btn-delete" title="Discontinue" (click)="openDeleteConfirm(med)">🗑️</button>
+            </div>
           </div>
           <div class="med-details">
             <div class="med-item">
@@ -54,12 +64,139 @@
           </div>
         </div>
       </div>
+
+      <div *ngIf="medications.length === 0" class="empty-state-container">
+        <div style="font-size: 80px; margin-bottom: 20px;">💊</div>
+        <p>No active medications for this patient.</p>
+      </div>
+    </section>
+
+    <!-- Medication History (discontinued) -->
+    <section class="medications-section history-section" *ngIf="discontinued.length > 0">
+      <button class="history-toggle" (click)="showHistory = !showHistory">
+        <span>📋 Medication History ({{ discontinued.length }} discontinued)</span>
+        <span class="toggle-arrow">{{ showHistory ? '▲' : '▼' }}</span>
+      </button>
+
+      <div *ngIf="showHistory" class="medications-grid history-grid">
+        <div *ngFor="let med of discontinued" class="medication-card card-discontinued">
+          <div class="med-header">
+            <h3 class="med-name">{{ med['name'] || 'Unknown Medication' }}</h3>
+            <div class="med-header-right">
+              <span class="badge-discontinued">Discontinued</span>
+              <button *ngIf="canEdit" class="btn btn-sm btn-reactivate" (click)="reactivate(med)" title="Reactivate this medication">
+                ↩ Reactivate
+              </button>
+            </div>
+          </div>
+          <div class="med-details">
+            <div class="med-item">
+              <span class="med-label">Dose:</span>
+              <span class="med-value">{{ med['dose'] || 'N/A' }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Frequency:</span>
+              <span class="med-value">{{ getFrequencyLabel(med['frequency']) }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Route:</span>
+              <span class="med-value">{{ med['route'] || 'N/A' }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Started:</span>
+              <span class="med-value">{{ formatDate(med['startDate']) }}</span>
+            </div>
+            <div class="med-item">
+              <span class="med-label">Discontinued:</span>
+              <span class="med-value discontinued-date">{{ formatDate(med['deletedAt']) }}</span>
+            </div>
+          </div>
+          <div *ngIf="med['indication']" class="med-indication">
+            <strong>Indication:</strong> {{ med['indication'] }}
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
-  <!-- Empty State -->
-  <div *ngIf="!loading && (!medications || medications.length === 0) && !error" class="empty-state-container">
-    <div style="font-size: 80px; margin-bottom: 20px;">💊</div>
-    <p>No medications found for this patient.</p>
+</div>
+
+<!-- Add / Edit Modal — outside .medications-container so fixed positioning is viewport-relative -->
+<div *ngIf="showForm" class="modal-overlay" (click)="closeForm()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ editingMed ? 'Edit Medication' : 'Add Medication' }}</h3>
+      <button class="modal-close" (click)="closeForm()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Name <span class="required">*</span></label>
+        <input type="text" [(ngModel)]="form.name" placeholder="e.g. Lisinopril" class="form-control" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Dose</label>
+          <input type="text" [(ngModel)]="form.dose" placeholder="e.g. 10mg" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Route</label>
+          <input type="text" [(ngModel)]="form.route" placeholder="e.g. Oral" class="form-control" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Frequency</label>
+          <select [(ngModel)]="form.frequency" class="form-control">
+            <option value="">Select...</option>
+            <option value="once daily">Once daily</option>
+            <option value="twice daily">Twice daily</option>
+            <option value="three times daily">Three times daily</option>
+            <option value="every 8 hours">Every 8 hours</option>
+            <option value="every 12 hours">Every 12 hours</option>
+            <option value="as needed">As needed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="form.startDate" class="form-control" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Indication</label>
+        <input type="text" [(ngModel)]="form.indication" placeholder="e.g. Hypertension" class="form-control" />
+      </div>
+      <div *ngIf="formError" class="form-error">{{ formError }}</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeForm()" [disabled]="formSaving">Cancel</button>
+      <button class="btn btn-primary" (click)="saveForm()" [disabled]="formSaving">
+        {{ formSaving ? 'Saving...' : (editingMed ? 'Save Changes' : 'Add Medication') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal — outside .medications-container -->
+<div *ngIf="deletingMed" class="modal-overlay" (click)="closeDeleteConfirm()">
+  <div class="modal modal-danger" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>🗑️ Remove Medication</h3>
+      <button class="modal-close" (click)="closeDeleteConfirm()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>You are about to remove <strong>{{ deletingMed['name'] }}</strong> from this patient's medication list.</p>
+      <p class="confirm-instruction">Type the medication name to confirm:</p>
+      <input type="text" [(ngModel)]="deleteConfirmName" class="form-control"
+        placeholder="{{ deletingMed['name'] }}" />
+      <div *ngIf="deleteError" class="form-error">{{ deleteError }}</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDeleteConfirm()" [disabled]="deleting">Cancel</button>
+      <button class="btn btn-danger"
+        [disabled]="deleteConfirmName !== deletingMed['name'] || deleting"
+        (click)="confirmDelete()">
+        {{ deleting ? 'Removing...' : 'Remove Medication' }}
+      </button>
+    </div>
   </div>
 </div>

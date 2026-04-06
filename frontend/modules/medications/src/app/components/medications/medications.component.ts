@@ -1,8 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -16,10 +17,19 @@ interface Medication {
   [key: string]: any;
 }
 
+interface MedForm {
+  name: string;
+  dose: string;
+  frequency: string;
+  indication: string;
+  route: string;
+  startDate: string;
+}
+
 @Component({
   selector: 'app-medications',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
@@ -32,22 +42,39 @@ interface Medication {
 })
 export class MedicationsComponent implements OnInit, OnDestroy {
   medications: Medication[] = [];
+  discontinued: Medication[] = [];
+  showHistory = false;
   loading = true;
   error: string | null = null;
   patientName = 'Patient';
   private lastPatientId: string | null = null;
+
+  // Role guard
+  canEdit = false;
+
+  // Add/Edit form
+  showForm = false;
+  editingMed: Medication | null = null;
+  formSaving = false;
+  formError: string | null = null;
+  form: MedForm = this.emptyForm();
+
+  // Delete confirm
+  deletingMed: Medication | null = null;
+  deleteConfirmName = '';
+  deleteError: string | null = null;
+  deleting = false;
 
   private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    // Extract patientId from URL params (for deep linking and direct routes)
-    // Route params only fire when this module's route is active
+    this.canEdit = this.hasEditRole();
+
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const urlPatientId = params['patientId'];
       if (urlPatientId) {
-        console.log('[Medications] Patient ID from route params:', urlPatientId);
         this.storePatientContextInLocalStorage(urlPatientId);
         if (urlPatientId !== this.lastPatientId) {
           this.lastPatientId = urlPatientId;
@@ -58,9 +85,25 @@ export class MedicationsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Complete the destroy subject
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private hasEditRole(): boolean {
+    try {
+      // Shell app stores the role directly under 'user_role' (set by AuthService on login)
+      const role = (localStorage.getItem('user_role') || '').toLowerCase();
+      if (role === 'physician' || role === 'admin') return true;
+
+      // Fallback: decode JWT stored under 'jwt_token'
+      const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+      if (!token) return false;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const jwtRole = (payload.role || '').toLowerCase();
+      return jwtRole === 'physician' || jwtRole === 'admin';
+    } catch {
+      return false;
+    }
   }
 
   private loadMedications(): void {
@@ -75,41 +118,156 @@ export class MedicationsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:5000/api/patients/${patientId}/medications`;
+    const active$ = this.http.get<any>(`/api/patients/${patientId}/medications`);
+    const history$ = this.http.get<any[]>(`/api/patients/${patientId}/medications/history`);
 
-    this.http.get<any>(apiUrl)
+    forkJoin({ active: active$, history: history$ })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (data) => {
-          // Handle array response or object with data property
-          const medsArray = Array.isArray(data) ? data : data.medications || data.data || [];
-          this.medications = medsArray;
-          this.lastPatientId = patientId; // Track loaded patient
+        next: ({ active, history }) => {
+          this.medications  = Array.isArray(active)  ? active  : active?.medications  || active?.data  || [];
+          this.discontinued = Array.isArray(history) ? history : [];
+          this.lastPatientId = patientId;
           this.loading = false;
         },
         error: (err) => {
-          console.error('Error loading medications:', err);
           this.error = `Failed to load medications: ${err.message || 'Unknown error'}`;
           this.loading = false;
         }
       });
   }
 
+  // ── Add ────────────────────────────────────────────────────────────────────
+  openAddForm(): void {
+    this.editingMed = null;
+    this.form = this.emptyForm();
+    this.formError = null;
+    this.showForm = true;
+  }
+
+  // ── Edit ───────────────────────────────────────────────────────────────────
+  openEditForm(med: Medication): void {
+    this.editingMed = med;
+    this.form = {
+      name:        med['name']        || '',
+      dose:        med['dose']        || '',
+      frequency:   med['frequency']   || '',
+      indication:  med['indication']  || '',
+      route:       med['route']       || '',
+      startDate:   med['startDate'] ? String(med['startDate']).substring(0, 10) : '',
+    };
+    this.formError = null;
+    this.showForm = true;
+  }
+
+  closeForm(): void {
+    this.showForm = false;
+    this.editingMed = null;
+    this.formError = null;
+  }
+
+  saveForm(): void {
+    if (!this.form.name.trim()) {
+      this.formError = 'Medication name is required.';
+      return;
+    }
+    const patientId = this.getPatientIdFromStorage();
+    if (!patientId) return;
+
+    this.formSaving = true;
+    this.formError = null;
+
+    const payload = { ...this.form };
+
+    if (this.editingMed) {
+      const medId = this.editingMed['_id'];
+      if (!medId) {
+        this.formError = 'This medication cannot be identified (missing ID). Please refresh and try again.';
+        this.formSaving = false;
+        return;
+      }
+      this.http.put(`/api/patients/${patientId}/medications/${medId}`, payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => { this.formSaving = false; this.closeForm(); this.loadMedications(); },
+          error: (err) => { this.formSaving = false; this.formError = err.error?.error || 'Save failed.'; }
+        });
+    } else {
+      this.http.post(`/api/patients/${patientId}/medications`, payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => { this.formSaving = false; this.closeForm(); this.loadMedications(); },
+          error: (err) => { this.formSaving = false; this.formError = err.error?.error || 'Save failed.'; }
+        });
+    }
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+  openDeleteConfirm(med: Medication): void {
+    this.deletingMed = med;
+    this.deleteConfirmName = '';
+    this.deleteError = null;
+  }
+
+  closeDeleteConfirm(): void {
+    this.deletingMed = null;
+    this.deleteError = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.deletingMed) return;
+    const patientId = this.getPatientIdFromStorage();
+    if (!patientId) return;
+
+    const medId = this.deletingMed['_id'];
+    if (!medId) {
+      this.deleteError = 'This medication cannot be identified (missing ID). Please refresh and try again.';
+      return;
+    }
+
+    this.deleting = true;
+    this.deleteError = null;
+
+    this.http.delete(`/api/patients/${patientId}/medications/${medId}`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => { this.deleting = false; this.closeDeleteConfirm(); this.loadMedications(); },
+        error: (err) => { this.deleting = false; this.deleteError = err.error?.error || 'Delete failed.'; }
+      });
+  }
+
+  // ── Reactivate ─────────────────────────────────────────────────────────────
+  reactivate(med: Medication): void {
+    const patientId = this.getPatientIdFromStorage();
+    if (!patientId) return;
+    const medId = med['_id'];
+    if (!medId) return;
+
+    this.http.post(`/api/patients/${patientId}/medications/${medId}/reactivate`, {})
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.loadMedications(),
+        error: (err) => console.error('Reactivate failed', err),
+      });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  private emptyForm(): MedForm {
+    return { name: '', dose: '', frequency: '', indication: '', route: '', startDate: '' };
+  }
+
   private getPatientIdFromStorage(): string | null {
-    // Try shell app's shared patient context first
     const contextStr = localStorage.getItem('__PATIENT_CONTEXT__');
     if (contextStr) {
       try {
         const context = JSON.parse(contextStr);
         if (context.patientId) {
-          this.patientName = context.firstName && context.lastName 
-            ? `${context.firstName} ${context.lastName}` 
+          this.patientName = context.firstName && context.lastName
+            ? `${context.firstName} ${context.lastName}`
             : 'Patient';
           return String(context.patientId);
         }
-      } catch (e) {
-        console.warn('Failed to parse patient context:', e);
-      }
+      } catch (e) {}
     }
 
     let patientId = sessionStorage.getItem('selectedPatientId');
@@ -122,11 +280,8 @@ export class MedicationsComponent implements OnInit, OnDestroy {
     patientId = urlParams.get('patientId');
     if (patientId) return patientId;
 
-    // Extract patientId from URL pattern: /dashboard/:module/:patientId
     const pathMatch = window.location.pathname.match(/\/dashboard\/[^\/]+\/([^\/]+)/);
-    if (pathMatch && pathMatch[1]) {
-      return pathMatch[1];
-    }
+    if (pathMatch && pathMatch[1]) return pathMatch[1];
 
     return null;
   }
@@ -154,15 +309,12 @@ export class MedicationsComponent implements OnInit, OnDestroy {
     if (!date) return 'N/A';
     const d = new Date(date);
     if (isNaN(d.getTime())) return 'N/A';
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    };
-    return d.toLocaleDateString('en-US', options);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   retryLoad(): void {
     this.loadMedications();
   }
 }
+
+

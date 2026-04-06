@@ -72,6 +72,40 @@ app.get('/api/patients/:id/meds', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/patients/:id/medications/history — discontinued (soft-deleted) medications
+app.get('/api/patients/:id/medications/history', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('medications');
+    const meds = await repo.getDiscontinuedMedications(patientId);
+    res.json(meds || []);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to fetch medication history', detail: err.message });
+  }
+});
+
+// POST /api/patients/:id/medications/:medId/reactivate — restore a discontinued medication
+app.post('/api/patients/:id/medications/:medId/reactivate', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { medId } = req.params;
+    const repo = getRepository('medications');
+    const reactivated = await repo.reactivateMedication(patientId, medId);
+    if (!reactivated) return res.status(404).json({ error: 'discontinued medication not found' });
+
+    publishEvent('medication-changed', {
+      patientId: req.params.id,
+      action: 'reactivated',
+      medicationId: medId,
+      medicationName: reactivated.name || 'unknown',
+      performedBy: req.user?.username || req.user?.sub || 'unknown',
+    });
+    res.json(reactivated);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to reactivate medication', detail: err.message });
+  }
+});
+
 // POST /api/patients/:id/medications
 app.post('/api/patients/:id/medications', authMiddleware, async (req, res) => {
   try {
@@ -80,10 +114,67 @@ app.post('/api/patients/:id/medications', authMiddleware, async (req, res) => {
     const repo = getRepository('medications');
     const patient = await repo.addMedication(patientId, req.body);
     if (!patient) return res.status(404).json({ error: 'patient not found' });
-    publishEvent('medication-changed', { patientId: req.params.id, action: 'added', medicationName: req.body.name });
+    publishEvent('medication-changed', { patientId: req.params.id, action: 'added', medicationName: req.body.name, performedBy: req.user?.username || req.user?.sub || 'unknown' });
     res.status(201).json(req.body);
   } catch (err) {
     res.status(500).json({ error: 'failed to create medication', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/medications/:medId
+app.put('/api/patients/:id/medications/:medId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { medId } = req.params;
+    if (!req.body.name) return res.status(400).json({ error: 'name is required' });
+    const repo = getRepository('medications');
+
+    // Capture before-state for audit trail
+    const allMeds = await repo.getMedications(patientId);
+    const before = allMeds ? allMeds.find(m => String(m._id) === String(medId)) : null;
+
+    const updated = await repo.updateMedication(patientId, medId, req.body);
+    if (!updated) return res.status(404).json({ error: 'medication not found' });
+
+    publishEvent('medication-changed', {
+      patientId: req.params.id,
+      action: 'updated',
+      medicationId: medId,
+      medicationName: req.body.name,
+      performedBy: req.user?.username || req.user?.sub || 'unknown',
+      before: before ? { name: before.name, dose: before.dose, frequency: before.frequency } : null,
+      after:  { name: req.body.name, dose: req.body.dose, frequency: req.body.frequency },
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update medication', detail: err.message });
+  }
+});
+
+// DELETE /api/patients/:id/medications/:medId  (soft delete — sets deletedAt, never removes)
+app.delete('/api/patients/:id/medications/:medId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { medId } = req.params;
+    const repo = getRepository('medications');
+
+    // Capture the record name before soft-deleting for audit trail
+    const allMeds = await repo.getMedications(patientId);
+    const target = allMeds ? allMeds.find(m => String(m._id) === String(medId)) : null;
+
+    const deleted = await repo.deleteMedication(patientId, medId);
+    if (!deleted) return res.status(404).json({ error: 'medication not found' });
+
+    publishEvent('medication-changed', {
+      patientId: req.params.id,
+      action: 'discontinued',
+      medicationId: medId,
+      medicationName: target?.name || 'unknown',
+      performedBy: req.user?.username || req.user?.sub || 'unknown',
+    });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'failed to discontinue medication', detail: err.message });
   }
 });
 

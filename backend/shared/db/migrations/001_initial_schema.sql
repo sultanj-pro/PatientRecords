@@ -157,6 +157,7 @@ CREATE TABLE IF NOT EXISTS ai_audit_log (
   stream_msg_id  TEXT UNIQUE NOT NULL,
   event_type     TEXT NOT NULL,
   patient_id     TEXT,
+  performed_by   TEXT,
   payload        JSONB,
   processed_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

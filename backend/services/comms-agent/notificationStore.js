@@ -73,12 +73,13 @@ if (DB_ADAPTER === 'knex') {
     return rows.length ? toApi(rows[0]) : null;
   }
 
-  async function createAuditEntry({ streamMsgId, eventType, patientId, payload }) {
+  async function createAuditEntry({ streamMsgId, eventType, patientId, performedBy, payload }) {
     try {
       await db('ai_audit_log').insert({
         stream_msg_id: streamMsgId,
         event_type:    eventType,
         patient_id:    patientId ? String(patientId) : null,
+        performed_by:  performedBy || null,
         payload:       payload ? JSON.stringify(payload) : null,
       });
     } catch (err) {
@@ -159,11 +160,12 @@ if (DB_ADAPTER === 'knex') {
   // ── Audit Log ───────────────────────────────────────────────────────────────
 
   const auditLogSchema = new mongoose.Schema({
-    streamMsgId: { type: String, required: true },
-    eventType:   { type: String, required: true, index: true },
-    patientId:   { type: String, index: true },
-    payload:     { type: mongoose.Schema.Types.Mixed },
-    processedAt: { type: Date, default: Date.now },
+    streamMsgId:  { type: String, required: true },
+    eventType:    { type: String, required: true, index: true },
+    patientId:    { type: String, index: true },
+    performedBy:  { type: String, default: null },
+    payload:      { type: mongoose.Schema.Types.Mixed },
+    processedAt:  { type: Date, default: Date.now },
   }, { timestamps: false, collection: 'ai_audit_log' });
 
   auditLogSchema.index({ streamMsgId: 1 }, { unique: true });
@@ -178,10 +180,10 @@ if (DB_ADAPTER === 'knex') {
   const AuditLog = mongoose.models.AuditLog ||
     mongoose.model('AuditLog', auditLogSchema, 'ai_audit_log');
 
-  async function createAuditEntry({ streamMsgId, eventType, patientId, payload }) {
+  async function createAuditEntry({ streamMsgId, eventType, patientId, performedBy, payload }) {
     try {
       // 8.8.7 — write concern majority ensures durability for HIPAA audit trail
-      await new AuditLog({ streamMsgId, eventType, patientId, payload }).save({ writeConcern: { w: 'majority' } });
+      await new AuditLog({ streamMsgId, eventType, patientId, performedBy: performedBy || null, payload }).save({ writeConcern: { w: 'majority' } });
     } catch (err) {
       if (!err.message.includes('E11000')) throw err;
     }
