@@ -1,7 +1,7 @@
 .dashboard-wrapper {
   display: flex;
   flex-direction: row;
-  height: 100vh;
+  height: 100%;
   background: #f5f7fa;
   position: relative;
   width: 100%;
