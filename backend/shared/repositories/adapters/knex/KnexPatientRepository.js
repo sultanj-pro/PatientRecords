@@ -31,6 +31,17 @@ class KnexPatientRepository extends IPatientRepository {
     if (!row) return null;
     return _mapPatient(row);
   }
+
+  async updateDemographics(patientId, demographics) {
+    const row = await this.db('patients').where({ patientid: patientId }).first();
+    if (!row) return null;
+    const existing = row.demographics || {};
+    const merged = { ...existing, ...demographics };
+    await this.db('patients')
+      .where({ patientid: patientId })
+      .update({ demographics: JSON.stringify(merged), updated_at: new Date().toISOString() });
+    return _mapPatient({ ...row, demographics: merged });
+  }
 }
 
 function _mapPatient(row) {

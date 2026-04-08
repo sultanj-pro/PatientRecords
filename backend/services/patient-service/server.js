@@ -21,6 +21,7 @@ const PORT = process.env.PORT || 5002;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
 const getRepository = require('../../shared/repositories/repositoryFactory');
+const { publishEvent } = require('./shared/eventPublisher');
 
 if ((process.env.DB_ADAPTER || 'mongo').toLowerCase() !== 'knex') {
   mongoose.connect(MONGODB_URI)
@@ -276,6 +277,25 @@ app.delete('/api/patients/:id/care-team/:memberId', authMiddleware, async (req, 
     res.json({ success: true, message: 'care team member removed' });
   } catch (err) {
     res.status(500).json({ error: 'failed to delete care team member', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/demographics — merge-update demographics sub-document
+app.put('/api/patients/:id/demographics', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const repo = getRepository('patient');
+    const updated = await repo.updateDemographics(patientId, req.body);
+    if (!updated) return res.status(404).json({ error: 'patient not found' });
+
+    publishEvent('patient-demographics-changed', {
+      patientId: String(patientId),
+      performedBy: req.user?.username || req.user?.sub || 'unknown',
+      fields: Object.keys(req.body),
+    });
+    res.json(updated.demographics || {});
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update demographics', detail: err.message });
   }
 });
 

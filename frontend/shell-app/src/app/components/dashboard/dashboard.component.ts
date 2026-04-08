@@ -32,6 +32,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private patientApiInProgress: string | null = null; // Track which patient API call is in progress
   private apiCallCount = 0; // Track total API calls for diagnostics
   private cacheHitCount = 0; // Track cache hits
+  private demographicsUpdatedListener = () => {
+    if (!this.currentPatientId) return;
+    const patientId = this.currentPatientId;
+    // Bypass all caching — directly re-fetch and update context
+    this.patientService.getPatientById(Number(patientId)).subscribe({
+      next: (patient) => {
+        this.lastLoadedPatientId = patientId;
+        this.patientContextService.setSelectedPatient(patient);
+        this.sharePatientContext(patient);
+      },
+      error: (err) => console.error('[Dashboard] Failed to reload patient after demographics update:', err)
+    });
+  };
 
   constructor(
     private patientContextService: PatientContextService,
@@ -100,6 +113,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Also sync on initial load
     console.log('[Dashboard] [INIT] Calling initial syncFromCurrentRoute');
     this.syncFromCurrentRoute();
+
+    // Listen for demographics updates from MFEs
+    window.addEventListener('patient-demographics-updated', this.demographicsUpdatedListener);
   }
 
   private syncFromCurrentRoute(): void {
@@ -143,6 +159,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    window.removeEventListener('patient-demographics-updated', this.demographicsUpdatedListener);
   }
 
   /**
@@ -190,10 +207,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const demographics = this.patient?.demographics;
     const dobValue = demographics?.dateOfBirth || this.patient.dateOfBirth;
     if (!dobValue) return 'N/A';
-    
-    const dob = new Date(dobValue);
+
+    // Parse as local time — ISO strings with Z are UTC midnight which rolls back
+    // one day in timezones behind UTC. Stripping Z forces local interpretation.
+    const s = typeof dobValue === 'string' ? dobValue : new Date(dobValue).toISOString();
+    const localStr = s.length === 10 ? s + 'T00:00:00' : s.replace('Z', '');
+    const dob = new Date(localStr);
     if (isNaN(dob.getTime())) return 'N/A';
-    
+
     return dob.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -206,18 +227,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const demographics = this.patient?.demographics;
     const dobValue = demographics?.dateOfBirth || this.patient.dateOfBirth;
     if (!dobValue) return 'N/A';
-    
-    const dob = new Date(dobValue);
+
+    const s = typeof dobValue === 'string' ? dobValue : new Date(dobValue).toISOString();
+    const localStr = s.length === 10 ? s + 'T00:00:00' : s.replace('Z', '');
+    const dob = new Date(localStr);
     if (isNaN(dob.getTime())) return 'N/A';
-    
+
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
     const monthDiff = today.getMonth() - dob.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
       age--;
     }
-    
+
     return age > 0 ? age.toString() : 'N/A';
   }
 

@@ -15,10 +15,15 @@
 
   <!-- Content State -->
   <div *ngIf="!loading && currentPatient && currentDemographics && !error" class="content-container">
-    
+
+    <!-- Edit Demographics button — top right, physician/admin only -->
+    <div *ngIf="canEdit" class="edit-bar">
+      <button class="btn btn-primary" (click)="openEditModal('basic')">✏️ Edit Demographics</button>
+    </div>
+
     <!-- Contact Information Section -->
-    <app-collapsible-section 
-      title="📞 Contact Information" 
+    <app-collapsible-section
+      title="📞 Contact Information"
       [isExpanded]="contactInfoExpanded"
       sectionId="contact-info">
       <div class="section-content-inner">
@@ -313,12 +318,6 @@
             </div>
           </div>
 
-          <!-- Sex Assigned at Birth -->
-          <div class="info-field">
-            <label>Sex Assigned at Birth</label>
-            <p class="info-value">{{ currentDemographics.sexAssignedAtBirth || 'Not specified' }}</p>
-          </div>
-
           <!-- Date of Birth -->
           <div class="info-field">
             <label>Date of Birth</label>
@@ -331,3 +330,168 @@
   </div>
 
   <!-- Empty State -->
+</div>
+
+<!-- Edit Demographics Modal — outside .demographics-container so position:fixed is viewport-relative -->
+<div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h3>✏️ Edit Demographics</h3>
+      <button class="modal-close" (click)="closeEditModal()">&times;</button>
+    </div>
+
+    <!-- Section tabs -->
+    <div class="modal-tabs">
+      <button [class.active]="editSection==='basic'"    (click)="editSection='basic'">Basic Info</button>
+      <button [class.active]="editSection==='contact'"  (click)="editSection='contact'">Contact</button>
+      <button [class.active]="editSection==='emergency'" (click)="editSection='emergency'">Emergency</button>
+      <button [class.active]="editSection==='cultural'" (click)="editSection='cultural'">Cultural</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- ── Basic Info ─────────────────────────────────────────── -->
+      <div *ngIf="editSection==='basic'">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.legalName!.first" placeholder="First name" />
+          </div>
+          <div class="form-group">
+            <label>Middle Name</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.legalName!.middle" placeholder="Middle name" />
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.legalName!.last" placeholder="Last name" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" class="form-control" [(ngModel)]="editForm.dateOfBirth" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sex</label>
+            <select class="form-control" [(ngModel)]="editForm.gender">
+              <option value="">Select...</option>
+              <option>Male</option><option>Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Blood Type</label>
+            <select class="form-control" [(ngModel)]="editForm.bloodType">
+              <option value="">Unknown</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Marital Status</label>
+            <select class="form-control" [(ngModel)]="editForm.maritalStatus">
+              <option value="">Select...</option>
+              <option>Single</option><option>Married</option><option>Divorced</option>
+              <option>Widowed</option><option>Separated</option><option>Domestic Partner</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Preferred Language</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.preferredLanguage" placeholder="e.g. English" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Contact ────────────────────────────────────────────── -->
+      <div *ngIf="editSection==='contact'">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Primary Phone</label>
+            <input type="tel" class="form-control" [(ngModel)]="editForm.primaryPhone" placeholder="(555) 000-0000" />
+          </div>
+          <div class="form-group">
+            <label>Secondary Phone</label>
+            <input type="tel" class="form-control" [(ngModel)]="editForm.secondaryPhone" placeholder="(555) 000-0000" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" class="form-control" [(ngModel)]="editForm.email" placeholder="patient@example.com" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Street Address</label>
+          <input type="text" class="form-control" [(ngModel)]="editForm.address!.street" placeholder="123 Main St" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.address!.city" />
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.address!.state" placeholder="e.g. CA" />
+          </div>
+          <div class="form-group">
+            <label>ZIP</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.address!.zip" placeholder="00000" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Emergency Contacts ─────────────────────────────────── -->
+      <div *ngIf="editSection==='emergency'">
+        <div *ngFor="let ec of editForm.emergencyContacts; let i = index" class="emergency-card">
+          <div class="emergency-card-header">
+            <span>Contact {{ i + 1 }}</span>
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="ec.isPrimary" /> Primary
+            </label>
+            <button class="btn-icon" (click)="removeEmergencyContact(i)" title="Remove">🗑️</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" class="form-control" [(ngModel)]="ec.name" placeholder="Full name" />
+            </div>
+            <div class="form-group">
+              <label>Relationship</label>
+              <input type="text" class="form-control" [(ngModel)]="ec.relationship" placeholder="e.g. Spouse" />
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" class="form-control" [(ngModel)]="ec.phone" placeholder="(555) 000-0000" />
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" (click)="addEmergencyContact()">+ Add Contact</button>
+      </div>
+
+      <!-- ── Cultural ───────────────────────────────────────────── -->
+      <div *ngIf="editSection==='cultural'">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Race</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.race" placeholder="e.g. White" />
+          </div>
+          <div class="form-group">
+            <label>Ethnicity</label>
+            <input type="text" class="form-control" [(ngModel)]="editForm.ethnicity" placeholder="e.g. Hispanic or Latino" />
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="saveError" class="form-error">{{ saveError }}</div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeEditModal()" [disabled]="saving">Cancel</button>
+      <button class="btn btn-primary" (click)="saveDemographics()" [disabled]="saving">
+        {{ saving ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
+</div>

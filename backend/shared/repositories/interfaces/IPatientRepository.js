@@ -22,6 +22,16 @@ class IPatientRepository {
   async getByPatientId(patientId) {
     throw new Error(`${this.constructor.name} must implement getByPatientId()`);
   }
+
+  /**
+   * Merge-update the demographics sub-document for a patient.
+   * @param {number} patientId
+   * @param {Object} demographics  partial or full demographics fields
+   * @returns {Promise<Object|null>} updated patient, or null if not found
+   */
+  async updateDemographics(patientId, demographics) {
+    throw new Error(`${this.constructor.name} must implement updateDemographics()`);
+  }
 }
 
 module.exports = IPatientRepository;

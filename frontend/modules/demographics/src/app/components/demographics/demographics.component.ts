@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -73,7 +74,7 @@ interface Patient {
 @Component({
   selector: 'app-demographics',
   standalone: true,
-  imports: [CommonModule, CollapsibleSectionComponent],
+  imports: [CommonModule, FormsModule, CollapsibleSectionComponent],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
@@ -90,7 +91,17 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   loading = true;
   error: string | null = null;
   displayAge = 0;
-  
+
+  // Role guard
+  canEdit = false;
+
+  // Edit modal
+  showEditModal = false;
+  editSection = 'basic';   // which tab is active in the modal
+  editForm: Demographics = {};
+  saving = false;
+  saveError: string | null = null;
+
   // Section expansion states
   basicInfoExpanded = true;
   contactInfoExpanded = true;
@@ -108,6 +119,7 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    this.canEdit = this.hasEditRole();
     // Extract patientId from URL params (for deep linking and direct routes)
     // Route params only fire when this module's route is active
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
@@ -124,7 +136,6 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Complete the destroy subject
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -141,7 +152,7 @@ export class DemographicsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:5000/api/patients/${patientId}`;
+    const apiUrl = `/api/patients/${patientId}`;
     
     this.http.get<any>(apiUrl)
       .pipe(takeUntil(this.destroy$))
@@ -223,12 +234,17 @@ export class DemographicsComponent implements OnInit, OnDestroy {
 
   formatDate(date: Date | string | undefined | null): string {
     if (!date) return 'N/A';
-    const d = new Date(date);
+    // Parse as local time to avoid UTC midnight rolling back one day for western timezones.
+    // ISO date-only strings (YYYY-MM-DD) are treated as UTC by new Date(); appending
+    // T00:00:00 without Z forces local-time interpretation.
+    const s = typeof date === 'string' ? date : (date as Date).toISOString();
+    const localStr = s.length === 10 ? s + 'T00:00:00' : s.replace('Z', '');
+    const d = new Date(localStr);
     if (isNaN(d.getTime())) return 'N/A';
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     };
     return d.toLocaleDateString('en-US', options);
   }
@@ -278,6 +294,69 @@ export class DemographicsComponent implements OnInit, OnDestroy {
 
   toggleSSNVisibility(): void {
     this.showSSN = !this.showSSN;
+  }
+
+  // ── Edit Demographics ──────────────────────────────────────────────────────
+  private hasEditRole(): boolean {
+    try {
+      const role = (localStorage.getItem('user_role') || '').toLowerCase();
+      if (role === 'physician' || role === 'admin') return true;
+      const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+      if (!token) return false;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return ['physician', 'admin'].includes((payload.role || '').toLowerCase());
+    } catch { return false; }
+  }
+
+  openEditModal(section: string = 'basic'): void {
+    this.editForm = JSON.parse(JSON.stringify(this.currentDemographics || {}));
+    if (!this.editForm.legalName)        this.editForm.legalName = {};
+    if (!this.editForm.address)          this.editForm.address = {};
+    if (!this.editForm.emergencyContacts || !this.editForm.emergencyContacts.length)
+      this.editForm.emergencyContacts = [{ name: '', relationship: '', phone: '', isPrimary: true }];
+    this.editSection = section;
+    this.saveError = null;
+    this.showEditModal = true;
+    // Normalize dateOfBirth to YYYY-MM-DD for the date input
+    if (this.editForm.dateOfBirth) {
+      this.editForm.dateOfBirth = new Date(this.editForm.dateOfBirth).toISOString().slice(0, 10);
+    }
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.saveError = null;
+  }
+
+  saveDemographics(): void {
+    const patientId = this.getPatientIdFromStorage();
+    if (!patientId) return;
+    this.saving = true;
+    this.saveError = null;
+
+    // Strip empty strings to avoid overwriting real data with blanks
+    const payload: Demographics = JSON.parse(JSON.stringify(this.editForm));
+
+    this.http.put(`/api/patients/${patientId}/demographics`, payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.closeEditModal();
+          this.loadPatientData();
+          window.dispatchEvent(new CustomEvent('patient-demographics-updated', { detail: { patientId } }));
+        },
+        error: (err) => { this.saving = false; this.saveError = err.error?.error || 'Save failed. Please try again.'; }
+      });
+  }
+
+  addEmergencyContact(): void {
+    if (!this.editForm.emergencyContacts) this.editForm.emergencyContacts = [];
+    this.editForm.emergencyContacts.push({ name: '', relationship: '', phone: '', isPrimary: false });
+  }
+
+  removeEmergencyContact(idx: number): void {
+    this.editForm.emergencyContacts?.splice(idx, 1);
   }
 
   retryLoad(): void {

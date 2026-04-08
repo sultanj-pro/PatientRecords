@@ -43,6 +43,15 @@ class MongoPatientRepository extends IPatientRepository {
   async getByPatientId(patientId) {
     return Patient.findOne({ patientid: patientId });
   }
+
+  async updateDemographics(patientId, demographics) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return null;
+    patient.demographics = { ...(patient.demographics || {}), ...demographics };
+    patient.markModified('demographics');
+    await patient.save();
+    return patient;
+  }
 }
 
 module.exports = MongoPatientRepository;
