@@ -1,10 +1,90 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
+
+interface UnitRange {
+  min: number;
+  max: number;
+  step: number;
+  placeholder: string;
+}
+
+interface VitalTypeConfig {
+  type: string;
+  units: string[];
+  unitRanges: { [unit: string]: UnitRange };
+}
+
+const VITAL_CONFIGS: VitalTypeConfig[] = [
+  {
+    type: 'Temperature', units: ['°C', '°F'],
+    unitRanges: {
+      '°C': { min: 35,  max: 42,   step: 0.1, placeholder: '36.5' },
+      '°F': { min: 95,  max: 108,  step: 0.1, placeholder: '98.6' },
+    }
+  },
+  {
+    type: 'Blood Pressure Systolic', units: ['mmHg'],
+    unitRanges: { 'mmHg': { min: 50, max: 300, step: 1, placeholder: '120' } }
+  },
+  {
+    type: 'Blood Pressure Diastolic', units: ['mmHg'],
+    unitRanges: { 'mmHg': { min: 20, max: 200, step: 1, placeholder: '80' } }
+  },
+  {
+    type: 'Heart Rate', units: ['bpm'],
+    unitRanges: { 'bpm': { min: 20, max: 300, step: 1, placeholder: '72' } }
+  },
+  {
+    type: 'Respiratory Rate', units: ['breaths/min'],
+    unitRanges: { 'breaths/min': { min: 1, max: 60, step: 1, placeholder: '16' } }
+  },
+  {
+    type: 'O₂ Saturation', units: ['%'],
+    unitRanges: { '%': { min: 50, max: 100, step: 0.1, placeholder: '98' } }
+  },
+  {
+    type: 'Blood Glucose', units: ['mg/dL', 'mmol/L'],
+    unitRanges: {
+      'mg/dL':  { min: 10,  max: 1200, step: 0.1, placeholder: '100' },
+      'mmol/L': { min: 0.5, max: 66.5, step: 0.1, placeholder: '5.5' },
+    }
+  },
+  {
+    type: 'Weight', units: ['kg', 'lbs'],
+    unitRanges: {
+      'kg':  { min: 1, max: 300, step: 0.1, placeholder: '70'  },
+      'lbs': { min: 2, max: 660, step: 0.1, placeholder: '154' },
+    }
+  },
+  {
+    type: 'Height', units: ['cm', 'in'],
+    unitRanges: {
+      'cm': { min: 30, max: 280, step: 0.1, placeholder: '170' },
+      'in': { min: 12, max: 110, step: 0.1, placeholder: '67'  },
+    }
+  },
+  {
+    type: 'Pain Score', units: ['0-10'],
+    unitRanges: { '0-10': { min: 0, max: 10, step: 1, placeholder: '0' } }
+  },
+];
+
+interface VitalRecord {
+  _id?: string;
+  vital_description: string;
+  value: string | number;
+  unit?: string;
+  dateofobservation: string;
+  observationcode?: string;
+  deletedAt?: string | null;
+  [key: string]: any;
+}
 
 interface Vital {
   temperature?: number;
@@ -21,7 +101,7 @@ interface Vital {
 @Component({
   selector: 'app-vitals',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
@@ -34,9 +114,23 @@ interface Vital {
 })
 export class VitalsComponent implements OnInit, OnDestroy {
   vitals: Vital[] = [];
+  rawVitals: VitalRecord[] = [];
   loading = true;
   error: string | null = null;
   patientName = 'Patient';
+
+  // Add/Edit modal
+  showModal = false;
+  isEditing = false;
+  saving = false;
+  saveError: string | null = null;
+  editingId: string | null = null;
+  editForm: Partial<VitalRecord> = {};
+
+  // Delete
+  deletingId: string | null = null;
+
+  readonly vitalConfigs = VITAL_CONFIGS;
 
   private destroy$ = new Subject<void>();
   private lastPatientId: string | null = null;
@@ -77,85 +171,159 @@ export class VitalsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const apiUrl = `http://localhost:5000/api/patients/${patientId}/vitals`;
-
-    this.http.get<any>(apiUrl)
+    this.http.get<any>(`/api/patients/${patientId}/vitals`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          // Handle array response or object with data property
-          const vitalsArray = Array.isArray(data) ? data : data.vitals || data.data || [];
-          
-          // Transform API response into component format
-          this.vitals = this.transformVitals(vitalsArray);
-          
-          console.log('Transformed vitals:', this.vitals);
-          this.lastPatientId = patientId; // Track loaded patient
+          const vitalsArray: VitalRecord[] = Array.isArray(data) ? data : data.vitals || data.data || [];
+          this.rawVitals = vitalsArray.filter(v => !v.deletedAt).sort((a, b) =>
+            new Date(b.dateofobservation).getTime() - new Date(a.dateofobservation).getTime()
+          );
+          this.vitals = this.transformVitals(this.rawVitals);
+          this.lastPatientId = patientId;
           this.loading = false;
         },
         error: (err) => {
-          console.error('Error loading vitals:', err);
           this.error = `Failed to load vitals: ${err.message || 'Unknown error'}`;
           this.loading = false;
         }
       });
   }
 
-  /**
-   * Transform API response vitals into component format
-   * Groups related vitals and extracts values based on vital_description
-   */
-  private transformVitals(apiVitals: any[]): Vital[] {
-    // Sort by date, most recent first
-    const sorted = [...apiVitals].sort((a, b) => {
-      const dateA = new Date(a.dateofobservation || '').getTime();
-      const dateB = new Date(b.dateofobservation || '').getTime();
-      return dateB - dateA;
-    });
+  // ── Add / Edit modal ─────────────────────────────────────────────────────
 
-    // Group by date to combine related vitals
-    const groupedByDate: { [key: string]: any[] } = {};
-    sorted.forEach(vital => {
-      const dateKey = vital.dateofobservation || 'unknown';
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = [];
-      }
-      groupedByDate[dateKey].push(vital);
-    });
+  get selectedVitalConfig(): VitalTypeConfig | null {
+    return VITAL_CONFIGS.find(c => c.type === this.editForm.vital_description) || null;
+  }
 
-    // Transform grouped vitals into component format
-    const transformed: Vital[] = [];
-    
-    Object.entries(groupedByDate).forEach(([date, vitals]) => {
-      const vital: Vital = {
-        recordedAt: date
-      };
+  get availableUnits(): string[] {
+    return this.selectedVitalConfig?.units || [];
+  }
 
-      vitals.forEach((v: any) => {
-        const description = (v.vital_description || '').toLowerCase();
-        const value = parseFloat(v.value) || 0;
+  get selectedUnitConfig(): UnitRange | null {
+    const cfg = this.selectedVitalConfig;
+    if (!cfg || !this.editForm.unit) return null;
+    return cfg.unitRanges[this.editForm.unit] || null;
+  }
 
-        if (description.includes('temperature')) {
-          vital.temperature = value;
-        } else if (description.includes('blood pressure') || description.includes('systolic')) {
-          vital.bpSystolic = value;
-        } else if (description.includes('diastolic')) {
-          vital.bpDiastolic = value;
-        } else if (description.includes('heart rate') || description.includes('pulse')) {
-          vital.heartRate = value;
-        } else if (description.includes('respiratory rate') || description.includes('respiration')) {
-          vital.respiratoryRate = value;
-        } else if (description.includes('oxygen') || description.includes('o2 saturation') || description.includes('spo2')) {
-          vital.o2Saturation = value;
-        }
+  onVitalTypeChange(): void {
+    const cfg = this.selectedVitalConfig;
+    if (cfg) {
+      this.editForm.unit = cfg.units[0];
+      this.editForm.value = '';
+    }
+  }
+
+  openAddModal(): void {
+    this.isEditing = false;
+    this.editingId = null;
+    const firstCfg = VITAL_CONFIGS[0];
+    this.editForm = { dateofobservation: new Date().toISOString().slice(0, 16), vital_description: firstCfg.type, value: '', unit: firstCfg.units[0] };
+    this.saveError = null;
+    this.showModal = true;
+  }
+
+  openEditModal(v: VitalRecord): void {
+    this.isEditing = true;
+    this.editingId = v._id || null;
+    this.editForm = {
+      vital_description: v.vital_description,
+      value: v.value,
+      unit: v.unit || '',
+      dateofobservation: v.dateofobservation ? v.dateofobservation.slice(0, 16) : '',
+    };
+    this.saveError = null;
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.saveError = null;
+  }
+
+  saveVital(): void {
+    const patientId = this.getPatientIdFromStorage();
+    if (!patientId) return;
+    if (!this.editForm.vital_description || !this.editForm.dateofobservation) {
+      this.saveError = 'Vital type and date are required.';
+      return;
+    }
+
+    const cfg = this.selectedVitalConfig;
+    const unitCfg = this.selectedUnitConfig;
+    const val = parseFloat(String(this.editForm.value));
+    if (isNaN(val)) {
+      this.saveError = 'Please enter a valid numeric value.';
+      return;
+    }
+    if (unitCfg && (val < unitCfg.min || val > unitCfg.max)) {
+      this.saveError = `Value must be between ${unitCfg.min} and ${unitCfg.max} ${this.editForm.unit} for ${cfg?.type}.`;
+      return;
+    }
+
+    this.saving = true;
+    this.saveError = null;
+
+    const payload = { ...this.editForm };
+
+    if (this.isEditing && this.editingId) {
+      this.http.put(`/api/patients/${patientId}/vitals/${this.editingId}`, payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => { this.saving = false; this.closeModal(); this.loadVitals(); },
+          error: (err) => { this.saving = false; this.saveError = err.error?.error || 'Save failed. Please try again.'; }
+        });
+    } else {
+      this.http.post(`/api/patients/${patientId}/vitals`, payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => { this.saving = false; this.closeModal(); this.loadVitals(); },
+          error: (err) => { this.saving = false; this.saveError = err.error?.error || 'Save failed. Please try again.'; }
+        });
+    }
+  }
+
+  deleteVital(v: VitalRecord): void {
+    const patientId = this.getPatientIdFromStorage();
+    if (!patientId || !v._id) return;
+    this.deletingId = v._id;
+
+    this.http.delete(`/api/patients/${patientId}/vitals/${v._id}`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => { this.deletingId = null; this.loadVitals(); },
+        error: () => { this.deletingId = null; }
       });
+  }
 
-      if (Object.keys(vital).length > 1) { // More than just recordedAt
-        transformed.push(vital);
+  // ── Transform / display helpers ──────────────────────────────────────────
+
+  private transformVitals(apiVitals: VitalRecord[]): Vital[] {
+    // Build one consolidated Vital from the most recent value of each type
+    const latest: Vital = {};
+
+    apiVitals.forEach((v: VitalRecord) => {
+      const description = (v.vital_description || '').toLowerCase();
+      const value = parseFloat(String(v.value)) || 0;
+
+      if (description.includes('temperature') && !latest.temperature) {
+        latest.temperature = value;
+        if (!latest.recordedAt) latest.recordedAt = v.dateofobservation;
+      } else if ((description.includes('blood pressure') || description.includes('systolic')) && !latest.bpSystolic) {
+        latest.bpSystolic = value;
+      } else if (description.includes('diastolic') && !latest.bpDiastolic) {
+        latest.bpDiastolic = value;
+      } else if ((description.includes('heart rate') || description.includes('pulse')) && !latest.heartRate) {
+        latest.heartRate = value;
+        if (!latest.recordedAt) latest.recordedAt = v.dateofobservation;
+      } else if ((description.includes('respiratory rate') || description.includes('respiration')) && !latest.respiratoryRate) {
+        latest.respiratoryRate = value;
+      } else if ((description.includes('oxygen') || description.includes('o2') || description.includes('o₂') || description.includes('spo2') || description.includes('saturation')) && !latest.o2Saturation) {
+        latest.o2Saturation = value;
       }
     });
 
-    return transformed;
+    return Object.keys(latest).length > 0 ? [latest] : [];
   }
 
   private getPatientIdFromStorage(): string | null {

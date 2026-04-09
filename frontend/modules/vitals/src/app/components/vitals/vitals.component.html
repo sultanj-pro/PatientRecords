@@ -14,7 +14,7 @@
   </div>
 
   <!-- Content State -->
-  <div *ngIf="!loading && !error && vitals.length > 0" class="content-state">
+  <div *ngIf="!loading && !error && rawVitals.length > 0" class="content-state">
     <!-- Current Vital Signs -->
     <div class="vitals-section">
       <h2 class="section-title">Current Readings</h2>
@@ -103,32 +103,95 @@
       </div>
     </div>
 
-    <!-- Vital History Table -->
-    <div class="history-section" *ngIf="vitals.length > 1">
-      <h2 class="section-title">Recent History</h2>
+    <!-- All Records Table -->
+    <div class="history-section">
+      <div class="section-header">
+        <h2 class="section-title">All Readings</h2>
+        <button class="add-btn" (click)="openAddModal()">+ Add Vital</button>
+      </div>
       <div class="history-table">
         <div class="table-header">
           <div class="col-date">Date/Time</div>
-          <div class="col-temp">Temperature</div>
-          <div class="col-bp">Blood Pressure</div>
-          <div class="col-hr">Heart Rate</div>
-          <div class="col-o2">O₂ Saturation</div>
+          <div class="col-type">Type</div>
+          <div class="col-value">Value</div>
+          <div class="col-unit">Unit</div>
+          <div class="col-actions">Actions</div>
         </div>
-        <div *ngFor="let vital of vitals | slice:0:10" class="table-row">
-          <div class="col-date">{{ formatDate(vital.recordedAt) }}</div>
-          <div class="col-temp">{{ vital.temperature || 'N/A' }}°C</div>
-          <div class="col-bp">{{ vital.bpSystolic || 'N/A' }}/{{ vital.bpDiastolic || 'N/A' }}</div>
-          <div class="col-hr">{{ vital.heartRate || 'N/A' }} bpm</div>
-          <div class="col-o2">{{ vital.o2Saturation || 'N/A' }}%</div>
+        <div *ngFor="let v of rawVitals" class="table-row">
+          <div class="col-date">{{ formatDate(v.dateofobservation) }}</div>
+          <div class="col-type">{{ v.vital_description }}</div>
+          <div class="col-value">{{ v.value }}</div>
+          <div class="col-unit">{{ v.unit || '—' }}</div>
+          <div class="col-actions">
+            <button class="action-btn edit-btn" (click)="openEditModal(v)">Edit</button>
+            <button class="action-btn delete-btn"
+                    (click)="deleteVital(v)"
+                    [disabled]="deletingId === v._id">
+              {{ deletingId === v._id ? '…' : 'Delete' }}
+            </button>
+          </div>
         </div>
+        <div *ngIf="rawVitals.length === 0" class="table-empty">No records found.</div>
       </div>
     </div>
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="!loading && !error && vitals.length === 0" class="empty-state">
+  <div *ngIf="!loading && !error && rawVitals.length === 0" class="empty-state">
     <div class="empty-icon">📊</div>
     <h2>No Vital Signs Available</h2>
-    <p>Please select a patient from the dashboard to view their vital signs.</p>
+    <p>No vitals recorded yet.</p>
+    <button class="retry-btn" (click)="openAddModal()">+ Add First Vital</button>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ isEditing ? 'Edit Vital' : 'Add Vital' }}</h3>
+      <button class="close-btn" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Vital Type *</label>
+        <select [(ngModel)]="editForm.vital_description" (ngModelChange)="onVitalTypeChange()">
+          <option *ngFor="let cfg of vitalConfigs" [value]="cfg.type">{{ cfg.type }}</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Value *
+            <span class="range-hint" *ngIf="selectedUnitConfig">
+              ({{ selectedUnitConfig!.min }}–{{ selectedUnitConfig!.max }} {{ editForm.unit }})
+            </span>
+          </label>
+          <input type="number"
+                 [(ngModel)]="editForm.value"
+                 [placeholder]="selectedUnitConfig?.placeholder || ''"
+                 [min]="selectedUnitConfig?.min ?? null"
+                 [max]="selectedUnitConfig?.max ?? null"
+                 [step]="selectedUnitConfig?.step || 1" />
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <select [(ngModel)]="editForm.unit" (ngModelChange)="editForm.value = ''" *ngIf="availableUnits.length > 1">
+            <option *ngFor="let u of availableUnits" [value]="u">{{ u }}</option>
+          </select>
+          <input type="text" [value]="editForm.unit" readonly *ngIf="availableUnits.length <= 1" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Date / Time *</label>
+        <input type="datetime-local" [(ngModel)]="editForm.dateofobservation" />
+      </div>
+      <div class="save-error" *ngIf="saveError">{{ saveError }}</div>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeModal()">Cancel</button>
+      <button class="save-btn" (click)="saveVital()" [disabled]="saving">
+        {{ saving ? 'Saving…' : 'Save' }}
+      </button>
+    </div>
   </div>
 </div>

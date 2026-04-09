@@ -88,6 +88,34 @@ app.post('/api/patients/:id/vitals', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /api/patients/:id/vitals/:vitalId
+app.put('/api/patients/:id/vitals/:vitalId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { vitalId } = req.params;
+    const repo = getRepository('vitals');
+    const updated = await repo.updateVital(patientId, vitalId, req.body);
+    if (!updated) return res.status(404).json({ error: 'vital not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update vital', detail: err.message });
+  }
+});
+
+// DELETE /api/patients/:id/vitals/:vitalId
+app.delete('/api/patients/:id/vitals/:vitalId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { vitalId } = req.params;
+    const repo = getRepository('vitals');
+    const deleted = await repo.deleteVital(patientId, vitalId);
+    if (!deleted) return res.status(404).json({ error: 'vital not found' });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'failed to delete vital', detail: err.message });
+  }
+});
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Vitals Service listening on port ${PORT}`);

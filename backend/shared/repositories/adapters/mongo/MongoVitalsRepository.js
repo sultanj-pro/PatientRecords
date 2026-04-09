@@ -14,7 +14,22 @@ class MongoVitalsRepository extends IVitalsRepository {
   async getVitals(patientId) {
     const patient = await Patient.findOne({ patientid: patientId });
     if (!patient) return null;
-    return patient.vitals || [];
+    const vitals = patient.vitals || [];
+
+    // Lazy migration: assign _id to existing records that don't have one
+    let needsSave = false;
+    vitals.forEach(v => {
+      if (!v._id) {
+        v._id = new mongoose.Types.ObjectId();
+        needsSave = true;
+      }
+    });
+    if (needsSave) {
+      patient.markModified('vitals');
+      await patient.save();
+    }
+
+    return vitals;
   }
 
   async addVital(patientId, vital) {
@@ -23,19 +38,38 @@ class MongoVitalsRepository extends IVitalsRepository {
 
     if (!patient.vitals) patient.vitals = [];
 
-    // Soft-delete any existing vital with the same description (upsert-by-type)
-    if (vital.vital_description) {
-      patient.vitals.forEach((v) => {
-        if (v.vital_description === vital.vital_description && !v.deletedAt) {
-          v.deletedAt = new Date();
-        }
-      });
-    }
-
-    patient.vitals.push({ ...vital, deletedAt: null });
+    patient.vitals.push({ ...vital, _id: new mongoose.Types.ObjectId(), deletedAt: null });
     patient.markModified('vitals');
     await patient.save();
     return patient;
+  }
+
+  async updateVital(patientId, vitalId, data) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return null;
+
+    const vitals = patient.vitals || [];
+    const idx = vitals.findIndex(v => String(v._id) === String(vitalId) && !v.deletedAt);
+    if (idx === -1) return null;
+
+    vitals[idx] = { ...vitals[idx], ...data, _id: vitals[idx]._id, deletedAt: null };
+    patient.markModified('vitals');
+    await patient.save();
+    return vitals[idx];
+  }
+
+  async deleteVital(patientId, vitalId) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return false;
+
+    const vitals = patient.vitals || [];
+    const idx = vitals.findIndex(v => String(v._id) === String(vitalId) && !v.deletedAt);
+    if (idx === -1) return false;
+
+    vitals[idx].deletedAt = new Date().toISOString();
+    patient.markModified('vitals');
+    await patient.save();
+    return true;
   }
 }
 
