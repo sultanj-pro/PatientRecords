@@ -396,7 +396,9 @@ async function callLlmLabAnalysis(ruleFindings, labs, vitals, patient, ollamaUrl
     .map(v => sanitizeForPrompt(`${v.vital_description}: ${v.value} ${v.unit || ''}`))
     .join(', ') || 'None';
 
-  const patientDesc = `Age: ${sanitizeForPrompt(String(patient?.age || patient?.demographics?.age || 'unknown'), 20)}, Gender: ${sanitizeForPrompt(String(patient?.demographics?.gender || 'unknown'), 20)}`;
+  const _dob2 = patient?.demographics?.dateOfBirth || patient?.dateOfBirth;
+  const _calcAge2 = (dob) => { if (!dob) return null; const b = new Date(dob); if (isNaN(b)) return null; const n = new Date(); let a = n.getFullYear() - b.getFullYear(); const m = n.getMonth() - b.getMonth(); if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--; return a; };
+  const patientDesc = `Age: ${sanitizeForPrompt(String(patient?.age || _calcAge2(_dob2) || 'unknown'), 20)}, Gender: ${sanitizeForPrompt(String(patient?.demographics?.gender || patient?.gender || 'unknown'), 20)}`;
 
   const alreadyFlagged = ruleFindings.length > 0
     ? ruleFindings.map(f => f.title).join('; ')

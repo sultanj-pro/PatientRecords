@@ -12,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET  || 'dev-secret';
 const OLLAMA_URL = process.env.OLLAMA_URL  || 'http://localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 const CLINICAL_NOTES_URL = process.env.CLINICAL_NOTES_URL || 'http://localhost:5012';
-const OLLAMA_TIMEOUT_MS  = parseInt(process.env.OLLAMA_TIMEOUT_MS || '120000', 10);
+const OLLAMA_TIMEOUT_MS  = parseInt(process.env.OLLAMA_TIMEOUT_MS || '300000', 10);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -48,9 +48,25 @@ function authMiddleware(req, res, next) {
 
 // ── Prompt builder ───────────────────────────────────────────────────────────
 
+function calcAge(dob) {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  if (isNaN(birth)) return null;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 function buildPrompt({ patient, findings, notes, vitals, medications, labs }) {
+  const dob     = patient?.demographics?.dateOfBirth || patient?.dateOfBirth;
+  const age     = patient?.age || calcAge(dob) || 'unknown';
+  const gender  = patient?.demographics?.gender || patient?.gender || 'unknown';
+  const first   = patient?.demographics?.legalName?.first || patient?.firstName || '';
+  const last    = patient?.demographics?.legalName?.last  || patient?.lastName  || '';
   const patientLine = patient
-    ? `Patient: ${patient.firstName || ''} ${patient.lastName || ''}, Age: ${patient.age || 'unknown'}, DOB: ${patient.dateOfBirth || 'unknown'}, Gender: ${patient.gender || 'unknown'}`
+    ? `Patient: ${first} ${last}, Age: ${age}, DOB: ${dob || 'unknown'}, Gender: ${gender}`
     : 'Patient details unavailable.';
 
   const findingsSection = findings && findings.length > 0
@@ -61,17 +77,42 @@ function buildPrompt({ patient, findings, notes, vitals, medications, labs }) {
     : '  None identified.';
 
   const notesSection = notes && notes.length > 0
-    ? notes.slice(0, 6).map(n =>
-        `  [${n.type?.toUpperCase() || 'NOTE'}] by ${n.providerName || n.providerId} (${n.providerRole || 'provider'}): ${n.content}`
-      ).join('\n\n')
-    : '  No recent clinical notes available.';
+    ? notes.slice(0, 2).map(n =>
+        `  [${n.type?.toUpperCase() || 'NOTE'}] ${n.providerRole || 'provider'}: ${(n.content || '').slice(0, 200)}`
+      ).join('\n')
+    : '  None.';
 
-  const vitalsSection = vitals && vitals.length > 0
-    ? (() => {
-        const latest = vitals[0];
-        return `BP: ${latest.systolic || '?'}/${latest.diastolic || '?'} mmHg, HR: ${latest.heartRate || '?'} bpm, Temp: ${latest.temperature || '?'}°C, SpO₂: ${latest.oxygenSaturation || '?'}%, Weight: ${latest.weight || '?'} kg`;
-      })()
-    : 'Not available.';
+  const vitalsSection = (() => {
+    if (!vitals || vitals.length === 0) return 'Not available.';
+    // Sort newest first, then pick most-recent value per description
+    const sorted = [...vitals].sort((a, b) =>
+      new Date(b.dateofobservation || 0) - new Date(a.dateofobservation || 0)
+    );
+    const seen = new Map();
+    for (const v of sorted) {
+      const key = (v.vital_description || v.description || '').trim().toLowerCase();
+      if (key && !seen.has(key)) seen.set(key, v);
+    }
+    // Build a concise list, flagging obviously abnormal values
+    const CRITICAL_FLAGS = {
+      'temperature':                 (v, u) => u.includes('f') ? v >= 101.5 : v >= 38.6,
+      'blood pressure (systolic)':   (v)    => v >= 160 || v < 90,
+      'blood pressure systolic':     (v)    => v >= 160 || v < 90,
+      'blood pressure (diastolic)':  (v)    => v >= 100,
+      'blood pressure diastolic':    (v)    => v >= 100,
+      'heart rate':                  (v)    => v >= 120 || v <= 50,
+      'oxygen saturation':           (v)    => v < 95,
+      'o₂ saturation':               (v)    => v < 95,
+    };
+    const parts = [];
+    for (const [key, v] of seen.entries()) {
+      const val  = parseFloat(v.value);
+      const unit = (v.unit || '').toLowerCase();
+      const flag = !isNaN(val) && CRITICAL_FLAGS[key] ? CRITICAL_FLAGS[key](val, unit) : false;
+      parts.push(`${v.vital_description || v.description}: ${v.value} ${v.unit || ''}${flag ? ' ⚠ CRITICAL' : ''}`.trim());
+    }
+    return parts.join(', ') || 'Not available.';
+  })();
 
   const medsSection = medications && medications.length > 0
     ? medications.slice(0, 8).map(m => `${m.name} ${m.dose || ''} ${m.frequency || ''}`.trim()).join(', ')
@@ -81,32 +122,23 @@ function buildPrompt({ patient, findings, notes, vitals, medications, labs }) {
     ? labs.slice(0, 6).map(l => `${l.testName}: ${l.value} ${l.unit || ''}${l.flag ? ` (${l.flag})` : ''}`).join(', ')
     : 'None recorded.';
 
-  return `You are a clinical decision support AI embedded in an electronic health record system. Generate a concise, professional narrative summary for a physician reviewing this patient.
+  return `Summarize this patient health record data into a structured report. Only use the information provided. Do not add opinions or advice beyond what the data states.
 
 ${patientLine}
-
-LATEST VITALS:
-${vitalsSection}
-
-CURRENT MEDICATIONS:
-${medsSection}
-
-RECENT LAB RESULTS:
-${labsSection}
-
-AGENT FINDINGS (automated clinical rule analysis):
+Vitals: ${vitalsSection}
+Medications: ${medsSection}
+Lab Results: ${labsSection}
+Flagged Issues:
 ${findingsSection}
-
-RECENT CLINICAL NOTES (from providers):
+Recent Notes:
 ${notesSection}
 
-TASK:
-Write a structured clinical summary in 3 sections:
-1. CLINICAL OVERVIEW — 2-3 sentences summarising the patient's current clinical picture.
-2. KEY CONCERNS — bullet list of the most important issues requiring attention, incorporating the agent findings and notes.
-3. SUGGESTED NEXT STEPS — concise action points for the care team.
+Write a report with these 3 sections:
+CLINICAL OVERVIEW: 2 sentences describing the patient's current status from the data.
+KEY CONCERNS: up to 3 bullet points listing the flagged issues above.
+SUGGESTED NEXT STEPS: up to 3 bullet points based on the flagged issues and lab results.
 
-Keep the summary under 300 words. Use clinical language appropriate for a physician audience. Do not invent information not present in the data above. If data is limited, note it briefly.`;
+Report:`;
 }
 
 // ── Ollama availability check ────────────────────────────────────────────────
@@ -139,7 +171,7 @@ async function fetchNotes(patientId, authHeader) {
 async function callOllama(prompt) {
   const { data } = await axios.post(
     `${OLLAMA_URL}/api/generate`,
-    { model: OLLAMA_MODEL, prompt, stream: false },
+    { model: OLLAMA_MODEL, prompt, stream: false, options: { num_predict: 400, temperature: 0.2 } },
     { timeout: OLLAMA_TIMEOUT_MS }
   );
   return (data.response || '').trim();
@@ -189,6 +221,75 @@ app.post('/summarize', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('[llm-agent] Ollama call failed:', err.message);
     res.json({ summary: null, reason: 'ollama_error', detail: err.message, model: OLLAMA_MODEL });
+  }
+});
+
+// ── POST /stream ─────────────────────────────────────────────────────────────
+//
+//  Same body as /summarize.
+//  Returns an SSE stream: data: {"t":"token"}\n\n … data: [DONE]\n\n
+
+app.post('/stream', authMiddleware, async (req, res) => {
+  const { patientId, patient, findings = [], vitals = [], medications = [], labs = [] } = req.body;
+  if (!patientId) return res.status(400).json({ error: 'patientId required' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const ollamaAvailable = await checkOllama();
+  if (!ollamaAvailable) {
+    res.write('data: {"error":"ollama_unavailable"}\n\n');
+    res.write('data: [DONE]\n\n');
+    return res.end();
+  }
+
+  const notes = await fetchNotes(patientId, req.headers.authorization);
+  const prompt = buildPrompt({ patient, findings, notes, vitals, medications, labs });
+
+  try {
+    console.log(`[llm-agent] Streaming Ollama (${OLLAMA_MODEL}) for patient ${patientId}…`);
+    const ollamaRes = await axios.post(
+      `${OLLAMA_URL}/api/generate`,
+      { model: OLLAMA_MODEL, prompt, stream: true, options: { num_predict: 400, temperature: 0.2 } },
+      { responseType: 'stream', timeout: OLLAMA_TIMEOUT_MS }
+    );
+
+    let buf = '';
+    ollamaRes.data.on('data', (chunk) => {
+      buf += chunk.toString();
+      const lines = buf.split('\n');
+      buf = lines.pop(); // keep incomplete last fragment
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const json = JSON.parse(line);
+          if (json.response) {
+            res.write(`data: ${JSON.stringify({ t: json.response })}\n\n`);
+          }
+          if (json.done) {
+            res.write('data: [DONE]\n\n');
+            res.end();
+          }
+        } catch { /* skip unparseable line */ }
+      }
+    });
+
+    ollamaRes.data.on('error', (err) => {
+      console.error('[llm-agent] Ollama stream error:', err.message);
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    });
+
+    req.on('close', () => ollamaRes.data.destroy());
+
+  } catch (err) {
+    console.error('[llm-agent] Stream failed:', err.message);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
   }
 });
 

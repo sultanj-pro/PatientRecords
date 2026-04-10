@@ -112,7 +112,9 @@ async function getLlmMedicationFindings({ medications, labs, patient, existingFi
     .join(', ') || 'None';
 
   const allergies = (patient?.allergies || []).map(a => sanitizeForPrompt(a.substance || a, 60)).join(', ') || 'None known';
-  const age       = sanitizeForPrompt(String(patient?.age || patient?.demographics?.age || 'unknown'), 20);
+  const _dob    = patient?.demographics?.dateOfBirth || patient?.dateOfBirth;
+  const _calcAge = (dob) => { if (!dob) return null; const b = new Date(dob); if (isNaN(b)) return null; const n = new Date(); let a = n.getFullYear() - b.getFullYear(); const m = n.getMonth() - b.getMonth(); if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--; return a; };
+  const age       = sanitizeForPrompt(String(patient?.age || _calcAge(_dob) || 'unknown'), 20);
   const gender    = sanitizeForPrompt(String(patient?.demographics?.gender || patient?.gender || 'unknown'), 20);
 
   const existingSummary = existingFindings.length > 0

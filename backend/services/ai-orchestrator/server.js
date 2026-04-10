@@ -8,7 +8,7 @@ const mongoose   = require('mongoose');
 const axios      = require('axios');
 
 const { buildContext }       = require('./contextBuilder');
-const { createRecommendation, getRecommendations, setStatus } = require('./approvalStore');
+const { createRecommendation, getRecommendations, setStatus, deleteAllRecommendations, getById, updateSummary } = require('./approvalStore');
 
 const app        = express();
 const PORT       = process.env.PORT       || 5008;
@@ -93,7 +93,7 @@ async function callLlmAgent(patientId, context, findings, authHeader) {
         medications: context.medications,
         labs:        context.labs,
       },
-      { headers: { Authorization: authHeader }, timeout: 130000 }
+      { headers: { Authorization: authHeader }, timeout: 310000 }
     );
     return data.summary || null;
   } catch (err) {
@@ -148,14 +148,11 @@ app.post('/api/ai/recommend/:patientId', authMiddleware, async (req, res) => {
       ...commsFindings,
     ];
 
-    // Call LLM agent for narrative summary (fail-soft — null if Ollama unavailable)
-    const llmSummary = await callLlmAgent(patientId, context, findings, req.authHeader);
-
-    // 8.8.12 — recommendation latency metric
+    // Save recommendation immediately — LLM summary streamed separately
     const latencyMs = Date.now() - t0;
     console.log(JSON.stringify({ event: 'recommendation-generated', latencyMs, findingsCount: findings.length }));
 
-    const recommendation = await createRecommendation(patientId, context, findings, llmSummary);
+    const recommendation = await createRecommendation(patientId, context, findings, null);
     res.status(201).json(recommendation);
   } catch (err) {
     console.error('[ai-orchestrator] recommend error:', err.message);
@@ -212,6 +209,194 @@ app.post('/api/ai/recommendations/:id/dismiss', authMiddleware, async (req, res)
       return res.status(409).json({ error: err.message });
     }
     res.status(500).json({ error: 'Failed to dismiss recommendation', detail: err.message });
+  }
+});
+
+/**
+ * POST /api/ai/recommend-stream/:patientId
+ * Combined SSE stream covering the full analysis pipeline:
+ *   {type:"phase", message:"..."}  — progress during agent phase
+ *   {type:"rec",   rec:{...}}      — recommendation created (agents done)
+ *   {type:"token", t:"..."}        — LLM narrative token
+ *   data: [DONE]                   — everything finished
+ */
+app.post('/api/ai/recommend-stream/:patientId', authMiddleware, async (req, res) => {
+  const { patientId } = req.params;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (obj) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(obj)}\n\n`); };
+
+  try {
+    send({ type: 'phase', message: 'Fetching patient data…' });
+    const context = await buildContext(patientId, req.authHeader);
+
+    send({ type: 'phase', message: 'Running medication, labs and care-coordination analysis…' });
+    const [medicationFindings, labsFindings, commsFindings] = await Promise.all([
+      callAgent(MEDICATION_AGENT_URL, { medications: context.medications, labs: context.labs, patient: context.patient }),
+      callAgent(LABS_AGENT_URL,       { labs: context.labs, vitals: context.vitals, patient: context.patient, medications: context.medications }),
+      callAgent(COMMS_AGENT_URL,      { visits: context.visits, medications: context.medications, patient: context.patient }),
+    ]);
+    const findings = [...medicationFindings, ...labsFindings, ...commsFindings];
+
+    send({ type: 'phase', message: `Found ${findings.length} finding(s) — saving recommendation…` });
+    const recommendation = await createRecommendation(patientId, context, findings, null);
+    send({ type: 'rec', rec: recommendation });
+
+    send({ type: 'phase', message: 'Generating clinical summary…' });
+    const llmPayload = {
+      patientId,
+      patient:     context.patient,
+      findings,
+      vitals:      context.vitals,
+      medications: context.medications,
+      labs:        context.labs,
+    };
+
+    const llmRes = await axios.post(
+      `${LLM_AGENT_URL}/stream`,
+      llmPayload,
+      { headers: { Authorization: req.authHeader }, responseType: 'stream', timeout: 310000 }
+    );
+
+    let fullSummary = '';
+    let llmBuf = '';
+    const recId = String(recommendation._id);
+
+    await new Promise((resolve) => {
+      llmRes.data.on('data', (chunk) => {
+        if (res.writableEnded) return llmRes.data.destroy();
+        llmBuf += chunk.toString();
+        const lines = llmBuf.split('\n');
+        llmBuf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const ssePayload = line.slice(6).trim();
+          if (ssePayload === '[DONE]') {
+            updateSummary(recId, fullSummary).catch(() => {});
+            res.write('data: [DONE]\n\n');
+            res.end();
+            return resolve();
+          }
+          try {
+            const parsed = JSON.parse(ssePayload);
+            if (parsed.t) {
+              fullSummary += parsed.t;
+              send({ type: 'token', t: parsed.t });
+            }
+          } catch {}
+        }
+      });
+      llmRes.data.on('end', resolve);
+      llmRes.data.on('error', (err) => {
+        console.error('[ai-orchestrator] recommend-stream LLM error:', err.message);
+        send({ type: 'error', message: 'LLM summary failed — findings still saved.' });
+        if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+        resolve();
+      });
+      req.on('close', () => llmRes.data.destroy());
+    });
+
+  } catch (err) {
+    console.error('[ai-orchestrator] recommend-stream error:', err.message);
+    send({ type: 'error', message: err.message });
+    if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+  }
+});
+
+/**
+ * POST /api/ai/recommendations/:id/stream-summary
+ * SSE stream: pipes LLM tokens from llm-agent to the client.
+ * Saves the complete summary to the DB once streaming finishes.
+ */
+app.post('/api/ai/recommendations/:id/stream-summary', authMiddleware, async (req, res) => {
+  try {
+    const rec = await getById(req.params.id);
+    if (!rec) return res.status(404).json({ error: 'Recommendation not found' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const context = rec.context || {};
+    const payload = {
+      patientId:   rec.patientId,
+      patient:     context.patient,
+      findings:    rec.findings || [],
+      vitals:      context.vitals,
+      medications: context.medications,
+      labs:        context.labs,
+    };
+
+    const llmRes = await axios.post(
+      `${LLM_AGENT_URL}/stream`,
+      payload,
+      { headers: { Authorization: req.authHeader }, responseType: 'stream', timeout: 310000 }
+    );
+
+    let fullSummary = '';
+    let buf = '';
+
+    llmRes.data.on('data', (chunk) => {
+      buf += chunk.toString();
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') {
+          updateSummary(req.params.id, fullSummary).catch(() => {});
+          res.write('data: [DONE]\n\n');
+          return res.end();
+        }
+        try {
+          const parsed = JSON.parse(payload);
+          if (parsed.t) fullSummary += parsed.t;
+        } catch {}
+        res.write(`${line}\n\n`);
+      }
+    });
+
+    llmRes.data.on('error', (err) => {
+      console.error('[ai-orchestrator] stream-summary error:', err.message);
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    });
+
+    req.on('close', () => llmRes.data.destroy());
+
+  } catch (err) {
+    console.error('[ai-orchestrator] stream-summary failed:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Stream failed', detail: err.message });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  }
+});
+
+/**
+ * DELETE /api/ai/recommendations/:patientId/all
+ * Permanently removes all analysis history for a patient.
+ * Restricted to admin and clinician roles.
+ */
+app.delete('/api/ai/recommendations/:patientId/all', authMiddleware, async (req, res) => {
+  const allowedRoles = ['admin', 'clinician', 'physician'];
+  if (!allowedRoles.includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Insufficient permissions to reset analysis history.' });
+  }
+  try {
+    const result = await deleteAllRecommendations(req.params.patientId);
+    res.json({ message: `Deleted ${result.deleted} recommendation(s).`, deleted: result.deleted });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reset analysis history', detail: err.message });
   }
 });
 

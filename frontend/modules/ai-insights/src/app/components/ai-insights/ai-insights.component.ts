@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
@@ -54,6 +54,8 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
   recommendations: Recommendation[] = [];
   loadingRecs = true;
   analyzing = false;
+  resetting = false;
+  showResetConfirm = false;
   recError: string | null = null;
 
   // Which recommendation is expanded
@@ -64,6 +66,12 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
 
   // Approve / dismiss state
   actioning = new Set<string>();
+
+  // Streaming LLM summary state
+  streamingRecId: string | null = null;
+  streamingSummary = '';
+  streamingDone = false;
+  streamingPhase = '';
 
   // Notifications
   notifications: Notification[] = [];
@@ -90,7 +98,7 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
     return this.userRole === 'physician' || this.userRole === 'admin';
   }
 
-  constructor(private http: HttpClient, private route: ActivatedRoute) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -159,22 +167,118 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
     if (!this.patientId || this.analyzing) return;
     this.analyzing = true;
     this.recError = null;
+    this.streamingPhase = 'Fetching patient data…';
+    this.streamingRecId = null;
+    this.streamingSummary = '';
+    this.streamingDone = false;
 
-    this.http.post<Recommendation>(`${this.apiBase}/api/ai/recommend/${this.patientId}`, {})
+    const token = localStorage.getItem('jwt_token');
+    fetch(`${this.apiBase}/api/ai/recommend-stream/${this.patientId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }).then(async (response) => {
+      if (!response.ok || !response.body) {
+        this.recError = 'AI analysis failed. Please try again.';
+        this.analyzing = false;
+        this.streamingPhase = '';
+        this.cdr.markForCheck();
+        return;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let recId: string | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') {
+            if (recId) {
+              const rec = this.recommendations.find(r => r._id === recId);
+              if (rec) {
+                rec.llmSummary = this.streamingSummary;
+                this.llmExpanded.add(recId);
+              }
+            }
+            this.streamingRecId = null;
+            this.streamingPhase = '';
+            this.analyzing = false;
+            this.loadNotifications();
+            this.cdr.markForCheck();
+            return;
+          }
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.type === 'phase') {
+              this.streamingPhase = parsed.message;
+              this.cdr.markForCheck();
+            } else if (parsed.type === 'rec') {
+              const rec = parsed.rec;
+              this.recommendations = [rec, ...this.recommendations];
+              this.expandedRecId = rec._id;
+              recId = rec._id;
+              this.streamingRecId = rec._id;
+              this.streamingSummary = '';
+              this.streamingPhase = '';
+              this.cdr.markForCheck();
+            } else if (parsed.type === 'token') {
+              if (parsed.t) {
+                this.streamingSummary += parsed.t;
+                this.cdr.markForCheck();
+              }
+            } else if (parsed.type === 'error') {
+              this.recError = parsed.message || 'AI analysis failed.';
+              this.analyzing = false;
+              this.streamingPhase = '';
+              this.streamingRecId = null;
+              this.cdr.markForCheck();
+            }
+          } catch { /* ignore malformed SSE lines */ }
+        }
+      }
+    }).catch(() => {
+      this.recError = 'AI analysis failed. Please try again.';
+      this.analyzing = false;
+      this.streamingPhase = '';
+      this.cdr.markForCheck();
+    });
+  }
+
+  // ── Reset analysis history ───────────────────────────────────────────────────
+
+  confirmReset(): void {
+    this.showResetConfirm = true;
+  }
+
+  cancelReset(): void {
+    this.showResetConfirm = false;
+  }
+
+  resetAnalysis(): void {
+    if (!this.patientId || this.resetting) return;
+    this.resetting = true;
+    this.showResetConfirm = false;
+    this.recError = null;
+
+    this.http.delete(`${this.apiBase}/api/ai/recommendations/${this.patientId}/all`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (rec) => {
-          this.recommendations = [rec, ...this.recommendations];
-          this.expandedRecId = rec._id;
-          // Auto-expand LLM summary if present
-          if (rec.llmSummary) this.llmExpanded.add(rec._id);
-          this.analyzing = false;
-          // Refresh notifications after analysis (comms-agent may have new ones)
-          this.loadNotifications();
+        next: () => {
+          this.recommendations = [];
+          this.expandedRecId = null;
+          this.llmExpanded.clear();
+          this.resetting = false;
         },
         error: (err) => {
-          this.recError = err?.error?.error || 'AI analysis failed. Please try again.';
-          this.analyzing = false;
+          this.recError = err?.error?.error || 'Failed to reset analysis history.';
+          this.resetting = false;
         }
       });
   }
@@ -324,5 +428,59 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
 
   get hasPendingRec(): boolean {
     return this.recommendations.some(r => r.status === 'pending');
+  }
+
+  // ── LLM streaming ────────────────────────────────────────────────────────────
+
+  async streamSummary(recId: string): Promise<void> {
+    this.streamingRecId = recId;
+    this.streamingSummary = '';
+    this.streamingDone = false;
+    const token = localStorage.getItem('jwt_token');
+    try {
+      const response = await fetch(`${this.apiBase}/api/ai/recommendations/${recId}/stream-summary`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok || !response.body) {
+        this.streamingRecId = null;
+        return;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') {
+            const rec = this.recommendations.find(r => r._id === recId);
+            if (rec) {
+              rec.llmSummary = this.streamingSummary;
+              this.llmExpanded.add(recId);
+            }
+            this.streamingDone = true;
+            this.streamingRecId = null;
+            this.cdr.markForCheck();
+            return;
+          }
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.t) {
+              this.streamingSummary += parsed.t;
+              this.cdr.markForCheck();
+            }
+          } catch { /* ignore malformed SSE chunks */ }
+        }
+      }
+    } catch {
+      this.streamingRecId = null;
+    }
   }
 }

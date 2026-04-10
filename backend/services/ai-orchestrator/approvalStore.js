@@ -60,7 +60,27 @@ if (DB_ADAPTER === 'knex') {
     return toApi(row);
   }
 
-  module.exports = { createRecommendation, getRecommendations, setStatus };
+  async function deleteAllRecommendations(patientId) {
+    const count = await db('ai_recommendations')
+      .where({ patient_id: String(patientId) })
+      .delete();
+    return { deleted: count };
+  }
+
+  async function getById(id) {
+    const row = await db('ai_recommendations').where({ id }).first();
+    return row ? toApi(row) : null;
+  }
+
+  async function updateSummary(id, llmSummary) {
+    const [row] = await db('ai_recommendations')
+      .where({ id })
+      .update({ llm_summary: llmSummary, updated_at: db.fn.now() })
+      .returning('*');
+    return row ? toApi(row) : null;
+  }
+
+  module.exports = { createRecommendation, getRecommendations, setStatus, deleteAllRecommendations, getById, updateSummary };
 
 } else {
 
@@ -107,5 +127,18 @@ if (DB_ADAPTER === 'knex') {
     return rec.save();
   }
 
-  module.exports = { createRecommendation, getRecommendations, setStatus };
+  async function deleteAllRecommendations(patientId) {
+    const result = await Recommendation.deleteMany({ patientId: String(patientId) });
+    return { deleted: result.deletedCount };
+  }
+
+  async function getById(id) {
+    return Recommendation.findById(id).lean();
+  }
+
+  async function updateSummary(id, llmSummary) {
+    return Recommendation.findByIdAndUpdate(id, { llmSummary }, { new: true }).lean();
+  }
+
+  module.exports = { createRecommendation, getRecommendations, setStatus, deleteAllRecommendations, getById, updateSummary };
 }

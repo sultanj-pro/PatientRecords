@@ -21,7 +21,23 @@
         Analyzing…
       </span>
     </button>
+    <button
+      *ngIf="canApprove && recommendations.length > 0"
+      class="btn btn-reset"
+      [disabled]="resetting || analyzing"
+      (click)="confirmReset()">
+      🗑 Reset History
+    </button>
     <span *ngIf="!canApprove" class="role-badge nurse-badge">👩‍⚕️ Nurse View</span>
+  </div>
+
+  <!-- ── Reset confirmation banner ─────────────────────────────────── -->
+  <div *ngIf="showResetConfirm" class="reset-confirm-banner">
+    <span>⚠️ This will permanently delete all analysis history for this patient. Are you sure?</span>
+    <div class="reset-confirm-actions">
+      <button class="btn btn-reset-confirm" (click)="resetAnalysis()">Yes, Delete All</button>
+      <button class="btn btn-reset-cancel" (click)="cancelReset()">Cancel</button>
+    </div>
   </div>
 
   <!-- ── Error banner ───────────────────────────────────────────────── -->
@@ -34,8 +50,8 @@
   <div *ngIf="analyzing" class="analyzing-banner">
     <div class="spinner analyzing-spinner"></div>
     <div class="analyzing-text">
-      <strong>Running multi-agent analysis…</strong>
-      <span>Medication Agent &nbsp;·&nbsp; Labs Agent &nbsp;·&nbsp; Care Coordination &nbsp;·&nbsp; LLM Analysis</span>
+      <strong>{{ streamingPhase || 'Running multi-agent analysis…' }}</strong>
+      <span *ngIf="!streamingPhase">Medication Agent &nbsp;·&nbsp; Labs Agent &nbsp;·&nbsp; Care Coordination &nbsp;·&nbsp; LLM Analysis</span>
     </div>
   </div>
 
@@ -106,8 +122,19 @@
       <!-- Findings detail (collapsible) -->
       <div *ngIf="isExpanded(rec._id)" class="rec-body">
 
-        <!-- LLM Narrative Summary -->
-        <div *ngIf="rec.llmSummary" class="llm-summary-section">
+        <!-- LLM Narrative Summary — streaming in progress -->
+        <div *ngIf="streamingRecId === rec._id" class="llm-summary-section">
+          <div class="llm-summary-header">
+            <span>🧠 Clinical Summary <span class="llm-badge">llama3</span></span>
+            <span class="streaming-indicator">generating…</span>
+          </div>
+          <div class="llm-summary-body">
+            <pre class="llm-text llm-streaming">{{ streamingSummary }}</pre>
+          </div>
+        </div>
+
+        <!-- LLM Narrative Summary — completed -->
+        <div *ngIf="rec.llmSummary && streamingRecId !== rec._id" class="llm-summary-section">
           <div class="llm-summary-header" (click)="toggleLlm(rec._id)">
             <span>🧠 Clinical Summary <span class="llm-badge">llama3</span></span>
             <span class="llm-toggle-icon">{{ isLlmExpanded(rec._id) ? '▲' : '▼' }}</span>
