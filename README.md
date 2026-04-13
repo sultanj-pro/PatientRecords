@@ -302,7 +302,7 @@ The system uses Angular Module Federation to isolate clinical modules within a s
 
 <div align="center">
 
-![PatientRecords System Architecture](docs/diagrams/system-architecture.svg)
+![PatientRecords System Architecture](docs/diagrams/system-architecture-v2.svg)
 
 </div>
 
