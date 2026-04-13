@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { Subject, interval } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { JwtInterceptor } from '../../core/interceptors/jwt.interceptor';
 
@@ -14,6 +15,17 @@ interface Visit {
   department?: string;
   reason?: string;
   notes?: string;
+  discharge_status?: string;
+}
+
+interface VisitForm {
+  date: string;
+  visitType: string;
+  provider_name: string;
+  facility_name: string;
+  reason: string;
+  notes: string;
+  discharge_status: string;
 }
 
 @Component({
@@ -36,96 +48,154 @@ export class VisitsComponent implements OnInit, OnDestroy {
   error: string | null = null;
   selectedVisitType = 'all';
   expandedVisit: string | null = null;
+
+  // Add / Edit modal
+  showModal = false;
+  isEditing = false;
+  saving = false;
+  saveError: string | null = null;
+  editingId: string | null = null;
+  editForm: VisitForm = this.blankForm();
+
+  // Delete
+  deletingId: string | null = null;
+
+  readonly visitTypes = ['hospital', 'clinic', 'office'];
+
   private lastPatientId: string | null = null;
   private destroy$ = new Subject<void>();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    // Listen for patient context changes from the dashboard
+    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const urlPatientId = params['patientId'];
+      if (urlPatientId) {
+        this.storePatientContext(urlPatientId);
+        if (urlPatientId !== this.lastPatientId) {
+          this.lastPatientId = urlPatientId;
+          this.loadVisitData();
+        }
+      }
+    });
+
     window.addEventListener('patient-context-changed', (event: any) => {
-      console.log('Visits: Received patient-context-changed event', event.detail);
-      const newPatientId = event.detail?.patientId?.toString();
-      if (newPatientId && newPatientId !== this.lastPatientId) {
-        this.lastPatientId = newPatientId;
+      const newId = event.detail?.patientId?.toString();
+      if (newId && newId !== this.lastPatientId) {
+        this.lastPatientId = newId;
         this.loadVisitData();
       }
     });
 
-    // Initial load
     this.loadVisitData();
-    
-    // Use Angular's interval Observable to watch for patient changes (as fallback)
-    interval(500)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        const currentPatientId = this.getPatientIdFromStorage();
-        if (currentPatientId && currentPatientId !== this.lastPatientId) {
-          console.log('Visits: Patient changed, reloading data', {
-            old: this.lastPatientId,
-            new: currentPatientId
-          });
-          this.lastPatientId = currentPatientId;
-          this.loadVisitData();
-        }
-      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadVisitData(): void {
     this.loading = true;
     this.error = null;
 
-    const patientId = this.getPatientIdFromStorage();
-    
-    console.log('Visits component - Loading data for patient:', patientId);
-    console.log('Visits component - localStorage __PATIENT_CONTEXT__:', localStorage.getItem('__PATIENT_CONTEXT__'));
-    
+    const patientId = this.getPatientId();
     if (!patientId) {
       this.loading = false;
       this.error = 'No patient selected. Please select a patient from the dashboard.';
-      console.error('Visits component - No patient ID found');
       return;
     }
 
-    const apiUrl = `http://localhost:5000/api/patients/${patientId}/visits`;
-    console.log('Visits component - Calling API:', apiUrl);
-    
-    this.http.get<any>(apiUrl)
+    this.http.get<Visit[]>(`/api/patients/${patientId}/visits`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          console.log('Visits component - API response:', data);
-          // Handle array response or object with data property
-          const visitsArray = Array.isArray(data) ? data : data.visits || data.data || [];
-          this.visits = visitsArray.map((v: any, idx: number) => ({
-            ...v,
-            id: v.id || `visit-${idx}`
-          }));
-          this.lastPatientId = patientId; // Track loaded patient
+          const arr: any[] = Array.isArray(data) ? data : (data as any).visits || (data as any).data || [];
+          this.visits = arr.map((v: any, idx: number) => ({ ...v, id: v.id || `visit-${idx}` }));
+          this.lastPatientId = patientId;
           this.loading = false;
         },
         error: (err) => {
-          console.error('Error loading visits:', err);
           this.error = `Failed to load visit data: ${err.message || 'Unknown error'}`;
           this.loading = false;
         }
       });
   }
 
-  private getPatientIdFromStorage(): string | null {
-    const contextStr = localStorage.getItem('__PATIENT_CONTEXT__');
-    if (contextStr) {
-      try {
-        const context = JSON.parse(contextStr);
-        if (context.patientId) {
-          return String(context.patientId);
-        }
-      } catch (e) {
-        console.warn('Failed to parse patient context:', e);
-      }
-    }
-    return null;
+  // ── Add / Edit modal ──────────────────────────────────────────────────────
+
+  openAddModal(): void {
+    this.isEditing = false;
+    this.editingId = null;
+    this.editForm = this.blankForm();
+    this.saveError = null;
+    this.showModal = true;
   }
+
+  openEditModal(visit: Visit): void {
+    this.isEditing = true;
+    this.editingId = visit.id || null;
+    this.editForm = {
+      date: visit.visitDate ? String(visit.visitDate).slice(0, 10) : '',
+      visitType: visit.visitType,
+      provider_name: visit.provider || '',
+      facility_name: visit.department || '',
+      reason: visit.reason || '',
+      notes: visit.notes || '',
+      discharge_status: visit.discharge_status || '',
+    };
+    this.saveError = null;
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.saveError = null;
+  }
+
+  saveVisit(): void {
+    const patientId = this.getPatientId();
+    if (!patientId) return;
+    if (!this.editForm.date || !this.editForm.visitType) {
+      this.saveError = 'Date and visit type are required.';
+      return;
+    }
+
+    this.saving = true;
+    this.saveError = null;
+    const payload = { ...this.editForm };
+
+    if (this.isEditing && this.editingId) {
+      this.http.put(`/api/patients/${patientId}/visits/${this.editingId}`, payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => { this.saving = false; this.closeModal(); this.loadVisitData(); },
+          error: (err) => { this.saving = false; this.saveError = err.error?.error || 'Save failed. Please try again.'; }
+        });
+    } else {
+      this.http.post(`/api/patients/${patientId}/visits`, payload)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => { this.saving = false; this.closeModal(); this.loadVisitData(); },
+          error: (err) => { this.saving = false; this.saveError = err.error?.error || 'Save failed. Please try again.'; }
+        });
+    }
+  }
+
+  deleteVisit(visit: Visit): void {
+    const patientId = this.getPatientId();
+    if (!patientId || !visit.id) return;
+    this.deletingId = visit.id;
+
+    this.http.delete(`/api/patients/${patientId}/visits/${visit.id}`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => { this.deletingId = null; this.loadVisitData(); },
+        error: () => { this.deletingId = null; }
+      });
+  }
+
+  // ── Display helpers ───────────────────────────────────────────────────────
 
   getVisitTypes(): string[] {
     const types = new Set(this.visits.map(visit => visit.visitType));
@@ -133,9 +203,7 @@ export class VisitsComponent implements OnInit, OnDestroy {
   }
 
   getFilteredVisits(): Visit[] {
-    if (this.selectedVisitType === 'all') {
-      return this.visits;
-    }
+    if (this.selectedVisitType === 'all') return this.visits;
     return this.visits.filter(visit => visit.visitType === this.selectedVisitType);
   }
 
@@ -156,21 +224,15 @@ export class VisitsComponent implements OnInit, OnDestroy {
   getDaysUntilVisit(visitDate: Date | string): number | null {
     const now = new Date();
     const visit = new Date(visitDate);
-    const diffTime = visit.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((visit.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : null;
   }
 
   getVisitIcon(visitType: string): string {
     const icons: { [key: string]: string } = {
-      'hospital': '🏥',
-      'clinic': '🏥',
-      'office': '👨‍⚕️',
-      'emergency': '🚨',
-      'telemedicine': '💻',
-      'lab': '🔬',
-      'imaging': '📷',
-      'surgery': '⚕️'
+      'hospital': '🏥', 'clinic': '🏥', 'office': '👨‍⚕️',
+      'emergency': '🚨', 'telemedicine': '💻', 'lab': '🔬',
+      'imaging': '📷', 'surgery': '⚕️'
     };
     return icons[visitType?.toLowerCase()] || '📋';
   }
@@ -199,8 +261,30 @@ export class VisitsComponent implements OnInit, OnDestroy {
     return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private blankForm(): VisitForm {
+    return { date: new Date().toISOString().slice(0, 10), visitType: 'office', provider_name: '', facility_name: '', reason: '', notes: '', discharge_status: '' };
+  }
+
+  private getPatientId(): string | null {
+    const contextStr = localStorage.getItem('__PATIENT_CONTEXT__');
+    if (contextStr) {
+      try {
+        const ctx = JSON.parse(contextStr);
+        if (ctx.patientId) return String(ctx.patientId);
+      } catch {}
+    }
+    return null;
+  }
+
+  private storePatientContext(patientId: string): void {
+    try {
+      const existing = localStorage.getItem('__PATIENT_CONTEXT__');
+      const ctx = existing ? JSON.parse(existing) : {};
+      ctx.patientId = patientId;
+      localStorage.setItem('__PATIENT_CONTEXT__', JSON.stringify(ctx));
+    } catch {}
   }
 }
+

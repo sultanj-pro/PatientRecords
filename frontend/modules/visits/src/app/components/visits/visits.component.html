@@ -2,15 +2,19 @@
   <div *ngIf="loading" class="loading-spinner"></div>
   
   <div *ngIf="!loading" class="visits-content">
-    <!-- Filter Section -->
-    <div *ngIf="getVisitTypes().length > 0" class="filter-section">
-      <label for="visitType" class="filter-label">Filter by Visit Type:</label>
-      <select id="visitType" [(ngModel)]="selectedVisitType" class="filter-select">
-        <option value="all">All Visits</option>
-        <option *ngFor="let type of getVisitTypes()" [value]="type">
-          {{ getVisitIcon(type) }} {{ getVisitTypeLabel(type) }}
-        </option>
-      </select>
+
+    <!-- Header row: filter + Add button -->
+    <div class="header-row">
+      <div *ngIf="getVisitTypes().length > 0" class="filter-section">
+        <label for="visitType" class="filter-label">Filter by Visit Type:</label>
+        <select id="visitType" [(ngModel)]="selectedVisitType" class="filter-select">
+          <option value="all">All Visits</option>
+          <option *ngFor="let type of getVisitTypes()" [value]="type">
+            {{ getVisitIcon(type) }} {{ getVisitTypeLabel(type) }}
+          </option>
+        </select>
+      </div>
+      <button class="btn-add" (click)="openAddModal()">+ Add Visit</button>
     </div>
 
     <!-- Upcoming Visits -->
@@ -29,6 +33,13 @@
                 In {{ days }} days
               </div>
               <div class="countdown-date">{{ formatDate(visit.visitDate) }}</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-edit" (click)="openEditModal(visit); $event.stopPropagation()" title="Edit">✏️</button>
+              <button class="btn-delete"
+                (click)="deleteVisit(visit); $event.stopPropagation()"
+                [disabled]="deletingId === visit.id"
+                title="Delete">{{ deletingId === visit.id ? '…' : '🗑️' }}</button>
             </div>
           </div>
           <div class="visit-details" *ngIf="expandedVisit === visit.id">
@@ -69,6 +80,13 @@
                 {{ getVisitTypeLabel(visit.visitType) }}
               </div>
               <div class="timeline-date">{{ formatDate(visit.visitDate) }}</div>
+              <div class="card-actions">
+                <button class="btn-edit" (click)="openEditModal(visit)" title="Edit">✏️</button>
+                <button class="btn-delete"
+                  (click)="deleteVisit(visit)"
+                  [disabled]="deletingId === visit.id"
+                  title="Delete">{{ deletingId === visit.id ? '…' : '🗑️' }}</button>
+              </div>
             </div>
             <div class="timeline-body">
               <div class="info-item">
@@ -116,4 +134,62 @@
       <p>No visits recorded</p>
     </div>
   </div>
+
+  <!-- Add / Edit Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditing ? 'Edit Visit' : 'Add Visit' }}</h3>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row form-row-half">
+          <div>
+            <label>Date <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="editForm.date" />
+          </div>
+          <div>
+            <label>Visit Type <span class="required">*</span></label>
+            <select [(ngModel)]="editForm.visitType">
+              <option *ngFor="let t of visitTypes" [value]="t">{{ getVisitTypeLabel(t) }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row form-row-half">
+          <div>
+            <label>Provider</label>
+            <input type="text" [(ngModel)]="editForm.provider_name" placeholder="e.g. Dr. Smith" />
+          </div>
+          <div>
+            <label>Department / Facility</label>
+            <input type="text" [(ngModel)]="editForm.facility_name" placeholder="e.g. Cardiology" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Reason for Visit</label>
+          <input type="text" [(ngModel)]="editForm.reason" placeholder="e.g. Follow-up" />
+        </div>
+        <div class="form-row">
+          <label>Notes</label>
+          <textarea [(ngModel)]="editForm.notes" rows="3" placeholder="Additional notes…"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Discharge Status</label>
+          <input type="text" [(ngModel)]="editForm.discharge_status" placeholder="e.g. Discharged home" />
+        </div>
+
+        <div *ngIf="saveError" class="save-error">{{ saveError }}</div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeModal()" [disabled]="saving">Cancel</button>
+        <button class="btn-save" (click)="saveVisit()" [disabled]="saving">
+          {{ saving ? 'Saving…' : (isEditing ? 'Save Changes' : 'Add Visit') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
+

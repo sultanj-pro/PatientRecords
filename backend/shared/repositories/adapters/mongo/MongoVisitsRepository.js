@@ -14,7 +14,21 @@ class MongoVisitsRepository extends IVisitsRepository {
   async getVisits(patientId) {
     const patient = await Patient.findOne({ patientid: patientId });
     if (!patient) return null;
-    return patient.visits || [];
+    const visits = patient.visits || [];
+
+    // Lazy migration: assign _id to existing records that don't have one
+    let needsSave = false;
+    visits.forEach(v => {
+      if (!v._id) {
+        v._id = new mongoose.Types.ObjectId();
+        needsSave = true;
+      }
+    });
+    if (needsSave) {
+      patient.markModified('visits');
+      await patient.save();
+    }
+    return visits;
   }
 
   async addVisit(patientId, visit) {
@@ -22,10 +36,38 @@ class MongoVisitsRepository extends IVisitsRepository {
     if (!patient) return null;
 
     if (!patient.visits) patient.visits = [];
-    patient.visits.push({ ...visit, deletedAt: null });
+    patient.visits.push({ ...visit, _id: new mongoose.Types.ObjectId(), deletedAt: null });
     patient.markModified('visits');
     await patient.save();
     return patient;
+  }
+
+  async updateVisit(patientId, visitId, data) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return null;
+
+    const visits = patient.visits || [];
+    const idx = visits.findIndex(v => String(v._id) === String(visitId) && !v.deletedAt);
+    if (idx === -1) return null;
+
+    visits[idx] = { ...visits[idx], ...data, _id: visits[idx]._id, deletedAt: null };
+    patient.markModified('visits');
+    await patient.save();
+    return visits[idx];
+  }
+
+  async deleteVisit(patientId, visitId) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return false;
+
+    const visits = patient.visits || [];
+    const idx = visits.findIndex(v => String(v._id) === String(visitId) && !v.deletedAt);
+    if (idx === -1) return false;
+
+    visits[idx].deletedAt = new Date().toISOString();
+    patient.markModified('visits');
+    await patient.save();
+    return true;
   }
 }
 

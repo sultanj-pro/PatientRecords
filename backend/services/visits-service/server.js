@@ -80,6 +80,36 @@ app.post('/api/patients/:id/visits', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /api/patients/:id/visits/:visitId
+app.put('/api/patients/:id/visits/:visitId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { visitId } = req.params;
+    if (req.body.visitType && !['hospital', 'clinic', 'office'].includes(req.body.visitType))
+      return res.status(400).json({ error: 'visitType must be hospital, clinic, or office' });
+    const repo = getRepository('visits');
+    const updated = await repo.updateVisit(patientId, visitId, req.body);
+    if (!updated) return res.status(404).json({ error: 'visit not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update visit', detail: err.message });
+  }
+});
+
+// DELETE /api/patients/:id/visits/:visitId
+app.delete('/api/patients/:id/visits/:visitId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { visitId } = req.params;
+    const repo = getRepository('visits');
+    const deleted = await repo.deleteVisit(patientId, visitId);
+    if (!deleted) return res.status(404).json({ error: 'visit not found' });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'failed to delete visit', detail: err.message });
+  }
+});
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Visits Service listening on port ${PORT}`);
