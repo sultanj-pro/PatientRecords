@@ -30,6 +30,7 @@ GET http://localhost:5000/api-docs     Swagger UI
 | Visits | 4205 | http://localhost:4205 |
 | Care Team | 4206 | http://localhost:4206 |
 | Procedures | 4207 | http://localhost:4207 |
+| AI Insights (Care Intelligence) | 4208 | http://localhost:4208 |
 
 ### Backend
 
@@ -99,6 +100,25 @@ Services:  patient, vitals, labs, medications, visits,
            care-team, clinical-notes, registry
 AI stores: ai-orchestrator (approvalStore.js), comms-agent (notificationStore.js)
            — both honour DB_ADAPTER and switch between PG and Mongoose accordingly
+```
+
+### AI Orchestrator endpoints
+```
+POST /api/ai/recommend-stream/:patientId  SSE — full pipeline: phase → rec → tokens → [DONE]
+POST /api/ai/recommend/:patientId         Blocking — agents only, llmSummary:null
+GET  /api/ai/recommendations/:patientId   List all recs for patient
+POST /api/ai/recommendations/:id/approve
+POST /api/ai/recommendations/:id/dismiss
+DELETE /api/ai/recommendations/:patientId  Reset analysis history (physician role required)
+```
+
+### Header Bell — Critical Alerts
+```
+Source:   GET /api/ai/recommendations/:patientId
+Filter:   status=pending AND finding.severity=critical (deduped by title)
+Refresh:  on patient selection + on CustomEvent('ai-recommendations-changed')
+          (fired by AI Insights on: analysis done, reset, approve, dismiss)
+Deep-link: View button → /dashboard/ai-insights/:patientId?rec=<recId>
 ```
 
 ---

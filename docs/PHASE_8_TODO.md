@@ -148,6 +148,38 @@
 
 ---
 
+## Post-8.8 Enhancements
+
+Features implemented after the Phase 8.8 hardening milestone.
+
+### Streaming Analysis Pipeline
+- [x] **P1** Replace two-call pattern (POST /recommend + POST /stream-summary) with single `POST /recommend-stream/:patientId` SSE endpoint covering the full pipeline
+- [x] **P2** SSE event types: `{type:"phase", message}` (agent progress) → `{type:"rec", rec}` (recommendation created) → `{type:"token", t}` (LLM tokens) → `data:[DONE]`
+- [x] **P3** Frontend `generateAnalysis()` replaced with `fetch` + `ReadableStream` consuming the new combined endpoint
+- [x] **P4** Analyzing banner shows live `streamingPhase` text so physicians see progress during the 60-second agent phase
+
+### LLM Clinical Summary Improvements
+- [x] **P5** Vitals formatter updated to use raw `vital_description`/`value` fields (previous formatter used structured `systolic`/`diastolic` etc. which were always undefined)
+- [x] **P6** Vitals sorted by `dateofobservation` descending; deduped by `vital_description`; CRITICAL flags added for abnormal thresholds (temp≥101.5°F, BP≥160, HR≤50/≥120, SpO₂<95%)
+- [x] **P7** Lab count in prompt increased from 4 to 6 most-recent entries
+
+### Critical Alerts in Header Bell
+- [x] **P8** Navigation component fetches `criticalFindings` from `/api/ai/recommendations/:patientId` on patient selection — filters pending recs with `severity: critical` findings, deduped by title
+- [x] **P9** Bell `unreadCount` includes both comms notifications and critical AI findings
+- [x] **P10** Bell drawer split into two sections: 🚨 Unhandled Critical Issues (AI findings) and 🔔 Notifications (comms alerts)
+- [x] **P11** "View" button on critical finding navigates to `/dashboard/ai-insights/:patientId?rec=<recId>`
+- [x] **P12** AI Insights reads `?rec` query param on load, expands the target recommendation card and scrolls to it
+
+### Live Bell Refresh
+- [x] **P13** AI Insights dispatches `window.CustomEvent('ai-recommendations-changed')` when: analysis completes (`[DONE]`), history is reset, or a recommendation is approved/dismissed
+- [x] **P14** Navigation component listens for `ai-recommendations-changed` event and re-fetches critical findings immediately — no patient-switch required to see updated bell count
+
+### Bug Fixes
+- [x] **P15** Dashboard `syncFromCurrentRoute()` strips query string from URL segment — `this.router.url` includes `?rec=<id>`, causing patient ID to be parsed as `20002?rec=abc`; fixed with `.split('?')[0]`
+- [x] **P16** Bell "View" navigation fixed — was routing to `/ai-insights/:id` (missing `/dashboard/` prefix); corrected to `/dashboard/ai-insights/:patientId`
+
+---
+
 ## Progress Summary
 
 | Milestone | Tasks | Status |
@@ -161,4 +193,5 @@
 | 8.6 Frontend | 11 | ✅ Complete |
 | 8.7 LLM | 9 | ✅ Complete (8.7.9 pending clinical sign-off) |
 | 8.8 Hardening | 13 | ✅ Complete |
-| **Total** | **76 + 6 decisions** | **75 / 76 dev tasks complete** |
+| Post-8.8 Enhancements | 16 | ✅ Complete |
+| **Total** | **92 + 6 decisions** | **91 / 92 dev tasks complete** |

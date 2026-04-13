@@ -115,20 +115,20 @@ PatientRecords implements a production-pattern **AI Multi-Agent clinical decisio
 **The Agent Topology**
 
 ```
-POST /api/ai/recommend/:patientId
+POST /api/ai/recommend-stream/:patientId   (SSE — streaming pipeline)
          │
          ▼
   AI Orchestrator (5008)
   ├── builds full patient context (patient + vitals + labs + meds + visits)
+  ├── streams {type:"phase"} events so UI shows live agent progress
   ├── fans out in parallel to:
   │     ├── Medication Agent (5009) — drug interactions, contraindications,
   │     │                             renal dose flags, duplicate therapy
-  │     ├── Labs Agent (5010)      — critical values, stale labs, deterioration
-  │     │                           trends, vital-triggered lab gaps
-  │     └── Comms Agent (5011)     — visit cadence, polypharmacy, ER pattern
-  ├── aggregates findings from all agents (fail-soft per agent)
-  ├── calls LLM Agent (5013) for narrative summary (optional, non-blocking)
-  └── stores recommendation as pending — requires physician approval
+  │     └── Labs Agent (5010)      — critical values, stale labs, deterioration
+  │                                  trends, vital-triggered lab gaps
+  ├── persists recommendation as "pending" — requires physician approval
+  ├── streams {type:"rec"} once recommendation is saved
+  └── calls LLM Agent (5013) for narrative summary — streams tokens to UI
 ```
 
 **Real-Time Escalation Pipeline**
@@ -208,10 +208,10 @@ See **[docs/DATA_ACCESS_LAYER_PLAN.md](./docs/DATA_ACCESS_LAYER_PLAN.md)** for t
 ### Current State (Implemented)
 
 - **Microservices Backend** — API Gateway (5000) + Auth (5001) + Patient (5002) + Vitals/Labs/Medications/Visits/Care-Team domain services (5003–5007) + Clinical Notes (5012) + Registry (5100), all in separate containers
-- **AI Multi-Agent System** — AI Orchestrator (5008) fans out to Medication Agent (5009), Labs Agent (5010), Comms Agent (5011), and LLM Agent (5013); rule-based findings augmented by Ollama LLM narrative; physician approval workflow with immutable audit trail
+- **AI Multi-Agent System** — AI Orchestrator (5008) fans out to Medication Agent (5009), Labs Agent (5010), Comms Agent (5011), and LLM Agent (5013); full SSE streaming pipeline (phase banners → recommendation → LLM tokens → done); rule-based findings augmented by Ollama LLM narrative; physician approval workflow with immutable audit trail
 - **Redis Streams Event Bus** — Domain services publish clinical events; Comms Agent consumer group processes them in real time for escalation detection and notification creation
 - **Dual-Adapter Data Layer** — Repository pattern with full PostgreSQL (Knex) and MongoDB (Mongoose) support; switch with `DB_ADAPTER=knex|mongo`; zero code changes required
-- **AI Clinical Intelligence UI** — Care Intelligence module with recommendation generation, finding severity badges, physician approve/dismiss workflow, real-time WebSocket notification bell, and an acknowledgeable notification drawer
+- **AI Clinical Intelligence UI** — Care Intelligence module with streaming analysis (SSE phase banners + live LLM tokens), finding severity badges, physician approve/dismiss workflow, real-time WebSocket notification bell, acknowledgeable notification drawer, and critical findings surfaced directly in the header bell with deep-link navigation to the associated recommendation
 - **Admin Dashboard** — Runtime module management: enable/disable modules, edit per-module role permissions, view service health grid
 - **Phase 8.8 Hardening** — WebSocket push notifications, prompt injection sanitization, append-only audit log (write concern majority), AI services network-isolated, load-tested at 20 concurrent requests, structured latency metrics
 
@@ -226,7 +226,8 @@ This foundation will evolve into:
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
 - **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, procedures, and clinical notes
-- **AI Multi-Agent clinical decision support** — Orchestrator fans out to 4 specialized agents; findings displayed in Care Intelligence module with physician approval workflow
+- **AI Multi-Agent clinical decision support** — Orchestrator fans out to 4 specialized agents; full SSE streaming with live phase banners and token-by-token LLM narrative; findings displayed in Care Intelligence module with physician approval workflow
+- **Critical findings bell** — pending critical-severity AI findings surfaced in the header bell alongside comms notifications; live count refresh on analysis, reset, approve, or dismiss; deep-link navigates directly to the relevant recommendation card
 - **Real-time escalation notifications** — Redis Streams consumer evaluates 10 clinical escalation rules; real-time WebSocket push notification bell with unread badge and per-item acknowledge workflow
 - **Dual-adapter data layer** — PostgreSQL via Knex or MongoDB via Mongoose; one env var, zero code changes; all stores (domain + AI) honour `DB_ADAPTER`
 - **Microservices backend** — API Gateway routing to 15+ independent domain services and AI agents

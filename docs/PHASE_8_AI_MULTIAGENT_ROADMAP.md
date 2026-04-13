@@ -49,21 +49,33 @@ The design addresses three distinct clinical use cases with two fundamentally di
 
 ### 1. AI Orchestrator Service — Port 5300
 
-The entry point for all synchronous AI requests. Exposes a single endpoint:
+The entry point for all synchronous AI requests. Exposes two endpoints:
 
 ```
-POST /api/ai/recommend/:patientId
+POST /api/ai/recommend/:patientId          — blocking, returns when agents complete (llmSummary: null)
+POST /api/ai/recommend-stream/:patientId   — SSE stream covering the full pipeline end-to-end
 Authorization: Bearer <jwt>
 ```
 
 **Responsibilities:**
 - Assembles the full patient context by calling existing domain services: Patient (5002), Vitals (5003), Labs (5004), Medications (5005), Visits (5006)
-- Runs a tool-calling LLM loop: the model is given a set of tools (each mapping to a service API call) and decides what context it needs before making a recommendation
-- Delegates assembled context to the Medication Agent and Labs Agent
-- Aggregates both agents' outputs into a single structured response
+- Fans out to Medication Agent and Labs Agent in parallel; aggregates findings (fail-soft per agent)
+- Persists recommendation as `pending` in `ai_recommendations` — requires physician approval
+- Streams LLM narrative via LLM Agent (5013) using Ollama with `stream: true`
 - Returns a `recommendations` object — never takes any action directly
 
-**Response shape:**
+**SSE event stream (`/recommend-stream/:patientId`):**
+```
+data: {"type":"phase","message":"Running Medication Agent…"}
+data: {"type":"phase","message":"Running Labs Agent…"}
+data: {"type":"rec","rec":{...full recommendation object...}}
+data: {"type":"token","t":"The "}
+data: {"type":"token","t":"patient "}
+...
+data: [DONE]
+```
+
+**Blocking response shape (`/recommend/:patientId`):**
 ```json
 {
   "patientId": "...",
@@ -158,33 +170,42 @@ A lightweight message broker that decouples domain services from the Comms Agent
 
 ---
 
-## Request-Driven Flow (Sync)
+## Request-Driven Flow (Sync — Streaming)
 
 ```
-Physician UI
+Physician UI (Care Intelligence module)
     │  click "Get AI Recommendations"
     ▼
-Shell App  →  POST /api/ai/recommend/:patientId
+Shell App  →  POST /api/ai/recommend-stream/:patientId   (SSE)
     │
     ▼
 API Gateway (5000) — validates JWT, routes to AI Orchestrator
     │
     ▼
-AI Orchestrator (5300)
+AI Orchestrator (5008)
     │  ← calls Patient, Vitals, Labs, Medications, Visits services to build context
+    │  → streams {type:"phase"} events so UI shows live progress
     │
-    ├──▶ Medication Agent  →  returns { recommendations, interactions, contraindications }
+    ├──▶ Medication Agent (5009)  →  returns findings ({ type, severity, title, … })
+    │      SSE: data: {"type":"phase","message":"Running Medication Agent…"}
     │
-    └──▶ Labs Agent        →  returns { recommendedTests, dataGaps, urgency }
+    └──▶ Labs Agent (5010)        →  returns findings
+           SSE: data: {"type":"phase","message":"Running Labs Agent…"}
     │
     ▼
-Aggregated response returned to physician UI
+Recommendation persisted as "pending" in ai_recommendations
+    SSE: data: {"type":"rec","rec":{...}}
+    │
+    ▼
+LLM Agent (5013) streams narrative summary token-by-token
+    SSE: data: {"type":"token","t":"..."} × N
+    SSE: data: [DONE]
     │
     ▼
 Physician reviews → approves or dismisses each recommendation
-    │
+    │  Bell icon refreshed immediately via CustomEvent('ai-recommendations-changed')
     ▼
-Approved actions executed through existing domain service APIs (by the physician)
+Critical findings (severity:"critical", status:"pending") surfaced in header bell
 ```
 
 ---
