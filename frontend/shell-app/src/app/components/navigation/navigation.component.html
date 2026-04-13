@@ -26,8 +26,28 @@
             <span>Alerts</span>
             <span class="notif-count-label">{{ unreadCount }} pending</span>
           </div>
-          <div class="notif-empty" *ngIf="notifications.length === 0">No pending alerts</div>
-          <ul class="notif-list">
+          <div class="notif-empty" *ngIf="unreadCount === 0">No pending alerts</div>
+
+          <!-- Critical AI findings section -->
+          <div *ngIf="criticalFindings.length > 0" class="notif-section-header critical-section-header">
+            🚨 Unhandled Critical Issues
+          </div>
+          <ul class="notif-list" *ngIf="criticalFindings.length > 0">
+            <li class="notif-item sev-critical" *ngFor="let f of criticalFindings">
+              <span class="notif-icon">🚨</span>
+              <div class="notif-body">
+                <div class="notif-title">{{ f.title }}</div>
+                <div class="notif-msg">{{ f.description }}</div>
+              </div>
+              <button class="notif-view-btn" (click)="viewCriticalFinding(f.recId, $event)">View</button>
+            </li>
+          </ul>
+
+          <!-- Comms-agent notifications section -->
+          <div *ngIf="notifications.length > 0" class="notif-section-header">
+            🔔 Notifications
+          </div>
+          <ul class="notif-list" *ngIf="notifications.length > 0">
             <li class="notif-item" *ngFor="let n of notifications" [class]="'sev-' + n.severity">
               <span class="notif-icon">{{ severityIcon(n.severity) }}</span>
               <div class="notif-body">

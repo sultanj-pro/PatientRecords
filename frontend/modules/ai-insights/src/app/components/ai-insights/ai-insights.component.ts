@@ -135,6 +135,15 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
           // Auto-expand LLM summary for any rec that has one
           this.recommendations.forEach(r => { if (r.llmSummary) this.llmExpanded.add(r._id); });
           this.loadingRecs = false;
+          // If navigated here from the bell with a specific rec, expand and scroll to it
+          const targetRecId = this.route.snapshot.queryParamMap.get('rec');
+          if (targetRecId) {
+            this.expandedRecId = targetRecId;
+            setTimeout(() => {
+              const el = document.getElementById(`rec-${targetRecId}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }
         },
         error: (err) => {
           this.recError = err?.error?.error || 'Failed to load recommendations.';
@@ -211,6 +220,7 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
             this.streamingPhase = '';
             this.analyzing = false;
             this.loadNotifications();
+            this.notifyRecommendationsChanged();
             this.cdr.markForCheck();
             return;
           }
@@ -275,6 +285,7 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
           this.expandedRecId = null;
           this.llmExpanded.clear();
           this.resetting = false;
+          this.notifyRecommendationsChanged();
         },
         error: (err) => {
           this.recError = err?.error?.error || 'Failed to reset analysis history.';
@@ -324,6 +335,11 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
   private updateRec(updated: Recommendation): void {
     const idx = this.recommendations.findIndex(r => r._id === updated._id);
     if (idx !== -1) this.recommendations[idx] = updated;
+    this.notifyRecommendationsChanged();
+  }
+
+  private notifyRecommendationsChanged(): void {
+    window.dispatchEvent(new CustomEvent('ai-recommendations-changed', { detail: { patientId: this.patientId } }));
   }
 
   // ── Notifications ────────────────────────────────────────────────────────────
@@ -428,6 +444,31 @@ export class AiInsightsComponent implements OnInit, OnDestroy {
 
   get hasPendingRec(): boolean {
     return this.recommendations.some(r => r.status === 'pending');
+  }
+
+  /** All critical findings from still-pending recommendations, deduped by title. */
+  get criticalAlerts(): Array<{ recId: string; finding: Finding }> {
+    const seen = new Set<string>();
+    const alerts: Array<{ recId: string; finding: Finding }> = [];
+    for (const rec of this.recommendations) {
+      if (rec.status !== 'pending') continue;
+      for (const f of (rec.findings || [])) {
+        if (f.severity?.toLowerCase() !== 'critical') continue;
+        if (seen.has(f.title)) continue;
+        seen.add(f.title);
+        alerts.push({ recId: rec._id, finding: f });
+      }
+    }
+    return alerts;
+  }
+
+  viewCriticalAlert(recId: string): void {
+    this.expandedRecId = recId;
+    // Scroll to the rec card
+    setTimeout(() => {
+      const el = document.getElementById(`rec-${recId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }
 
   // ── LLM streaming ────────────────────────────────────────────────────────────

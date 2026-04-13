@@ -55,25 +55,6 @@
     </div>
   </div>
 
-  <!-- ── Pending Notifications panel ──────────────────────────────── -->
-  <div *ngIf="notifications.length > 0" class="notif-panel">
-    <h2 class="section-title">🔔 Real-Time Alerts <span class="badge badge-critical">{{ notifications.length }}</span></h2>
-    <div *ngFor="let n of notifications" class="notif-card" [ngClass]="severityClass(n.severity)">
-      <div class="notif-header">
-        <span class="notif-icon">{{ severityIcon(n.severity) }}</span>
-        <span class="notif-title">{{ n.title }}</span>
-        <button
-          class="btn btn-ack"
-          [disabled]="acknowledgingId === n._id"
-          (click)="acknowledge(n)">
-          {{ acknowledgingId === n._id ? '…' : 'Acknowledge' }}
-        </button>
-      </div>
-      <p class="notif-msg">{{ n.message }}</p>
-      <span class="notif-time">{{ formatDate(n.createdAt) }}</span>
-    </div>
-  </div>
-
   <!-- ── Loading state ──────────────────────────────────────────────── -->
   <div *ngIf="loadingRecs" class="spinner-container">
     <div class="spinner"></div>
@@ -91,7 +72,7 @@
   <div *ngIf="!loadingRecs && recommendations.length > 0" class="recs-list">
     <h2 class="section-title">📋 Analysis History</h2>
 
-    <div *ngFor="let rec of recommendations" class="rec-card">
+    <div *ngFor="let rec of recommendations" class="rec-card" [id]="'rec-' + rec._id">
 
       <!-- Rec header (always visible) -->
       <div class="rec-header" (click)="toggleExpand(rec._id)">

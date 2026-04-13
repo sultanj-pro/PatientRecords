@@ -146,7 +146,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     // Extract patient ID from URL and preserve it
-    const patientIdFromUrl = urlSegments.length >= 3 ? urlSegments[2] : null;
+    const rawSegment = urlSegments.length >= 3 ? urlSegments[2] : null;
+    const patientIdFromUrl = rawSegment ? rawSegment.split('?')[0] : null;
     if (patientIdFromUrl && patientIdFromUrl !== 'patient') {
       this.currentPatientId = patientIdFromUrl;
       console.log('[Dashboard] Patient ID extracted from URL:', this.currentPatientId);

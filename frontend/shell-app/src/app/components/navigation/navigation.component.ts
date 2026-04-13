@@ -18,6 +18,13 @@ interface NavNotification {
   createdAt: string;
 }
 
+interface CriticalFinding {
+  recId: string;
+  title: string;
+  description: string;
+  recommendation: string;
+}
+
 @Component({
   selector: 'app-navigation',
   standalone: true,
@@ -33,11 +40,16 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   // Notification bell state
   notifications: NavNotification[] = [];
+  criticalFindings: CriticalFinding[] = [];
   bellOpen = false;
   acknowledgingId: string | null = null;
   private ws: WebSocket | null = null;
   private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroy$ = new Subject<void>();
+  private recsChangedListener = () => {
+    const patientId = ((this.selectedPatient as any)?.patientid || (this.selectedPatient as any)?.id || '').toString();
+    if (patientId) this.fetchCriticalFindings(patientId);
+  };
 
   @ViewChild(PatientSearchComponent) patientSearch!: PatientSearchComponent;
 
@@ -51,6 +63,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.currentUsername = this.authService.getUsername();
     this.currentRole = this.authService.getRole();
+    window.addEventListener('ai-recommendations-changed', this.recsChangedListener);
 
     this.patientContextService.getSelectedPatient().pipe(takeUntil(this.destroy$)).subscribe(patient => {
       this.selectedPatient = patient;
@@ -58,9 +71,11 @@ export class NavigationComponent implements OnInit, OnDestroy {
         this.searchVisible = false;
         const patientId = ((patient as any).patientid || (patient as any).id || '').toString();
         this.connectWs(patientId);
+        this.fetchCriticalFindings(patientId);
       } else {
         this.disconnectWs();
         this.notifications = [];
+        this.criticalFindings = [];
       }
     });
   }
@@ -69,6 +84,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.disconnectWs();
+    window.removeEventListener('ai-recommendations-changed', this.recsChangedListener);
   }
 
   // ── WebSocket real-time notifications (8.8.1) ─────────────────────────────
@@ -127,7 +143,28 @@ export class NavigationComponent implements OnInit, OnDestroy {
       });
   }
 
-  get unreadCount(): number { return this.notifications.length; }
+  private fetchCriticalFindings(patientId: string): void {
+    this.http.get<any[]>(`/api/ai/recommendations/${patientId}`)
+      .subscribe({
+        next: (recs) => {
+          const seen = new Set<string>();
+          const alerts: CriticalFinding[] = [];
+          for (const rec of (recs || [])) {
+            if (rec.status !== 'pending') continue;
+            for (const f of (rec.findings || [])) {
+              if (f.severity?.toLowerCase() !== 'critical') continue;
+              if (seen.has(f.title)) continue;
+              seen.add(f.title);
+              alerts.push({ recId: rec._id, title: f.title, description: f.description, recommendation: f.recommendation });
+            }
+          }
+          this.criticalFindings = alerts;
+        },
+        error: () => { /* fail silently */ }
+      });
+  }
+
+  get unreadCount(): number { return this.notifications.length + this.criticalFindings.length; }
 
   toggleBell(event: Event): void {
     event.stopPropagation();
@@ -153,6 +190,13 @@ export class NavigationComponent implements OnInit, OnDestroy {
   severityIcon(severity: string): string {
     const map: Record<string, string> = { critical: '🚨', high: '⚠️', medium: '🔔', low: 'ℹ️' };
     return map[severity?.toLowerCase()] || '🔔';
+  }
+
+  viewCriticalFinding(recId: string, event: Event): void {
+    event.stopPropagation();
+    this.bellOpen = false;
+    const patientId = ((this.selectedPatient as any)?.patientid || (this.selectedPatient as any)?.id || '').toString();
+    this.router.navigate(['/dashboard/ai-insights', patientId], { queryParams: { rec: recId } });
   }
 
   // ── Existing methods ──────────────────────────────────────────────────────
