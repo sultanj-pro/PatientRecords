@@ -14,7 +14,22 @@ class MongoLabsRepository extends ILabsRepository {
   async getLabs(patientId) {
     const patient = await Patient.findOne({ patientid: patientId });
     if (!patient) return null;
-    return patient.labs || [];
+    const labs = patient.labs || [];
+
+    // Lazy migration: assign _id to existing records that don't have one
+    let needsSave = false;
+    labs.forEach(l => {
+      if (!l._id) {
+        l._id = new mongoose.Types.ObjectId();
+        needsSave = true;
+      }
+    });
+    if (needsSave) {
+      patient.markModified('labs');
+      await patient.save();
+    }
+
+    return labs;
   }
 
   async addLab(patientId, lab) {
@@ -22,10 +37,38 @@ class MongoLabsRepository extends ILabsRepository {
     if (!patient) return null;
 
     if (!patient.labs) patient.labs = [];
-    patient.labs.push({ ...lab, deletedAt: null });
-    patient.markModified('labs'); // fix: was missing in original labs-service
+    patient.labs.push({ ...lab, _id: new mongoose.Types.ObjectId(), deletedAt: null });
+    patient.markModified('labs');
     await patient.save();
     return patient;
+  }
+
+  async updateLab(patientId, labId, data) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return null;
+
+    const labs = patient.labs || [];
+    const idx = labs.findIndex(l => String(l._id) === String(labId) && !l.deletedAt);
+    if (idx === -1) return null;
+
+    labs[idx] = { ...labs[idx], ...data, _id: labs[idx]._id, deletedAt: null };
+    patient.markModified('labs');
+    await patient.save();
+    return labs[idx];
+  }
+
+  async deleteLab(patientId, labId) {
+    const patient = await Patient.findOne({ patientid: patientId });
+    if (!patient) return false;
+
+    const labs = patient.labs || [];
+    const idx = labs.findIndex(l => String(l._id) === String(labId) && !l.deletedAt);
+    if (idx === -1) return false;
+
+    labs[idx].deletedAt = new Date().toISOString();
+    patient.markModified('labs');
+    await patient.save();
+    return true;
   }
 }
 

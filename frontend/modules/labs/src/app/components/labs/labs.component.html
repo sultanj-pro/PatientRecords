@@ -1,14 +1,18 @@
 <div class="labs-container">
   <div *ngIf="loading" class="loading-spinner"></div>
-  
+
   <div *ngIf="!loading" class="labs-content">
-    <!-- Filter Section -->
-    <div *ngIf="getTestTypeOptions().length > 0" class="filter-section">
-      <label for="testType" class="filter-label">Filter by Test Type:</label>
-      <select id="testType" [(ngModel)]="selectedTestType" class="filter-select">
-        <option value="all">All Tests</option>
-        <option *ngFor="let type of getTestTypeOptions()" [value]="type">{{ type }}</option>
-      </select>
+
+    <!-- Header row: filter + Add button -->
+    <div class="header-row">
+      <div *ngIf="getTestTypeOptions().length > 0" class="filter-section">
+        <label for="testType" class="filter-label">Filter by Test Type:</label>
+        <select id="testType" [(ngModel)]="selectedTestType" class="filter-select">
+          <option value="all">All Tests</option>
+          <option *ngFor="let type of getTestTypeOptions()" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      <button class="btn-add" (click)="openAddModal()">+ Add Lab Result</button>
     </div>
 
     <!-- Recent Tests Summary -->
@@ -39,6 +43,7 @@
               <th>Status</th>
               <th>Date</th>
               <th>Lab</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -55,6 +60,15 @@
               </td>
               <td class="date-col">{{ formatDate(lab.resultDate) }}</td>
               <td class="lab-col">{{ lab.labName || 'N/A' }}</td>
+              <td class="actions-col">
+                <button class="btn-edit" (click)="openEditModal(lab)" title="Edit">✏️</button>
+                <button class="btn-delete"
+                  (click)="deleteLab(lab)"
+                  [disabled]="deletingId === lab._id"
+                  title="Delete">
+                  {{ deletingId === lab._id ? '…' : '🗑️' }}
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -63,6 +77,60 @@
 
     <div *ngIf="getFilteredLabs().length === 0" class="no-data">
       <p>No lab results found</p>
+    </div>
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditing ? 'Edit Lab Result' : 'Add Lab Result' }}</h3>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Test Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="editForm.test_name" placeholder="e.g. Complete Blood Count" />
+        </div>
+        <div class="form-row">
+          <label>Test Code</label>
+          <input type="text" [(ngModel)]="editForm.test_code" placeholder="e.g. CBC" />
+        </div>
+        <div class="form-row form-row-half">
+          <div>
+            <label>Result <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="editForm.result" placeholder="e.g. 5.2" />
+          </div>
+          <div>
+            <label>Unit</label>
+            <input type="text" [(ngModel)]="editForm.unit" placeholder="e.g. g/dL" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Reference Range</label>
+          <input type="text" [(ngModel)]="editForm.reference_range" placeholder="e.g. 4.5–5.9" />
+        </div>
+        <div class="form-row form-row-half">
+          <div>
+            <label>Result Date <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="editForm.date" />
+          </div>
+          <div>
+            <label>Lab Name</label>
+            <input type="text" [(ngModel)]="editForm.lab_name" placeholder="e.g. Quest Diagnostics" />
+          </div>
+        </div>
+
+        <div *ngIf="saveError" class="save-error">{{ saveError }}</div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeModal()" [disabled]="saving">Cancel</button>
+        <button class="btn-save" (click)="saveLab()" [disabled]="saving">
+          {{ saving ? 'Saving…' : (isEditing ? 'Save Changes' : 'Add Lab Result') }}
+        </button>
+      </div>
     </div>
   </div>
 </div>

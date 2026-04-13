@@ -54,7 +54,7 @@ app.get('/api/patients/:id/labs', authMiddleware, async (req, res) => {
     const labs = await repo.getLabs(patientId);
     if (labs === null) return res.status(404).json({ error: 'not found' });
     res.json(labs.filter(l => !l.deletedAt).map(l => ({
-      testName: l.test_name, testCode: l.test_code, value: l.result, unit: l.unit,
+      _id: l._id, testName: l.test_name, testCode: l.test_code, value: l.result, unit: l.unit,
       referenceRange: l.reference_range, resultDate: l.date, labName: l.lab_name
     })));
   } catch (err) {
@@ -75,6 +75,34 @@ app.post('/api/patients/:id/labs', authMiddleware, async (req, res) => {
     res.status(201).json(req.body);
   } catch (err) {
     res.status(500).json({ error: 'failed to create lab', detail: err.message });
+  }
+});
+
+// PUT /api/patients/:id/labs/:labId
+app.put('/api/patients/:id/labs/:labId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { labId } = req.params;
+    const repo = getRepository('labs');
+    const updated = await repo.updateLab(patientId, labId, req.body);
+    if (!updated) return res.status(404).json({ error: 'lab not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'failed to update lab', detail: err.message });
+  }
+});
+
+// DELETE /api/patients/:id/labs/:labId
+app.delete('/api/patients/:id/labs/:labId', authMiddleware, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    const { labId } = req.params;
+    const repo = getRepository('labs');
+    const deleted = await repo.deleteLab(patientId, labId);
+    if (!deleted) return res.status(404).json({ error: 'lab not found' });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'failed to delete lab', detail: err.message });
   }
 });
 
