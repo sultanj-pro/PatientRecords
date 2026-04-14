@@ -1,0 +1,139 @@
+<div class="about-page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="avatar-wrap">
+        <div class="avatar-initials">SJ</div>
+      </div>
+      <div class="hero-text">
+        <h1 class="hero-name">Sultan Jabbour</h1>
+        <p class="hero-title">Engineering Leader &amp; Systems Architect</p>
+        <p class="hero-tagline">
+          Engineering leader with deep experience building and scaling software organizations across every growth stage.
+        </p>
+        <div class="hero-links">
+          <a href="https://github.com/sultanj-pro" target="_blank" rel="noopener" class="hero-link github-link">
+            <span class="link-icon">&#xe2e5;</span> GitHub
+          </a>
+          <a href="https://www.linkedin.com/in/sultanjabbour" target="_blank" rel="noopener" class="hero-link linkedin-link">
+            <span class="link-icon">in</span> LinkedIn
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+
+    <!-- Bio -->
+    <section class="card bio-card">
+      <h2 class="section-title">About Me</h2>
+      <p>
+        I'm an engineering leader with deep experience at the intersection of software architecture and
+        organizational design. I've guided engineering teams through every growth stage, and the common thread
+        across all of them has been the same challenge:
+        <strong>how do you keep velocity high as complexity grows?</strong>
+      </p>
+      <p>
+        My answer has always been to design systems and org structures together. Architecture that fights your team
+        topology always loses. PatientRecords is the living proof-of-concept of that philosophy: a production-grade
+        reference implementation that demonstrates how Module Federation, microservices, and AI multi-agent patterns
+        combine to let independent teams ship independently without sacrificing coherence.
+      </p>
+      <p>
+        Outside of work, I'm drawn to problems that sit at the edge of what software can do in high-stakes domains —
+        which is why clinical decision support became the subject matter for this case study. Complex data,
+        real consequences, demanding UX requirements, and strict correctness constraints make it the perfect proving
+        ground for architectural ideas.
+      </p>
+    </section>
+
+    <!-- About this project -->
+    <section class="card project-card">
+      <h2 class="section-title">About This Project</h2>
+      <p>
+        <strong>PatientRecords</strong> is a production-grade clinical reference architecture built to answer a
+        concrete question: <em>what does a well-scaled, multi-team system actually look like end-to-end?</em>
+      </p>
+      <p>
+        It is not a toy demo. Every layer is fully implemented:
+      </p>
+      <ul class="feature-list">
+        <li>
+          <span class="feat-icon">&#9679;</span>
+          <span><strong>Micro-Frontend Shell</strong> — 6 Angular MFEs + 1 React MFE running side-by-side via Module Federation, demonstrating true technology-choice independence for frontend teams.</span>
+        </li>
+        <li>
+          <span class="feat-icon">&#9679;</span>
+          <span><strong>Microservices Backend</strong> — 15 independent Node/Express services, each containerised, each with its own Swagger docs, covering the full clinical domain.</span>
+        </li>
+        <li>
+          <span class="feat-icon">&#9679;</span>
+          <span><strong>AI Multi-Agent Pipeline</strong> — An orchestrator fans out to specialist agents (medication, labs, LLM narrative), streams results over SSE, and requires physician approval before any recommendation is acted on.</span>
+        </li>
+        <li>
+          <span class="feat-icon">&#9679;</span>
+          <span><strong>Real-Time Escalation</strong> — Redis Streams consumer evaluates 10 clinical rules on every domain write; matched rules surface as WebSocket-pushed notifications with 24-hour deduplication.</span>
+        </li>
+        <li>
+          <span class="feat-icon">&#9679;</span>
+          <span><strong>Dual-Adapter Data Layer</strong> — Switch between PostgreSQL and MongoDB with a single environment variable. Zero code changes required.</span>
+        </li>
+      </ul>
+      <p class="project-cta">
+        The full source is open on
+        <a href="https://github.com/sultanj-pro/PatientRecords" target="_blank" rel="noopener">GitHub</a>.
+        Clone it, run it with <code>docker compose up -d</code>, and explore.
+      </p>
+    </section>
+
+    <!-- Skills -->
+    <section class="card skills-card">
+      <h2 class="section-title">Core Expertise</h2>
+      <div class="skills-grid">
+        <div class="skill-group">
+          <h3 class="skill-group-title">Architecture</h3>
+          <ul>
+            <li>Micro-Frontend / Module Federation</li>
+            <li>Microservices &amp; Event-Driven Systems</li>
+            <li>AI &amp; Multi-Agent Pipelines</li>
+            <li>Repository Pattern / Dual-Adapter Data Layers</li>
+          </ul>
+        </div>
+        <div class="skill-group">
+          <h3 class="skill-group-title">Frontend</h3>
+          <ul>
+            <li>Angular 17, React 18, TypeScript</li>
+            <li>RxJS, Module Federation, Webpack</li>
+            <li>Real-Time UI (SSE, WebSockets)</li>
+          </ul>
+        </div>
+        <div class="skill-group">
+          <h3 class="skill-group-title">Backend &amp; Data</h3>
+          <ul>
+            <li>Node.js / Express.js</li>
+            <li>PostgreSQL, MongoDB, Redis Streams</li>
+            <li>Knex.js, Mongoose, Swagger/OpenAPI</li>
+          </ul>
+        </div>
+        <div class="skill-group">
+          <h3 class="skill-group-title">Leadership</h3>
+          <ul>
+            <li>Engineering org design &amp; team structure</li>
+            <li>Technical strategy &amp; roadmapping</li>
+            <li>Hiring, mentoring, growing engineering teams</li>
+            <li>Production incident response &amp; post-mortems</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="about-footer">
+    <p>PatientRecords — Production-Grade Clinical Reference Architecture &nbsp;·&nbsp;
+      <a href="https://github.com/sultanj-pro/PatientRecords" target="_blank" rel="noopener">View on GitHub</a>
+    </p>
+  </footer>
+</div>

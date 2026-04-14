@@ -116,6 +116,10 @@ const baseRoutes: Routes = [
     canActivate: [authGuard, adminGuard],
     loadComponent: () => import('./app/components/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent)
   },
+  {
+    path: 'about',
+    loadComponent: () => import('./app/components/about/about.component').then(m => m.AboutComponent)
+  },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' }
 ];

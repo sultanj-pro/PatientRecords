@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -28,7 +28,7 @@ interface CriticalFinding {
 @Component({
   selector: 'app-navigation',
   standalone: true,
-  imports: [CommonModule, PatientSearchComponent],
+  imports: [CommonModule, RouterModule, PatientSearchComponent],
   templateUrl: './navigation.component.html',
   styleUrls: ['./navigation.component.css']
 })

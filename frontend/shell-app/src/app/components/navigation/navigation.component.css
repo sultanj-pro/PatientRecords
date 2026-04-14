@@ -173,6 +173,22 @@
   background-color: rgba(156, 163, 175, 0.6);
 }
 
+.about-link {
+  color: white;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.about-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .btn-logout,
 .logout-link {
   color: white;
