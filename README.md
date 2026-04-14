@@ -218,6 +218,11 @@ See **[docs/DATA_ACCESS_LAYER_PLAN.md](./docs/DATA_ACCESS_LAYER_PLAN.md)** for t
 ### Future Vision
 
 This foundation will evolve into:
+- **Patient Registration Workflow** — *(partially complete)* Full intake form connecting new patient creation directly to the demographics editor; planned extensions include photo capture, document upload, and insurance card scanning
+- **Soft-Delete & Audit Trail for Clinical Data** — Labs and visits marked as deleted rather than hard-removed; full history recoverable by administrators and auditors
+- **Backend Service Tests** — Automated test suites for every microservice endpoint covering happy path, auth, and error branches; CI gate before merge
+- **Frontend Component Tests** — Jasmine/Jest specs for shell and MFE components covering navigation, event emission, and role-guard behaviour
+- **Shared Auth Middleware** — Extract `authMiddleware` and `requireRole` into a shared package (`backend/shared/middleware/auth.js`) so each service imports one canonical implementation
 - **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
 - **Advanced Module Orchestration** — Dynamic module loading based on user roles, device capabilities, and network conditions
 - **Cloud LLM** — Swap Ollama for Azure OpenAI or Anthropic once PHI regulatory pathway is confirmed; only the `llm-agent` inference layer changes
@@ -226,6 +231,7 @@ This foundation will evolve into:
 ### Key Capabilities
 - **Multi-framework micro-frontends** — 6 Angular modules + 1 React module via Module Federation
 - **Multi-module clinical system** with demographics, vitals, medications, visits, labs, care team, procedures, and clinical notes
+- **Single-step patient registration** — `+ New Patient` button (admin/physician only) navigates to `/dashboard/demographics/new`; the existing Edit Demographics form handles the full creation workflow; cancel returns the user to their previous location without losing context
 - **AI Multi-Agent clinical decision support** — Orchestrator fans out to 4 specialized agents; full SSE streaming with live phase banners and token-by-token LLM narrative; findings displayed in Care Intelligence module with physician approval workflow
 - **Critical findings bell** — pending critical-severity AI findings surfaced in the header bell alongside comms notifications; live count refresh on analysis, reset, approve, or dismiss; deep-link navigates directly to the relevant recommendation card
 - **Real-time escalation notifications** — Redis Streams consumer evaluates 10 clinical escalation rules; real-time WebSocket push notification bell with unread badge and per-item acknowledge workflow
