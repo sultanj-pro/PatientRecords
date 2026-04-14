@@ -10,27 +10,36 @@ class KnexRegistryRepository {
   }
 
   async seed() {
+    // Support both local dev and Docker container layouts
+    const candidatePaths = [
+      path.join(__dirname, '../../../../services/registry-service/registry.json'),
+      path.join(process.cwd(), 'registry.json'),
+    ];
+    const filePath = candidatePaths.find(p => fs.existsSync(p));
+    if (!filePath) {
+      console.warn('[registry] registry.json not found, registry will be empty');
+      return;
+    }
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     const rows = await this.db('registry').count('id as cnt');
     if (parseInt(rows[0].cnt, 10) === 0) {
-      // Support both local dev and Docker container layouts
-      const candidatePaths = [
-        path.join(__dirname, '../../../../services/registry-service/registry.json'),
-        path.join(process.cwd(), 'registry.json'),
-      ];
-      const filePath = candidatePaths.find(p => fs.existsSync(p));
-      if (filePath) {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        await this.db('registry').insert({
-          version: data.version,
-          description: data.description,
-          modules: JSON.stringify(data.modules)
-        });
-        console.log(`[registry] Seeded ${data.modules.length} modules into PostgreSQL`);
-      } else {
-        console.warn('[registry] registry.json not found, registry will be empty');
-      }
+      await this.db('registry').insert({
+        version: data.version,
+        description: data.description,
+        modules: JSON.stringify(data.modules)
+      });
+      console.log(`[registry] Seeded ${data.modules.length} modules into PostgreSQL`);
     } else {
-      console.log('[registry] PostgreSQL registry already seeded');
+      const row = await this.db('registry').first();
+      const existingIds = new Set(row.modules.map(m => m.id));
+      const newModules = data.modules.filter(m => !existingIds.has(m.id));
+      if (newModules.length > 0) {
+        const merged = [...row.modules, ...newModules];
+        await this.db('registry').where({ id: row.id }).update({ modules: JSON.stringify(merged), updated_at: this.db.fn.now() });
+        console.log(`[registry] PostgreSQL registry updated: added ${newModules.length} new module(s): ${newModules.map(m => m.id).join(', ')}`);
+      } else {
+        console.log('[registry] PostgreSQL registry already seeded, all modules present');
+      }
     }
   }
 

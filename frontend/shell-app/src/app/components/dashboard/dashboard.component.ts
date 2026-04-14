@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { Location } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, filter, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { PatientContextService } from '../../core/services/patient-context.service';
@@ -32,6 +33,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private patientApiInProgress: string | null = null; // Track which patient API call is in progress
   private apiCallCount = 0; // Track total API calls for diagnostics
   private cacheHitCount = 0; // Track cache hits
+  private urlBeforeNewPatient: string | null = null;
+  private newPatientRequestedListener = (event: any) => {
+    this.urlBeforeNewPatient = event.detail?.returnUrl || null;
+  };
+  private navigateToPatientListener = (event: any) => {
+    const patientId = event.detail?.patientId;
+    if (patientId) {
+      this.urlBeforeNewPatient = null;
+      this.router.navigate(['/dashboard/demographics', patientId]);
+    } else {
+      // Cancelled — go back to wherever the user was before clicking + New Patient
+      if (this.urlBeforeNewPatient) {
+        this.router.navigateByUrl(this.urlBeforeNewPatient);
+        this.urlBeforeNewPatient = null;
+      } else {
+        this.location.back();
+      }
+    }
+  };
   private demographicsUpdatedListener = () => {
     if (!this.currentPatientId) return;
     const patientId = this.currentPatientId;
@@ -50,6 +70,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private patientContextService: PatientContextService,
     private authService: AuthService,
     private router: Router,
+    private location: Location,
     private patientService: PatientService,
     private pluginRegistry: PluginRegistryService
   ) {}
@@ -114,8 +135,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     console.log('[Dashboard] [INIT] Calling initial syncFromCurrentRoute');
     this.syncFromCurrentRoute();
 
-    // Listen for demographics updates from MFEs
+    // Listen for demographics updates and new-patient navigation from MFEs
     window.addEventListener('patient-demographics-updated', this.demographicsUpdatedListener);
+    window.addEventListener('navigate-to-patient', this.navigateToPatientListener);
+    window.addEventListener('new-patient-requested', this.newPatientRequestedListener);
   }
 
   private syncFromCurrentRoute(): void {
@@ -148,7 +171,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Extract patient ID from URL and preserve it
     const rawSegment = urlSegments.length >= 3 ? urlSegments[2] : null;
     const patientIdFromUrl = rawSegment ? rawSegment.split('?')[0] : null;
-    if (patientIdFromUrl && patientIdFromUrl !== 'patient') {
+    if (patientIdFromUrl && patientIdFromUrl !== 'patient' && patientIdFromUrl !== 'new') {
       this.currentPatientId = patientIdFromUrl;
       console.log('[Dashboard] Patient ID extracted from URL:', this.currentPatientId);
       this.syncPatientFromUrl(patientIdFromUrl);
@@ -161,6 +184,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     window.removeEventListener('patient-demographics-updated', this.demographicsUpdatedListener);
+    window.removeEventListener('navigate-to-patient', this.navigateToPatientListener);
+    window.removeEventListener('new-patient-requested', this.newPatientRequestedListener);
   }
 
   /**

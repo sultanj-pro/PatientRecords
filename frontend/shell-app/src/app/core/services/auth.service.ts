@@ -31,10 +31,10 @@ export class AuthService {
     private patientContextService: PatientContextService
   ) {}
 
-  login(username: string): Observable<AuthResponse> {
+  login(username: string, password: string): Observable<AuthResponse> {
     console.log('AuthService.login() called with username:', username);
     return this.http
-      .post<AuthResponse>(`${this.apiUrl}/auth/login`, { username })
+      .post<AuthResponse>(`${this.apiUrl}/auth/login`, { username, password })
       .pipe(
         tap((response) => {
           console.log('AuthService.login() - Login response received:', response);

@@ -49,6 +49,8 @@ export class VisitsComponent implements OnInit, OnDestroy {
   selectedVisitType = 'all';
   expandedVisit: string | null = null;
 
+  canEdit = false;
+
   // Add / Edit modal
   showModal = false;
   isEditing = false;
@@ -68,6 +70,8 @@ export class VisitsComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    this.canEdit = this.hasEditRole();
+
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const urlPatientId = params['patientId'];
       if (urlPatientId) {
@@ -93,6 +97,20 @@ export class VisitsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private hasEditRole(): boolean {
+    try {
+      const role = (localStorage.getItem('user_role') || '').toLowerCase();
+      if (role === 'physician' || role === 'admin') return true;
+      const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+      if (!token) return false;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const jwtRole = (payload.role || '').toLowerCase();
+      return jwtRole === 'physician' || jwtRole === 'admin';
+    } catch {
+      return false;
+    }
   }
 
   private loadVisitData(): void {

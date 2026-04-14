@@ -22,10 +22,24 @@
         />
       </div>
 
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          class="form-control"
+          placeholder="Enter your password"
+          [disabled]="loading"
+          autocomplete="current-password"
+        />
+      </div>
+
       <button
         type="submit"
         class="btn btn-primary"
-        [disabled]="loading || !username.trim()"
+        [disabled]="loading || !username.trim() || !password"
       >
         {{ loading ? 'Logging in...' : 'Login' }}
       </button>
@@ -36,14 +50,11 @@
     </div>
 
     <div class="demo-users">
-      <p class="text-muted">Demo Users:</p>
+      <p class="text-muted">Demo Credentials:</p>
       <ul>
-        <li>physician</li>
-        <li>nurse</li>
-        <li>lab-tech</li>
-        <li>radiology</li>
-        <li>nutrition</li>
-        <li>physical-therapy</li>
+        <li><strong>admin</strong> / Admin1234!</li>
+        <li><strong>doctor</strong> / Doctor1234!</li>
+        <li><strong>nurse</strong> / Nurse1234!</li>
       </ul>
     </div>
   </div>

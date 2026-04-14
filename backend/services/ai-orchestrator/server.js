@@ -13,14 +13,32 @@ const { createRecommendation, getRecommendations, setStatus, deleteAllRecommenda
 const app        = express();
 const PORT       = process.env.PORT       || 5008;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+if (JWT_SECRET === 'dev-secret') {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[SECURITY] JWT_SECRET is using the default value in production! Set the JWT_SECRET environment variable. Exiting.');
+    process.exit(1);
+  } else {
+    console.warn('[SECURITY] WARNING: JWT_SECRET is set to the default dev value. Set the JWT_SECRET environment variable before deploying to production.');
+  }
+}
 const MONGODB_URI = process.env.MONGODB_URI ||
   'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 const MEDICATION_AGENT_URL = process.env.MEDICATION_AGENT_URL || 'http://localhost:5009';
 const LABS_AGENT_URL       = process.env.LABS_AGENT_URL       || 'http://localhost:5010';
 const COMMS_AGENT_URL      = process.env.COMMS_AGENT_URL      || 'http://localhost:5011';
 const LLM_AGENT_URL        = process.env.LLM_AGENT_URL        || 'http://localhost:5013';
+const INTERNAL_API_KEY     = process.env.INTERNAL_API_KEY     || '';
 
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + ':'));
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
 app.use(bodyParser.json());
 
 // Structured request logging
@@ -72,7 +90,9 @@ function authMiddleware(req, res, next) {
  */
 async function callAgent(url, payload) {
   try {
-    const { data } = await axios.post(`${url}/analyze`, payload, { timeout: 120000 });
+    const headers = {};
+    if (INTERNAL_API_KEY) headers['x-internal-api-key'] = INTERNAL_API_KEY;
+    const { data } = await axios.post(`${url}/analyze`, payload, { headers, timeout: 120000 });
     return Array.isArray(data.findings) ? data.findings : [];
   } catch (err) {
     const status = err.response ? err.response.status : null;

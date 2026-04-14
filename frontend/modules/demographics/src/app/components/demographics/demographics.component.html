@@ -21,6 +21,53 @@
       <button class="btn btn-primary" (click)="openEditModal('basic')">✏️ Edit Demographics</button>
     </div>
 
+    <!-- Basic Information Section -->
+    <app-collapsible-section
+      title="🪪 Basic Information"
+      [isExpanded]="basicInfoExpanded"
+      sectionId="basic-info">
+      <div class="section-content-inner">
+        <div class="info-grid">
+          <div class="info-field">
+            <label>Full Name</label>
+            <p class="info-value">
+              {{ currentDemographics.legalName?.first || currentPatient?.firstname }}
+              <span *ngIf="currentDemographics.legalName?.middle"> {{ currentDemographics.legalName?.middle }}</span>
+              {{ currentDemographics.legalName?.last || currentPatient?.lastname }}
+            </p>
+          </div>
+          <div class="info-field">
+            <label>Preferred Name</label>
+            <p class="info-value">{{ currentDemographics.preferredName || 'Not specified' }}</p>
+          </div>
+          <div class="info-field">
+            <label>Date of Birth</label>
+            <p class="info-value">{{ formatDate(currentDemographics.dateOfBirth) || 'Not provided' }}</p>
+          </div>
+          <div class="info-field">
+            <label>Age</label>
+            <p class="info-value">{{ displayAge > 0 ? displayAge + ' years' : 'N/A' }}</p>
+          </div>
+          <div class="info-field">
+            <label>Gender</label>
+            <p class="info-value">{{ currentDemographics.gender || 'Not specified' }}</p>
+          </div>
+          <div class="info-field">
+            <label>Sex Assigned at Birth</label>
+            <p class="info-value">{{ currentDemographics.sexAssignedAtBirth || 'Not specified' }}</p>
+          </div>
+          <div class="info-field">
+            <label>MRN</label>
+            <p class="info-value">{{ currentDemographics.mrn || 'Not assigned' }}</p>
+          </div>
+          <div class="info-field">
+            <label>Blood Type</label>
+            <p class="info-value">{{ currentDemographics.bloodType || 'Unknown' }}</p>
+          </div>
+        </div>
+      </div>
+    </app-collapsible-section>
+
     <!-- Contact Information Section -->
     <app-collapsible-section
       title="📞 Contact Information"

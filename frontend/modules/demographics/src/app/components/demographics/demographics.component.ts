@@ -101,6 +101,7 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   editForm: Demographics = {};
   saving = false;
   saveError: string | null = null;
+  isNewPatient = false;
 
   // Section expansion states
   basicInfoExpanded = true;
@@ -124,6 +125,17 @@ export class DemographicsComponent implements OnInit, OnDestroy {
     // Route params only fire when this module's route is active
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const urlPatientId = params['patientId'];
+      if (urlPatientId === 'new') {
+        // New-patient registration mode — no API call, open empty edit form
+        this.isNewPatient = true;
+        this.loading = false;
+        this.error = null;
+        this.currentPatient = { patientid: 0, firstname: '', lastname: '' };
+        this.currentDemographics = {};
+        this.storePatientContextInLocalStorage('new');
+        setTimeout(() => this.openEditModal('basic'), 0);
+        return;
+      }
       if (urlPatientId) {
         console.log('[Demographics] Patient ID from route params:', urlPatientId);
         this.storePatientContextInLocalStorage(urlPatientId);
@@ -310,7 +322,14 @@ export class DemographicsComponent implements OnInit, OnDestroy {
 
   openEditModal(section: string = 'basic'): void {
     this.editForm = JSON.parse(JSON.stringify(this.currentDemographics || {}));
-    if (!this.editForm.legalName)        this.editForm.legalName = {};
+    if (!this.editForm.legalName) this.editForm.legalName = {};
+    // Fall back to top-level patient name fields when legalName was not set
+    if (!this.editForm.legalName.first && this.currentPatient?.firstname) {
+      this.editForm.legalName.first = this.currentPatient.firstname;
+    }
+    if (!this.editForm.legalName.last && this.currentPatient?.lastname) {
+      this.editForm.legalName.last = this.currentPatient.lastname;
+    }
     if (!this.editForm.address)          this.editForm.address = {};
     if (!this.editForm.emergencyContacts || !this.editForm.emergencyContacts.length)
       this.editForm.emergencyContacts = [{ name: '', relationship: '', phone: '', isPrimary: true }];
@@ -326,9 +345,17 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   closeEditModal(): void {
     this.showEditModal = false;
     this.saveError = null;
+    if (this.isNewPatient) {
+      this.isNewPatient = false;
+      window.dispatchEvent(new CustomEvent('navigate-to-patient', { detail: { patientId: null } }));
+    }
   }
 
   saveDemographics(): void {
+    if (this.isNewPatient) {
+      this.saveNewPatient();
+      return;
+    }
     const patientId = this.getPatientIdFromStorage();
     if (!patientId) return;
     this.saving = true;
@@ -353,6 +380,48 @@ export class DemographicsComponent implements OnInit, OnDestroy {
   addEmergencyContact(): void {
     if (!this.editForm.emergencyContacts) this.editForm.emergencyContacts = [];
     this.editForm.emergencyContacts.push({ name: '', relationship: '', phone: '', isPrimary: false });
+  }
+
+  private saveNewPatient(): void {
+    const firstname = this.editForm.legalName?.first?.trim();
+    const lastname = this.editForm.legalName?.last?.trim();
+    if (!firstname || !lastname) {
+      this.saveError = 'First name and last name are required to register a patient.';
+      return;
+    }
+    this.saving = true;
+    this.saveError = null;
+
+    this.http.post<any>('/api/patients', {
+      firstname,
+      lastname,
+      dateOfBirth: this.editForm.dateOfBirth || undefined,
+      gender: this.editForm.gender || undefined,
+      mrn: this.editForm.mrn || undefined,
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (patient) => {
+        const patientId = String(patient.patientid);
+        const payload: Demographics = JSON.parse(JSON.stringify(this.editForm));
+        this.http.put(`/api/patients/${patientId}/demographics`, payload)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.isNewPatient = false;
+              this.saving = false;
+              this.closeEditModal();
+              window.dispatchEvent(new CustomEvent('navigate-to-patient', { detail: { patientId } }));
+            },
+            error: (err) => {
+              this.saving = false;
+              this.saveError = err.error?.error || 'Failed to save demographics.';
+            }
+          });
+      },
+      error: (err) => {
+        this.saving = false;
+        this.saveError = err.error?.error || err.message || 'Failed to create patient.';
+      }
+    });
   }
 
   removeEmergencyContact(idx: number): void {

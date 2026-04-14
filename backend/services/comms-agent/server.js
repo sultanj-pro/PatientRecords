@@ -20,8 +20,18 @@ const app  = express();
 const PORT = process.env.PORT || 5011;
 const MONGODB_URI = process.env.MONGODB_URI ||
   'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + ':'));
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
 app.use(bodyParser.json({ limit: '2mb' }));
 
 // MongoDB connection (only when not using knex/PostgreSQL)
@@ -47,6 +57,15 @@ if (DB_ADAPTER !== 'knex') {
 }
 
 // ── Health ─────────────────────────────────────────────────────────────────
+
+// Internal API key guard — /analyze is internal-only; notifications are also guarded
+app.use((req, res, next) => {
+  if (req.path === '/health') return next();
+  if (!INTERNAL_API_KEY) return next(); // key not configured — allow (dev mode)
+  const key = req.headers['x-internal-api-key'];
+  if (key !== INTERNAL_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+});
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'comms-agent', port: PORT });

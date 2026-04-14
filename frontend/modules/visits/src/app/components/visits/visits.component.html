@@ -14,7 +14,7 @@
           </option>
         </select>
       </div>
-      <button class="btn-add" (click)="openAddModal()">+ Add Visit</button>
+      <button *ngIf="canEdit" class="btn-add" (click)="openAddModal()">+ Add Visit</button>
     </div>
 
     <!-- Upcoming Visits -->
@@ -34,7 +34,7 @@
               </div>
               <div class="countdown-date">{{ formatDate(visit.visitDate) }}</div>
             </div>
-            <div class="card-actions">
+            <div *ngIf="canEdit" class="card-actions">
               <button class="btn-edit" (click)="openEditModal(visit); $event.stopPropagation()" title="Edit">✏️</button>
               <button class="btn-delete"
                 (click)="deleteVisit(visit); $event.stopPropagation()"
@@ -80,7 +80,7 @@
                 {{ getVisitTypeLabel(visit.visitType) }}
               </div>
               <div class="timeline-date">{{ formatDate(visit.visitDate) }}</div>
-              <div class="card-actions">
+              <div *ngIf="canEdit" class="card-actions">
                 <button class="btn-edit" (click)="openEditModal(visit)" title="Edit">✏️</button>
                 <button class="btn-delete"
                   (click)="deleteVisit(visit)"

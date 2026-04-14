@@ -1,0 +1,166 @@
+<div class="admin-panel">
+  <div class="panel-header">
+    <h1>⚙️ Registry Admin Panel</h1>
+    <p class="subtitle">Manage micro-frontend modules — enable, disable, add, edit, or remove.</p>
+    <button class="btn-add" (click)="openAddModal()">+ Add Module</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading registry...</div>
+  <div *ngIf="error && !loading" class="alert-error">{{ error }}</div>
+
+  <table *ngIf="!loading && modules.length > 0" class="modules-table">
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Icon</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Path</th>
+        <th>Roles</th>
+        <th>Version</th>
+        <th>Enabled</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let mod of modules" [class.disabled-row]="!mod.enabled">
+        <td class="order-cell">
+          <button class="btn-order" (click)="moveUp(mod)" title="Move up">▲</button>
+          {{ mod.order }}
+          <button class="btn-order" (click)="moveDown(mod)" title="Move down">▼</button>
+        </td>
+        <td class="icon-cell">{{ mod.icon }}</td>
+        <td class="id-cell"><code>{{ mod.id }}</code></td>
+        <td>{{ mod.name }}</td>
+        <td><code>/{{ mod.path }}</code></td>
+        <td class="roles-cell">
+          <span *ngFor="let role of mod.roles" class="role-badge">{{ role }}</span>
+        </td>
+        <td>{{ mod.version }}</td>
+        <td class="toggle-cell">
+          <label class="toggle-switch" [title]="mod.enabled ? 'Click to disable' : 'Click to enable'">
+            <input type="checkbox" [checked]="mod.enabled" (change)="toggleEnabled(mod)" />
+            <span class="slider"></span>
+          </label>
+        </td>
+        <td class="actions-cell">
+          <button class="btn-edit" (click)="openEditModal(mod)" title="Edit">✏️</button>
+          <button class="btn-delete" (click)="confirmDelete(mod)" title="Delete">🗑️</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && modules.length === 0 && !error" class="empty-state">
+    No modules registered yet. Click "Add Module" to get started.
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div *ngIf="showModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>{{ isEditing ? 'Edit Module' : 'Add Module' }}</h2>
+        <button class="btn-close" (click)="closeModal()">✕</button>
+      </div>
+      <form (ngSubmit)="saveModule()" class="modal-body">
+        <div *ngIf="saveError" class="alert-error">{{ saveError }}</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>ID *</label>
+            <input [(ngModel)]="editForm.id" name="id" class="form-control" placeholder="e.g. my-module" [disabled]="isEditing" required />
+          </div>
+          <div class="form-group">
+            <label>Name *</label>
+            <input [(ngModel)]="editForm.name" name="name" class="form-control" placeholder="Display name" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Path *</label>
+            <input [(ngModel)]="editForm.path" name="path" class="form-control" placeholder="e.g. my-module" required />
+          </div>
+          <div class="form-group">
+            <label>Icon</label>
+            <input [(ngModel)]="editForm.icon" name="icon" class="form-control" placeholder="Emoji icon e.g. 🧩" />
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Description</label>
+          <input [(ngModel)]="editForm.description" name="description" class="form-control" placeholder="Short description" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Roles (comma-separated)</label>
+            <input [(ngModel)]="editForm.roles" name="roles" class="form-control" placeholder="admin, physician, nurse" />
+          </div>
+          <div class="form-group">
+            <label>Order</label>
+            <input [(ngModel)]="editForm.order" name="order" type="number" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Version</label>
+            <input [(ngModel)]="editForm.version" name="version" class="form-control" placeholder="1.0.0" />
+          </div>
+          <div class="form-group">
+            <label>Framework</label>
+            <select [(ngModel)]="editForm.framework" name="framework" class="form-control">
+              <option *ngFor="let f of availableFrameworks" [value]="f">{{ f }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Remote Entry URL</label>
+          <input [(ngModel)]="editForm.remoteEntry" name="remoteEntry" class="form-control" placeholder="http://localhost:4210/remoteEntry.js" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Remote Name</label>
+            <input [(ngModel)]="editForm.remoteName" name="remoteName" class="form-control" placeholder="myModuleApp" />
+          </div>
+          <div class="form-group">
+            <label>Exposed Module</label>
+            <input [(ngModel)]="editForm.exposedModule" name="exposedModule" class="form-control" placeholder="./MyModule" />
+          </div>
+        </div>
+
+        <div class="form-check">
+          <input type="checkbox" [(ngModel)]="editForm.enabled" name="enabled" id="enabledCheck" />
+          <label for="enabledCheck">Enabled</label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeModal()">Cancel</button>
+          <button type="submit" class="btn-save" [disabled]="saving">
+            {{ saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Module') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation -->
+  <div *ngIf="showDeleteConfirm" class="modal-overlay">
+    <div class="modal modal-confirm">
+      <div class="modal-header">
+        <h2>Confirm Delete</h2>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong>{{ deletingModule?.name }}</strong> (<code>{{ deletingModule?.id }}</code>)?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
+          <button class="btn-delete-confirm" (click)="deleteModule()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

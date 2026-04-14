@@ -52,6 +52,38 @@ class MongoPatientRepository extends IPatientRepository {
     await patient.save();
     return patient;
   }
+
+  async create(data) {
+    const last = await Patient.findOne().sort({ patientid: -1 }).select('patientid');
+    const nextId = last ? last.patientid + 1 : 1001;
+    const patient = new Patient({
+      patientid: nextId,
+      firstname: data.firstname,
+      lastname: data.lastname,
+      demographics: {
+        mrn: data.mrn || `MRN-${nextId}`,
+        dateOfBirth: data.dateOfBirth || null,
+        gender: data.gender || null,
+        legalName: { first: data.firstname, last: data.lastname },
+      },
+      allergies: [],
+      vitals: [],
+      labs: [],
+      medications: [],
+      visits: [],
+      careTeam: [],
+    });
+    await patient.save();
+    return patient;
+  }
+
+  async updateTopLevelName(patientId, fields) {
+    return Patient.findOneAndUpdate(
+      { patientid: patientId },
+      { $set: fields },
+      { new: true }
+    );
+  }
 }
 
 module.exports = MongoPatientRepository;

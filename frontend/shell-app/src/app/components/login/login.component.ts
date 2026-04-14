@@ -13,6 +13,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class LoginComponent implements OnInit {
   username: string = '';
+  password: string = '';
   loading: boolean = false;
   error: string = '';
   sessionExpired: boolean = false;
@@ -51,13 +52,17 @@ export class LoginComponent implements OnInit {
       this.error = 'Please enter a username';
       return;
     }
+    if (!this.password) {
+      this.error = 'Please enter a password';
+      return;
+    }
 
     this.loading = true;
     this.error = '';
 
     console.log('[Login] onLogin called, returnUrl is:', this.returnUrl);
 
-    this.authService.login(this.username).subscribe(
+    this.authService.login(this.username, this.password).subscribe(
       () => {
         this.loading = false;
         console.log('[Login] Login successful, navigating to:', this.returnUrl);

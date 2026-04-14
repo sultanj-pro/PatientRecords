@@ -5,7 +5,16 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const app = express();
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + ':'));
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -17,6 +26,14 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+if (JWT_SECRET === 'dev-secret') {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[SECURITY] JWT_SECRET is using the default value in production! Set the JWT_SECRET environment variable. Exiting.');
+    process.exit(1);
+  } else {
+    console.warn('[SECURITY] WARNING: JWT_SECRET is set to the default dev value. Set the JWT_SECRET environment variable before deploying to production.');
+  }
+}
 const PORT = process.env.PORT || 5002;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 
@@ -76,6 +93,31 @@ app.get('/api/patients/:id', authMiddleware, async (req, res) => {
     res.json(patient);
   } catch (err) {
     res.status(500).json({ error: 'failed to fetch patient', detail: err.message });
+  }
+});
+
+// POST /api/patients — create a new patient (admin and physician only)
+app.post('/api/patients', authMiddleware, async (req, res) => {
+  if (!['admin', 'physician'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'forbidden: only admin or physician may create patients' });
+  }
+  const { firstname, lastname, dateOfBirth, gender, mrn } = req.body;
+  if (!firstname || !lastname) {
+    return res.status(400).json({ error: 'firstname and lastname are required' });
+  }
+  try {
+    const repo = getRepository('patient');
+    const patient = await repo.create({ firstname, lastname, dateOfBirth, gender, mrn });
+    res.status(201).json({
+      id: patient._id,
+      patientid: patient.patientid,
+      firstname: patient.firstname,
+      lastname: patient.lastname,
+      mrn: patient.demographics?.mrn,
+      dateOfBirth: patient.demographics?.dateOfBirth,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to create patient', detail: err.message });
   }
 });
 
@@ -287,6 +329,17 @@ app.put('/api/patients/:id/demographics', authMiddleware, async (req, res) => {
     const repo = getRepository('patient');
     const updated = await repo.updateDemographics(patientId, req.body);
     if (!updated) return res.status(404).json({ error: 'patient not found' });
+
+    // Keep top-level firstname/lastname in sync with legalName when provided
+    if (req.body.legalName) {
+      const { first, last } = req.body.legalName;
+      const nameUpdate = {};
+      if (first) nameUpdate.firstname = first;
+      if (last)  nameUpdate.lastname  = last;
+      if (Object.keys(nameUpdate).length) {
+        await repo.updateTopLevelName(patientId, nameUpdate);
+      }
+    }
 
     publishEvent('patient-demographics-changed', {
       patientId: String(patientId),

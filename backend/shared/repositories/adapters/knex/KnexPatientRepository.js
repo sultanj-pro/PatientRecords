@@ -42,6 +42,37 @@ class KnexPatientRepository extends IPatientRepository {
       .update({ demographics: JSON.stringify(merged), updated_at: new Date().toISOString() });
     return _mapPatient({ ...row, demographics: merged });
   }
+
+  async create(data) {
+    const rows = await this.db('patients').select('patientid').orderBy('patientid', 'desc').limit(1);
+    const nextId = rows.length ? rows[0].patientid + 1 : 1001;
+    const demographics = {
+      mrn: data.mrn || `MRN-${nextId}`,
+      dateOfBirth: data.dateOfBirth || null,
+      gender: data.gender || null,
+      legalName: { first: data.firstname, last: data.lastname },
+    };
+    const [inserted] = await this.db('patients').insert({
+      patientid: nextId,
+      firstname: data.firstname,
+      lastname: data.lastname,
+      demographics: JSON.stringify(demographics),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).returning('*');
+    return _mapPatient(inserted);
+  }
+
+  async updateTopLevelName(patientId, fields) {
+    const updates = {};
+    if (fields.firstname) updates.firstname = fields.firstname;
+    if (fields.lastname)  updates.lastname  = fields.lastname;
+    if (!Object.keys(updates).length) return null;
+    updates.updated_at = new Date().toISOString();
+    await this.db('patients').where({ patientid: patientId }).update(updates);
+    const row = await this.db('patients').where({ patientid: patientId }).first();
+    return row ? _mapPatient(row) : null;
+  }
 }
 
 function _mapPatient(row) {

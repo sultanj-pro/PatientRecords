@@ -526,6 +526,7 @@ services:
       - LABS_AGENT_URL=http://patientrecord-labs-agent:5010
       - COMMS_AGENT_URL=http://patientrecord-comms-agent:5011
       - LLM_AGENT_URL=http://patientrecord-llm-agent:5013
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5008/health"]
@@ -565,6 +566,7 @@ services:
       - PORT=5009
       - OLLAMA_URL=http://patientrecord-ollama:11434
       - OLLAMA_MODEL=llama3.2:1b
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5009/health"]
@@ -585,6 +587,7 @@ services:
       - PORT=5010
       - OLLAMA_URL=http://patientrecord-ollama:11434
       - OLLAMA_MODEL=llama3.2:1b
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5010/health"]
@@ -608,6 +611,7 @@ services:
       - DATABASE_URL=postgresql://admin:admin@patientrecord-postgres:5432/patientrecords
       - REDIS_HOST=patientrecord-redis
       - REDIS_PORT=6379
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5011/health"]

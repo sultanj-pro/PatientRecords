@@ -6,7 +6,16 @@ const mongoose = require('mongoose');
 const { publishEvent } = require('./shared/eventPublisher');
 
 const app = express();
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + ':'));
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -18,6 +27,14 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+if (JWT_SECRET === 'dev-secret') {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[SECURITY] JWT_SECRET is using the default value in production! Set the JWT_SECRET environment variable. Exiting.');
+    process.exit(1);
+  } else {
+    console.warn('[SECURITY] WARNING: JWT_SECRET is set to the default dev value. Set the JWT_SECRET environment variable before deploying to production.');
+  }
+}
 const PORT = process.env.PORT || 5003;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin@localhost:27017/patientrecords?authSource=admin';
 

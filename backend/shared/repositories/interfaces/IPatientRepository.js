@@ -32,6 +32,25 @@ class IPatientRepository {
   async updateDemographics(patientId, demographics) {
     throw new Error(`${this.constructor.name} must implement updateDemographics()`);
   }
+
+  /**
+   * Create a new patient record.
+   * @param {Object} data - { firstname, lastname, dateOfBirth, gender, mrn }
+   * @returns {Promise<Object>} the created patient document
+   */
+  async create(data) {
+    throw new Error(`${this.constructor.name} must implement create()`);
+  }
+
+  /**
+   * Sync top-level firstname/lastname fields (after a legalName demographics change).
+   * @param {number} patientId
+   * @param {Object} fields - { firstname?, lastname? }
+   * @returns {Promise<Object|null>} updated patient, or null if not found
+   */
+  async updateTopLevelName(patientId, fields) {
+    throw new Error(`${this.constructor.name} must implement updateTopLevelName()`);
+  }
 }
 
 module.exports = IPatientRepository;

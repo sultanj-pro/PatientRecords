@@ -228,6 +228,168 @@
   font-family: monospace;
 }
 
+/* ── New Patient button ── */
+.new-patient-btn {
+  flex-shrink: 0;
+  margin-left: 10px;
+  padding: 6px 14px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.new-patient-btn:hover { background: #1e8449; }
+
+/* ── New Patient modal ── */
+.np-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 20px;
+}
+
+.np-modal {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.np-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f8f8;
+}
+
+.np-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.np-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #888;
+  padding: 2px 6px;
+  line-height: 1;
+}
+.np-close:hover { color: #333; }
+
+.np-body {
+  padding: 20px;
+}
+
+.np-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.np-row label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.np-row small {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #999;
+}
+
+.np-required { color: #e74c3c; }
+
+.np-row input,
+.np-row select {
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.np-row input:focus,
+.np-row select:focus {
+  outline: none;
+  border-color: #27ae60;
+  box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+}
+
+.np-two-col {
+  flex-direction: row;
+  gap: 16px;
+}
+
+.np-two-col > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.np-error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.np-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #eee;
+  background: #f8f8f8;
+}
+
+.np-cancel {
+  background: #f0f0f0;
+  color: #555;
+  border: 1px solid #ddd;
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.np-cancel:hover { background: #e0e0e0; }
+
+.np-save {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.np-save:hover:not([disabled]) { background: #1e8449; }
+.np-save[disabled] { opacity: 0.6; cursor: default; }
+
 .tooltip-desc {
   color: #666;
 }

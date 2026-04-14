@@ -14,7 +14,16 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 const CLINICAL_NOTES_URL = process.env.CLINICAL_NOTES_URL || 'http://localhost:5012';
 const OLLAMA_TIMEOUT_MS  = parseInt(process.env.OLLAMA_TIMEOUT_MS || '300000', 10);
 
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + ':'));
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
 app.use(bodyParser.json());
 
 // Structured request logging

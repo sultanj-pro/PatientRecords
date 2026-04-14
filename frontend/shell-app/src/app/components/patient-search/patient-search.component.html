@@ -52,4 +52,9 @@
       </div>
     </div>
   </div>
+
+  <!-- New Patient button — visible to admin and physician only -->
+  <button *ngIf="canCreatePatient" class="new-patient-btn" (click)="openNewPatientModal()" title="Register new patient">
+    + New Patient
+  </button>
 </div>

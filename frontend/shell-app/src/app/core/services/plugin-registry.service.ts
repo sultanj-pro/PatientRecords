@@ -246,6 +246,39 @@ export class PluginRegistryService {
   }
 
   /**
+   * Create a new module via the backend admin API (POST), then reload cache.
+   */
+  async createModule(module: Omit<ModuleMetadata, 'id'> & { id: string }): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`/api/admin/registry/modules`, module)
+    );
+    this.registry = null;
+    await this.loadRegistry();
+  }
+
+  /**
+   * Full update of a module via the backend admin API (PUT), then reload cache.
+   */
+  async updateModule(moduleId: string, module: Partial<ModuleMetadata>): Promise<void> {
+    await firstValueFrom(
+      this.http.put(`/api/admin/registry/modules/${moduleId}`, module)
+    );
+    this.registry = null;
+    await this.loadRegistry();
+  }
+
+  /**
+   * Delete a module via the backend admin API (DELETE), then reload cache.
+   */
+  async deleteModule(moduleId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`/api/admin/registry/modules/${moduleId}`)
+    );
+    this.registry = null;
+    await this.loadRegistry();
+  }
+
+  /**
    * Get a specific module by display name (e.g., 'Demographics')
    */
   getModuleByName(name: string): ModuleMetadata | undefined {

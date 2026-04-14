@@ -6,6 +6,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { PatientService } from '../../core/services/patient.service';
 import { PatientContextService } from '../../core/services/patient-context.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-patient-search',
@@ -26,19 +27,18 @@ export class PatientSearchComponent implements OnInit {
   showResults: boolean = false;
   private searchSubject = new Subject<string>();
 
+  canCreatePatient = false;
+
   constructor(
     private patientService: PatientService,
     private patientContextService: PatientContextService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    // Setup debounced search
     this.searchSubject
-      .pipe(
-        debounceTime(300),
-        distinctUntilChanged()
-      )
+      .pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((query) => {
         if (query.trim()) {
           this.performSearch(query);
@@ -47,6 +47,15 @@ export class PatientSearchComponent implements OnInit {
           this.highlightedIndex = -1;
         }
       });
+
+    const role = this.authService.getRole();
+    this.canCreatePatient = role === 'admin' || role === 'physician';
+  }
+
+  openNewPatientModal(): void {
+    // Tell the dashboard to remember the current URL before we navigate away
+    window.dispatchEvent(new CustomEvent('new-patient-requested', { detail: { returnUrl: this.router.url } }));
+    this.router.navigateByUrl('/dashboard/demographics/new');
   }
 
   onSearchChange(query: string): void {

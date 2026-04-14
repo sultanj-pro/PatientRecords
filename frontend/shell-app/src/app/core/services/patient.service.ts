@@ -10,6 +10,14 @@ export interface Patient {
   dateOfBirth?: string;
 }
 
+export interface NewPatient {
+  firstname: string;
+  lastname: string;
+  dateOfBirth?: string;
+  gender?: string;
+  mrn?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -26,5 +34,9 @@ export class PatientService {
 
   getPatientById(id: number): Observable<Patient> {
     return this.http.get<Patient>(`${this.apiUrl}/patients/${id}`);
+  }
+
+  createPatient(data: NewPatient): Observable<Patient> {
+    return this.http.post<Patient>(`${this.apiUrl}/patients`, data);
   }
 }

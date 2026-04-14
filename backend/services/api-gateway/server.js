@@ -25,7 +25,16 @@ const LABS_AGENT_URL             = process.env.LABS_AGENT_URL             || 'ht
 const REDIS_HOST                 = process.env.REDIS_HOST                 || 'localhost';
 const REDIS_PORT                 = parseInt(process.env.REDIS_PORT || '6379', 10);
 
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost').split(',').map(s => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + ':'));
+    if (allowed) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
 
 // Swagger UI — available at /api-docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
