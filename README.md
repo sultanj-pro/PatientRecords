@@ -213,14 +213,16 @@ See **[docs/DATA_ACCESS_LAYER_PLAN.md](./docs/DATA_ACCESS_LAYER_PLAN.md)** for t
 - **Dual-Adapter Data Layer** — Repository pattern with full PostgreSQL (Knex) and MongoDB (Mongoose) support; switch with `DB_ADAPTER=knex|mongo`; zero code changes required
 - **AI Clinical Intelligence UI** — Care Intelligence module with streaming analysis (SSE phase banners + live LLM tokens), finding severity badges, physician approve/dismiss workflow, real-time WebSocket notification bell, acknowledgeable notification drawer, and critical findings surfaced directly in the header bell with deep-link navigation to the associated recommendation
 - **Admin Dashboard** — Runtime module management: enable/disable modules, edit per-module role permissions, view service health grid
+- **Patient Registration** — Single-step new patient creation via the Edit Demographics form; `+ New Patient` (admin/physician only) navigates to `/demographics/new`; on cancel returns to previous patient URL; on save creates the patient record and navigates directly to their demographics page
+- **Soft-Delete for Clinical Data** — Labs, visits, care-team members, clinical notes, and medications are soft-deleted (`deletedAt` timestamp) rather than hard-removed; records are preserved in the data store across both PostgreSQL and MongoDB adapters
+- **Backend Service Tests** — Jest test suites for all 12 microservices covering happy path, auth enforcement, and error branches (auth, patient, vitals, labs, medications, visits, care-team, registry, clinical-notes, ai-orchestrator, medication-agent, labs-agent, comms-agent)
 - **Phase 8.8 Hardening** — WebSocket push notifications, prompt injection sanitization, append-only audit log (write concern majority), AI services network-isolated, load-tested at 20 concurrent requests, structured latency metrics
 
 ### Future Vision
 
 This foundation will evolve into:
-- **Patient Registration Workflow** — *(partially complete)* Full intake form connecting new patient creation directly to the demographics editor; planned extensions include photo capture, document upload, and insurance card scanning
-- **Soft-Delete & Audit Trail for Clinical Data** — Labs and visits marked as deleted rather than hard-removed; full history recoverable by administrators and auditors
-- **Backend Service Tests** — Automated test suites for every microservice endpoint covering happy path, auth, and error branches; CI gate before merge
+- **Patient Registration Extensions** — Photo capture, document upload, and insurance card scanning on the new patient intake form
+- **Admin Restore for Soft-Deleted Records** — API endpoints allowing administrators to view and restore soft-deleted labs, visits, and other clinical records; audit log showing delete and restore history per record
 - **Frontend Component Tests** — Jasmine/Jest specs for shell and MFE components covering navigation, event emission, and role-guard behaviour
 - **Shared Auth Middleware** — Extract `authMiddleware` and `requireRole` into a shared package (`backend/shared/middleware/auth.js`) so each service imports one canonical implementation
 - **Edge Computing** — Offline-capable modules with local-first architecture and cloud sync
