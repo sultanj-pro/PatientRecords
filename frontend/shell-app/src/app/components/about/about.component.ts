@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 
 @Component({
@@ -10,9 +10,13 @@ import { Router } from '@angular/router';
   styleUrls: ['./about.component.css']
 })
 export class AboutComponent {
-  constructor(private router: Router) {}
+  constructor(private router: Router, private location: Location) {}
 
   goBack(): void {
-    this.router.navigate(['/login']);
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 }
